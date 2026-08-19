@@ -1,0 +1,337 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@800&family=Space+Grotesk:wght@400;500;700&family=Space+Mono:wght@400&display=swap');
+
+:root{
+  --ink: #12101A;
+  --stage: #1D1A29;
+  --stage-elevated: #252131;
+  --paper: #F2EEE9;
+  --magenta: #E5487A;
+  --amber: #F2A93B;
+  --line: #3A3550;
+  --ink-45: rgba(242,238,233,0.45);
+  --ink-70: rgba(242,238,233,0.7);
+}
+
+*{box-sizing:border-box;margin:0;}
+
+body{
+  background:var(--ink);
+  color:var(--paper);
+  font-family:'Space Grotesk', sans-serif;
+}
+
+/* Page head / gallery of phone mockups */
+.page-head{
+  text-align:center;
+  padding:48px 24px 32px;
+}
+.page-head h1{
+  font-family:'Syne', sans-serif;
+  font-size:28px;
+}
+.page-head p{
+  font-size:14px;
+  color:var(--ink-45);
+  max-width:600px;
+  margin:8px auto 0;
+}
+.gallery{
+  display:flex;
+  flex-wrap:wrap;
+  gap:32px;
+  justify-content:center;
+  padding:0 24px 64px;
+}
+.slot{
+  width:340px;
+}
+.cap{
+  margin-bottom:16px;
+}
+.cap h3{
+  font-family:'Syne', sans-serif;
+  font-size:16px;
+  margin:4px 0;
+}
+.cap p{
+  font-size:12px;
+  color:var(--ink-45);
+}
+.num{
+  font-family:'Space Mono', monospace;
+  font-size:11px;
+  color:var(--amber);
+  margin-right:6px;
+}
+
+/* Phone frame */
+.phone{
+  width:320px;
+  height:693px;
+  background:var(--ink);
+  border-radius:44px;
+  border:8px solid var(--stage);
+  position:relative;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  box-shadow:0 20px 60px rgba(0,0,0,0.5);
+  margin:0 auto;
+}
+.notch{
+  position:absolute;
+  top:8px;
+  left:50%;
+  transform:translateX(-50%);
+  width:120px;
+  height:24px;
+  background:#000;
+  border-radius:0 0 16px 16px;
+  z-index:5;
+}
+.statusbar{
+  display:flex;
+  justify-content:space-between;
+  padding:14px 24px 0;
+  font-family:'Space Mono', monospace;
+  font-size:10px;
+  color:var(--ink-45);
+  position:relative;
+  z-index:2;
+}
+.screen{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  position:relative;
+  overflow:hidden;
+}
+.home-indicator{
+  width:120px;
+  height:4px;
+  background:var(--ink-45);
+  border-radius:2px;
+  position:absolute;
+  bottom:8px;
+  left:50%;
+  transform:translateX(-50%);
+  z-index:10;
+}
+.px{
+  padding-left:18px;
+  padding-right:18px;
+}
+
+/* Search / chips / sections */
+.search{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  background:var(--stage);
+  border-radius:8px;
+  padding:10px 12px;
+  font-size:12px;
+  color:var(--ink-45);
+}
+.scrollx{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:4px;
+}
+.chip{
+  flex:none;
+  font-family:'Space Mono', monospace;
+  font-size:9px;
+  padding:5px 10px;
+  border:1px solid var(--line);
+  color:var(--ink-45);
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+  white-space:nowrap;
+}
+.chip.on{
+  border-color:var(--magenta);
+  color:var(--magenta);
+}
+.sec-label{
+  font-family:'Space Mono', monospace;
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:0.1em;
+  color:var(--ink-45);
+  padding:14px 0 8px;
+}
+.card-thumb{
+  aspect-ratio:1;
+  width:100%;
+  background:var(--stage);
+}
+
+/* Frame / corner marks (app scale) */
+.frame{
+  position:relative;
+  overflow:hidden;
+  background:var(--stage);
+  border-radius:0;
+}
+.cm-tl, .cm-tr, .cm-bl, .cm-br{
+  position:absolute;
+  width:8px;
+  height:8px;
+}
+.cm-tl{
+  top:0; left:0;
+  border-top:1.5px solid var(--magenta);
+  border-left:1.5px solid var(--magenta);
+}
+.cm-tr{
+  top:0; right:0;
+  border-top:1.5px solid var(--magenta);
+  border-right:1.5px solid var(--magenta);
+}
+.cm-bl{
+  bottom:0; left:0;
+  border-bottom:1.5px solid var(--magenta);
+  border-left:1.5px solid var(--magenta);
+}
+.cm-br{
+  bottom:0; right:0;
+  border-bottom:1.5px solid var(--magenta);
+  border-right:1.5px solid var(--magenta);
+}
+.frame.amber .cm-tl,
+.frame.amber .cm-tr,
+.frame.amber .cm-bl,
+.frame.amber .cm-br{
+  border-color:var(--amber);
+}
+
+.avatar{
+  width:48px;
+  height:48px;
+  background:var(--line);
+  border-radius:4px;
+}
+
+/* Tab bar */
+.tabbar{
+  position:absolute;
+  bottom:0; left:0; right:0;
+  display:flex;
+  background:var(--stage);
+  border-top:1px solid var(--line);
+  padding:6px 0;
+  padding-bottom:env(safe-area-inset-bottom, 8px);
+  z-index:20;
+}
+.tab{
+  flex:1;
+  text-align:center;
+  font-size:9px;
+  color:var(--ink-45);
+  padding:4px 0;
+}
+.tab.active{
+  color:var(--magenta);
+}
+.tab .ic{
+  font-size:18px;
+  margin-bottom:2px;
+}
+.tab-create{
+  width:48px;
+  height:48px;
+  background:linear-gradient(135deg, var(--magenta), var(--amber));
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  margin-top:-12px;
+  color:var(--paper);
+  font-size:24px;
+  font-weight:300;
+  cursor:pointer;
+}
+
+/* Pills */
+.pill{
+  font-family:'Space Mono', monospace;
+  font-size:9px;
+  padding:3px 8px;
+  text-transform:uppercase;
+  letter-spacing:0.05em;
+}
+.pill.open{
+  background:rgba(229,72,122,0.15);
+  color:var(--magenta);
+}
+.pill.wait{
+  background:rgba(242,169,59,0.15);
+  color:var(--amber);
+}
+
+/* Buttons */
+.btn-primary{
+  width:100%;
+  padding:12px;
+  background:linear-gradient(90deg, var(--magenta), var(--amber));
+  color:var(--paper);
+  border:none;
+  border-radius:4px;
+  font-size:13px;
+  font-weight:600;
+  text-align:center;
+  cursor:pointer;
+}
+.btn-ghost{
+  width:100%;
+  padding:12px;
+  background:transparent;
+  border:1px solid var(--line);
+  color:var(--paper);
+  border-radius:4px;
+  font-size:13px;
+  text-align:center;
+}
+
+/* Fields */
+.field{
+  background:var(--stage);
+  border:1px solid var(--line);
+  border-radius:4px;
+  padding:12px;
+  margin-bottom:10px;
+}
+.lbl{
+  font-family:'Space Mono', monospace;
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:0.08em;
+  color:var(--ink-45);
+  margin-bottom:4px;
+}
+
+.eyebrow{
+  font-family:'Space Mono', monospace;
+  font-size:10px;
+  letter-spacing:0.1em;
+  text-transform:uppercase;
+  color:var(--magenta);
+}
+.mono{
+  font-family:'Space Mono', monospace;
+}
+.logo{
+  font-family:'Syne', sans-serif;
+  font-weight:800;
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.dot{
+  width:8px;
+  height:8px;
+  background:linear-gradient(135deg, var(--magenta), var(--amber));
+  border-radius:1px;
+}

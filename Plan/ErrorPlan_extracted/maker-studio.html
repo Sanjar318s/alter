@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Maker Studio — ALTER</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
+<style>
+.studio-tabs{display:flex;gap:0;margin-bottom:28px;border-bottom:1px solid var(--line);}
+.side-panel{position:fixed;top:0;right:0;bottom:0;width:340px;background:var(--stage);border-left:1px solid var(--line);
+  padding:32px 26px;transform:translateX(0);z-index:60;overflow-y:auto;}
+.checklist{display:flex;flex-direction:column;gap:10px;margin:18px 0;}
+.checklist label{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--ink-70);}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="wrap">
+    <a href="landing.html" class="logo"><span class="dot"></span>ALTER</a>
+    <div class="nav-links"><a href="explore.html">Исследовать</a><a href="profile-hub.html">Мой профиль</a></div>
+  </div>
+</nav>
+
+<div class="wrap" style="padding-top:40px;padding-bottom:80px;">
+  <div class="sec-head" style="margin-bottom:24px;">
+    <span class="eyebrow">Maker Studio</span>
+    <h2 style="font-size:30px;">Заказы nyx.cosplay</h2>
+  </div>
+
+  <div class="studio-tabs">
+    <div class="tab active">Доска заказов</div>
+    <div class="tab">Календарь загруженности</div>
+  </div>
+
+  <div class="stat-strip">
+    <div><div class="num">7</div><div class="label">Заказов в работе</div></div>
+    <div><div class="num" style="color:var(--amber);">1</div><div class="label">Просрочка</div></div>
+    <div><div class="num">520K</div><div class="label">Средний чек, сум</div></div>
+  </div>
+
+  <div style="overflow-x:auto;">
+    <div class="kanban">
+      <div>
+        <div class="kcol-head">Новая заявка <span>2</span></div>
+        <div class="kcard"><div class="client">A. Karimova</div><div class="thumb"></div><div class="deadline">заявка · 1 день назад</div></div>
+        <div class="kcard"><div class="client">R. Tashkentov</div><div class="thumb"></div><div class="deadline">заявка · 3 часа назад</div></div>
+      </div>
+      <div>
+        <div class="kcol-head">Обсуждение <span>1</span></div>
+        <div class="kcard"><div class="client">D. Yusupov</div><div class="thumb"></div><div class="deadline">до 02.09</div></div>
+      </div>
+      <div>
+        <div class="kcol-head">В работе <span>2</span></div>
+        <div class="kcard" onclick="document.getElementById('panel').style.display='block'" style="cursor:pointer;">
+          <div class="client">M. Rustamova</div><div class="thumb"></div>
+          <div class="deposit">Депозит подтверждён ✓</div>
+        </div>
+        <div class="kcard"><div class="client">L. Ergasheva</div><div class="thumb"></div><div class="deadline" style="color:var(--magenta);">просрочено на 2 дня</div></div>
+      </div>
+      <div>
+        <div class="kcol-head">Примерка / правки <span>1</span></div>
+        <div class="kcard"><div class="client">S. Nazarov</div><div class="thumb"></div><div class="deadline">до 14.09</div></div>
+      </div>
+      <div>
+        <div class="kcol-head">Готово <span>1</span></div>
+        <div class="kcard"><div class="client">K. Islamova</div><div class="thumb"></div><div class="deposit">Оплачено полностью</div></div>
+      </div>
+      <div>
+        <div class="kcol-head">Отправлено <span>1</span></div>
+        <div class="kcard"><div class="client">O. Petrova</div><div class="thumb"></div><div class="deposit mono">12.08.2026</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="side-panel" id="panel" style="display:none;">
+  <button onclick="document.getElementById('panel').style.display='none';" class="mono" style="font-size:12px;color:var(--ink-45);margin-bottom:20px;">← Закрыть</button>
+  <div class="mono" style="font-size:11px;color:var(--ink-45);text-transform:uppercase;">Заказ #0731</div>
+  <h3 style="font-size:22px;margin:8px 0 4px;">M. Rustamova</h3>
+  <div class="mono" style="font-size:12px;color:var(--amber);">Дедлайн: 14 сентября</div>
+
+  <div class="eyebrow" style="margin-top:26px;margin-bottom:10px;">Чек-лист этапов</div>
+  <div class="checklist">
+    <label><input type="checkbox" checked> Замеры сняты</label>
+    <label><input type="checkbox" checked> Депозит получен</label>
+    <label><input type="checkbox"> Крой готов</label>
+    <label><input type="checkbox"> Примерка назначена</label>
+    <label><input type="checkbox"> Финальная отправка</label>
+  </div>
+
+  <div class="eyebrow" style="margin-top:22px;margin-bottom:10px;">Заметки</div>
+  <textarea rows="3" style="width:100%;background:var(--ink);border:1px solid var(--line);color:var(--paper);padding:10px;font-family:inherit;font-size:13px;">Клиентка просила усилить корсетные кости — добавить 2 шт по бокам.</textarea>
+
+  <div class="eyebrow" style="margin-top:22px;margin-bottom:10px;">Договор</div>
+  <div class="mono" style="font-size:12px;color:var(--ink-45);line-height:1.6;">Депозит 30% невозвратный после начала работ, до 2 раундов правок…</div>
+
+  <button class="btn btn-outline" style="width:100%;margin-bottom:12px;">Открыть диалог с клиентом</button>
+  <button class="btn btn-primary" style="width:100%;margin-top:26px;">Отметить оплату депозита</button>
+</div>
+
+</body>
+</html>

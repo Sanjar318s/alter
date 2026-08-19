@@ -1,0 +1,52 @@
+import { v4 as uuid } from "uuid";
+import { db, schema } from "../db";
+import { pushNotification } from "./pushRealtime";
+
+export function notify(
+  userId: string,
+  type: string,
+  payload: Record<string, unknown>
+) {
+  const id = uuid();
+  db.insert(schema.notifications)
+    .values({
+      id,
+      userId,
+      type,
+      payloadJson: JSON.stringify(payload),
+    })
+    .run();
+  pushNotification(userId, { id, type, ...payload });
+}
+
+export function franchiseSlug(name?: string | null) {
+  const n = (name || "").toLowerCase();
+  const map: [string, string][] = [
+    ["genshin", "genshin-impact"],
+    ["honkai", "honkai-star-rail"],
+    ["nier", "nier-automata"],
+    ["league", "league-of-legends"],
+    ["vocaloid", "vocaloid"],
+    ["miku", "vocaloid"],
+    ["chainsaw", "chainsaw-man"],
+    ["demon slayer", "demon-slayer"],
+    ["jujutsu", "jujutsu-kaisen"],
+    ["overwatch", "overwatch"],
+  ];
+  for (const [needle, slug] of map) {
+    if (n.includes(needle)) return slug;
+  }
+  return "other";
+}
+
+export function unlinkUpload(url?: string | null) {
+  if (!url || !url.startsWith("/uploads/")) return;
+  try {
+    const fs = require("fs") as typeof import("fs");
+    const path = require("path") as typeof import("path");
+    const file = path.join(__dirname, "..", "..", "uploads", path.basename(url));
+    if (fs.existsSync(file)) fs.unlinkSync(file);
+  } catch {
+    /* ignore missing files */
+  }
+}
