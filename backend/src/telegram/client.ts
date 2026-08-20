@@ -42,3 +42,18 @@ export function sourceTopicId() {
   const n = Number(raw);
   return Number.isFinite(n) ? n : 60704;
 }
+
+export const COSPLAYERS_SOURCE_KEY = "cosplayers_uzb";
+export const AFISHA_SOURCE_KEY = "afishauz";
+
+export function afishaChatUsername() {
+  return (process.env.TELEGRAM_AFISHA_CHAT || "afishauz").replace(/^@/, "");
+}
+
+export function afishaKeywords() {
+  const raw = process.env.TELEGRAM_AFISHA_KEYWORDS || "косплей,comic con,geek con,аниме фест";
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+}

@@ -13,6 +13,10 @@ primary_region = 'sin'
   NODE_ENV = 'production'
   PORT = '8080'
 
+[processes]
+  app = 'node dist/index.js'
+  telegram = 'node dist/scripts/telegramPoll.js'
+
 [http_service]
   internal_port = 8080
   force_https = true
@@ -33,3 +37,15 @@ primary_region = 'sin'
   cpu_kind = 'shared'
   cpus = 1
   memory_mb = 512
+  processes = ['app']
+
+[[vm]]
+  memory = '512mb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 512
+  processes = ['telegram']
+
+[[restart]]
+  policy = 'never'
+  processes = ['telegram']

@@ -420,6 +420,11 @@ export function migrate() {
       session_id TEXT, city TEXT,
       created_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
+    CREATE TABLE IF NOT EXISTS app_kv (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL,
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
     CREATE INDEX IF NOT EXISTS idx_ad_placements_slot ON ad_placements(slot_id);
     CREATE INDEX IF NOT EXISTS idx_ad_events_placement ON ad_events(placement_id);
     CREATE INDEX IF NOT EXISTS idx_partner_events_starts ON partner_events(starts_at);

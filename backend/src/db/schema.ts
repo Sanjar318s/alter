@@ -685,6 +685,14 @@ export const adPlacements = sqliteTable("ad_placements", {
     .$defaultFn(() => new Date()),
 });
 
+export const appKv = sqliteTable("app_kv", {
+  key: text("key").primaryKey(),
+  value: text("value").notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
 export const adEvents = sqliteTable("ad_events", {
   id: text("id").primaryKey(),
   placementId: text("placement_id")

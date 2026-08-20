@@ -12,7 +12,8 @@
     "purge-demo": "tsx src/scripts/purgeDemo.ts",
     "owner:register": "tsx src/scripts/registerOwner.ts",
     "telegram:auth": "tsx src/scripts/telegramAuth.ts",
-    "telegram:sync": "tsx src/scripts/telegramSync.ts",
+    "telegram:sync": "tsx src/scripts/telegramPoll.ts",
+    "telegram:poll": "tsx src/scripts/telegramPoll.ts",
     "telegram:backfill": "tsx src/scripts/telegramBackfill.ts"
   },
   "keywords": [],
