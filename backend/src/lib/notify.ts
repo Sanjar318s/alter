@@ -1,6 +1,7 @@
 import { v4 as uuid } from "uuid";
 import { db, schema } from "../db";
 import { pushNotification } from "./pushRealtime";
+import { deleteUpload } from "./storage";
 
 export function notify(
   userId: string,
@@ -40,13 +41,5 @@ export function franchiseSlug(name?: string | null) {
 }
 
 export function unlinkUpload(url?: string | null) {
-  if (!url || !url.startsWith("/uploads/")) return;
-  try {
-    const fs = require("fs") as typeof import("fs");
-    const path = require("path") as typeof import("path");
-    const file = path.join(__dirname, "..", "..", "uploads", path.basename(url));
-    if (fs.existsSync(file)) fs.unlinkSync(file);
-  } catch {
-    /* ignore missing files */
-  }
+  void deleteUpload(url);
 }

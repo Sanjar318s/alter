@@ -1,8 +1,7 @@
 import { Router } from "express";
-import fs from "fs";
-import path from "path";
 import { v4 as uuid } from "uuid";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
+import { putUpload } from "../lib/storage";
 
 const ALLOWED = new Set([
   "image/jpeg",
@@ -33,14 +32,13 @@ const EXT: Record<string, string> = {
 };
 
 const MAX = 25 * 1024 * 1024;
-const dir = path.join(__dirname, "..", "..", "uploads");
-if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
 
 const router = Router();
 
 router.post("/", authMiddleware, (req: AuthRequest, res) => {
   const chunks: Buffer[] = [];
   let size = 0;
+
   req.on("data", (c: Buffer) => {
     size += c.length;
     if (size > MAX) {
@@ -50,22 +48,33 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
     }
     chunks.push(c);
   });
+
   req.on("end", () => {
-    const mime = String(req.headers["x-file-type"] || req.headers["content-type"] || "");
-    const cleanMime = mime.split(";")[0].trim();
-    if (!ALLOWED.has(cleanMime)) {
-      return res.status(400).json({ error: "MIME not allowed" });
-    }
-    const name = String(req.headers["x-file-name"] || `file.${EXT[cleanMime]}`);
-    const id = uuid();
-    const filename = `${id}.${EXT[cleanMime]}`;
-    fs.writeFileSync(path.join(dir, filename), Buffer.concat(chunks));
-    res.status(201).json({
-      url: `/uploads/${filename}`,
-      fileName: name,
-      fileSize: size,
-      mime: cleanMime,
-    });
+    void (async () => {
+      try {
+        const mime = String(req.headers["x-file-type"] || req.headers["content-type"] || "");
+        const cleanMime = mime.split(";")[0].trim();
+        if (!ALLOWED.has(cleanMime)) {
+          return res.status(400).json({ error: "MIME not allowed" });
+        }
+        const name = String(req.headers["x-file-name"] || `file.${EXT[cleanMime]}`);
+        const filename = `${uuid()}.${EXT[cleanMime]}`;
+        const body = Buffer.concat(chunks);
+        const stored = await putUpload(filename, body, cleanMime);
+        res.status(201).json({
+          url: stored.url,
+          fileName: name,
+          fileSize: size,
+          mime: cleanMime,
+          storage: stored.driver,
+        });
+      } catch (err: unknown) {
+        console.error("[upload]", err);
+        if (!res.headersSent) {
+          res.status(500).json({ error: err instanceof Error ? err.message : "Upload failed" });
+        }
+      }
+    })();
   });
 });
 

@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "ALTER — Исследовать",
-  description: "Новые билды, открытые заказы и комьюнити косплея.",
-};
+export const metadata: Metadata = pageMetadata({
+  title: "Исследовать — билды, мастера и заказы на косплей",
+  description:
+    "Новые билды косплея, открытые заказы на костюмы и фриланс мастера косплея. Ищите вдохновение и заказчиков на платформе ALTER.",
+  path: "/explore",
+});
 
 export default function ExploreLayout({ children }: { children: React.ReactNode }) {
   return children;

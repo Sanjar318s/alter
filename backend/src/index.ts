@@ -4,7 +4,9 @@ import cors from "cors";
 import path from "path";
 import { migrate } from "./db/migrate";
 import { purgeDemoUsers } from "./db/purgeDemoUsers";
+import { dbDriver } from "./db";
 import { clearOwnerBlocks } from "./lib/ownerImmunity";
+import { storageDriver, uploadsRouter, verifyR2Bucket } from "./lib/storage";
 
 import authRoutes from "./routes/auth";
 import userRoutes from "./routes/users";
@@ -30,6 +32,7 @@ import placementsRoutes from "./routes/placements";
 import partnerPortalRoutes from "./routes/partnerPortal";
 import fxRoutes from "./routes/fx";
 import gifsRoutes from "./routes/gifs";
+import integrationsRoutes from "./routes/integrations";
 import { rateLimit } from "./middleware/rateLimit";
 import { escalateOverdueReports } from "./lib/reportEscalation";
 import { getModerationSettings } from "./lib/moderationSettings";
@@ -43,7 +46,9 @@ app.use(
       if (!origin) return cb(null, true);
       if (
         /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-        /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin)
+        /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin) ||
+        /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(origin) ||
+        /^https:\/\/([a-z0-9-]+\.)*pages\.dev$/i.test(origin)
       ) {
         return cb(null, true);
       }
@@ -55,7 +60,12 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({
+    status: "ok",
+    db: dbDriver,
+    storage: storageDriver(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 app.use("/uploads", (req, res, next) => {
@@ -65,7 +75,9 @@ app.use("/uploads", (req, res, next) => {
   }
   next();
 });
-app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/uploads", uploadsRouter, (_req, res) => {
+  res.status(404).json({ error: "File not found" });
+});
 
 app.use("/api/auth", rateLimit(20, 60_000), authRoutes);
 app.use("/api/explore", exploreRoutes);
@@ -92,6 +104,7 @@ app.use("/api/partners", partnersRoutes);
 app.use("/api/placements", placementsRoutes);
 app.use("/api/partner-portal", partnerPortalRoutes);
 app.use("/api/gifs", rateLimit(90, 60_000), gifsRoutes);
+app.use("/api/integrations", integrationsRoutes);
 
 app.use((err: unknown, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
   console.error("[alter]", err);
@@ -104,6 +117,13 @@ app.use((_req, res) => {
 });
 
 migrate();
+void verifyR2Bucket()
+  .then(() => {
+    if (storageDriver() === "r2") console.log("✓ R2 bucket reachable");
+  })
+  .catch((err) => {
+    console.warn("⚠ R2 bucket check failed:", err instanceof Error ? err.message : err);
+  });
 try {
   const cleared = clearOwnerBlocks();
   if (cleared > 0) console.log(`✓ Cleared ${cleared} stale block(s) on owner account`);

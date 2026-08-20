@@ -102,11 +102,9 @@ function ProfileHub({ username }: { username: string }) {
         if (d.stats) setStats({ builds: d.stats.builds, followers: d.stats.followers, following: d.stats.following, likes: d.stats.likes, orders: d.stats.orders || 0 });
         if (d.events?.length) setEvents(d.events);
         setFollowing(Boolean(d.isFollowing));
-        document.title = `${username} — ALTER`;
       })
       .catch(() => {
         setNotFound(true);
-        document.title = `${username} — ALTER`;
       });
     users
       .orders(username)
