@@ -199,15 +199,18 @@ function ProfileHub({ username }: { username: string }) {
     | "blogger"
     | "seller"
     | null;
-  const canShowWorks = subjectPlatformRole === "seller" || subjectPlatformRole == null;
-  const canShowReels = subjectPlatformRole === "seller" || subjectPlatformRole === "blogger" || subjectPlatformRole == null;
+  /** Until profile loads, hide content tabs to avoid flashing Works/Reels for clients. */
+  const roleReady = Boolean(profile?.user) || (isOwner && Boolean(user?.platformRole));
+  const canShowWorks = roleReady && subjectPlatformRole === "seller";
+  const canShowReels = roleReady && (subjectPlatformRole === "seller" || subjectPlatformRole === "blogger");
   const canPublishWorks = isOwner && user?.platformRole === "seller";
   const canPublishReels = isOwner && (user?.platformRole === "seller" || user?.platformRole === "blogger");
   const isClientProfile = subjectPlatformRole === "client";
+  const canOrderFromProfile = roleReady && subjectPlatformRole === "seller";
   const profileTabs = (
     [
-      ...(canShowWorks && !isClientProfile ? (["builds"] as const) : []),
-      ...(canShowReels && !isClientProfile ? (["reels"] as const) : []),
+      ...(canShowWorks ? (["builds"] as const) : []),
+      ...(canShowReels ? (["reels"] as const) : []),
       ...(subjectPlatformRole === "seller" ? (["orders"] as const) : []),
       "about",
     ] as Tab[]
@@ -332,7 +335,7 @@ function ProfileHub({ username }: { username: string }) {
               </>
             ) : (
               <>
-                {!isClientProfile && (
+                {canOrderFromProfile && (
                   <Button size="sm" onClick={() => setCommissionOpen(true)} className="w-full sm:w-auto">
                     <Sparkles size={14} className="mr-1" /> Заказать
                   </Button>
