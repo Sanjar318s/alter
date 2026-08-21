@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
+import { RoleSelectModal } from "@/components/RoleSelectModal";
 import { cn } from "@/lib/cn";
 import { isViewportLockRoute } from "@/lib/viewportLock";
 
@@ -24,6 +25,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           {children}
         </main>
         <OnboardingBanner />
+        <RoleSelectModal />
       </div>
     );
   }
@@ -36,6 +38,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </main>
       <Footer />
       <OnboardingBanner />
+      <RoleSelectModal />
     </>
   );
 }

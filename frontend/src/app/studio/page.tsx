@@ -120,8 +120,12 @@ function StudioInner() {
         targetUser: ghostTargetUser || undefined,
       });
       const mapped = (res.orders || []).map(mapApiOrder);
-      mapped.sort((a, b) => Number(b.pinned) - Number(a.pinned));
-      setItems(mapped);
+      const roleFiltered =
+        user?.platformRole === "client"
+          ? mapped.filter((o) => o.viewerRole === "client" || o.clientId === user.id)
+          : mapped;
+      roleFiltered.sort((a, b) => Number(b.pinned) - Number(a.pinned));
+      setItems(roleFiltered);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Не удалось загрузить заказы");
     } finally {

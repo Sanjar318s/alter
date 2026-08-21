@@ -259,6 +259,7 @@ export function migrate() {
   `);
 
   addColumn("users", "phone", "TEXT");
+  addColumn("users", "platform_role", "TEXT");
 
   const profileCols: [string, string][] = [
     ["city", "TEXT"],
@@ -425,6 +426,21 @@ export function migrate() {
       value TEXT NOT NULL,
       updated_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
+    CREATE TABLE IF NOT EXISTS moderation_requests (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      type TEXT NOT NULL DEFAULT 'role_change',
+      current_role TEXT,
+      requested_role TEXT NOT NULL,
+      reason TEXT NOT NULL,
+      activity_explanation TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      reviewer_id TEXT REFERENCES users(id),
+      review_note TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      reviewed_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_moderation_requests_status ON moderation_requests(status);
     CREATE INDEX IF NOT EXISTS idx_ad_placements_slot ON ad_placements(slot_id);
     CREATE INDEX IF NOT EXISTS idx_ad_events_placement ON ad_events(placement_id);
     CREATE INDEX IF NOT EXISTS idx_partner_events_starts ON partner_events(starts_at);

@@ -9,6 +9,8 @@ export const users = sqliteTable("users", {
   passwordHash: text("password_hash").notNull(),
   roleFlags: text("role_flags").default("cosplayer"),
   phone: text("phone"),
+  /** One-time platform role: client | blogger | seller */
+  platformRole: text("platform_role"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -691,6 +693,26 @@ export const appKv = sqliteTable("app_kv", {
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
+});
+
+/** Role change / other moderation requests from users */
+export const moderationRequests = sqliteTable("moderation_requests", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  type: text("type").notNull().default("role_change"), // role_change
+  currentRole: text("current_role"),
+  requestedRole: text("requested_role").notNull(),
+  reason: text("reason").notNull(),
+  activityExplanation: text("activity_explanation").notNull(),
+  status: text("status").notNull().default("pending"), // pending | approved | rejected
+  reviewerId: text("reviewer_id").references(() => users.id),
+  reviewNote: text("review_note"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
 });
 
 export const adEvents = sqliteTable("ad_events", {

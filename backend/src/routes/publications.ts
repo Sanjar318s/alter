@@ -120,6 +120,11 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
 
   if (!mediaUrls?.length) return res.status(400).json({ error: "mediaUrls required" });
 
+  const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
+  if (me?.platformRole === "client") {
+    return res.status(403).json({ error: "Клиент не может публиковать рилсы" });
+  }
+
   const id = uuid();
   const pubKind = kind || "post";
   const expiresAt =

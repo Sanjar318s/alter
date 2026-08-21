@@ -36,6 +36,7 @@ import integrationsRoutes from "./routes/integrations";
 import { rateLimit } from "./middleware/rateLimit";
 import { escalateOverdueReports } from "./lib/reportEscalation";
 import { getModerationSettings } from "./lib/moderationSettings";
+import { purgeInactivePlatformAccounts } from "./lib/inactivityPurge";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
@@ -164,3 +165,44 @@ setInterval(() => {
     console.warn("[moderation] auto-escalation failed:", err instanceof Error ? err.message : err);
   }
 }, 60_000);
+
+/** Daily inactivity purge for blogger/seller (single checker, no duplicate schedules). */
+const inactivityEnabled = process.env.INACTIVITY_PURGE !== "0";
+const inactivityIntervalMs = Math.max(
+  60 * 60 * 1000,
+  Number(process.env.INACTIVITY_PURGE_INTERVAL_MS || 24 * 60 * 60 * 1000)
+);
+let lastInactivityPurgeAt = 0;
+
+setInterval(() => {
+  if (!inactivityEnabled) return;
+  const now = Date.now();
+  if (now - lastInactivityPurgeAt < inactivityIntervalMs) return;
+  lastInactivityPurgeAt = now;
+  try {
+    const result = purgeInactivePlatformAccounts();
+    if (result.deleted.length > 0) {
+      console.log(
+        `[inactivity] purged ${result.deleted.length} account(s)${result.dryRun ? " (dry-run)" : ""}: ${result.deleted.join(", ")}`
+      );
+    }
+  } catch (err) {
+    console.warn("[inactivity] purge failed:", err instanceof Error ? err.message : err);
+  }
+}, 60 * 60 * 1000);
+
+// Run once shortly after boot (after migrate), then on interval above.
+setTimeout(() => {
+  if (!inactivityEnabled) return;
+  try {
+    lastInactivityPurgeAt = Date.now();
+    const result = purgeInactivePlatformAccounts();
+    if (result.deleted.length > 0 || process.env.INACTIVITY_PURGE_LOG === "1") {
+      console.log(
+        `[inactivity] boot check: checked=${result.checked} deleted=${result.deleted.length} dryRun=${result.dryRun}`
+      );
+    }
+  } catch (err) {
+    console.warn("[inactivity] boot purge failed:", err instanceof Error ? err.message : err);
+  }
+}, 15_000);

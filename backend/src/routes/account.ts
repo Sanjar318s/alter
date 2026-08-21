@@ -1,5 +1,6 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
+import { v4 as uuid } from "uuid";
 import { eq, ne, and } from "drizzle-orm";
 import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
@@ -70,6 +71,7 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
     linksJson,
     privacySettings,
     roleFlags,
+    platformRole,
     commissionComplexity,
     commissionTypes,
     commissionDuration,
@@ -78,6 +80,20 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
     uiLocale,
     uiCurrency,
   } = req.body;
+
+  const ALLOWED_PLATFORM_ROLES = new Set(["client", "blogger", "seller"]);
+  if (platformRole !== undefined) {
+    const next = String(platformRole || "").trim();
+    if (!ALLOWED_PLATFORM_ROLES.has(next)) {
+      return res.status(400).json({ error: "Недопустимая роль платформы" });
+    }
+    if (user.platformRole) {
+      return res.status(403).json({
+        error: "Роль уже выбрана. Смена возможна только через заявку модератору.",
+      });
+    }
+    db.update(schema.users).set({ platformRole: next }).where(eq(schema.users.id, user.id)).run();
+  }
 
   const nextUsername = username && username !== user.username ? String(username).trim() : user.username;
   if (username && username !== user.username) {
@@ -125,7 +141,16 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
 
   const updatedUser = db.select().from(schema.users).where(eq(schema.users.id, user.id)).get();
   const profile = db.select().from(schema.profiles).where(eq(schema.profiles.userId, user.id)).get();
-  res.json({ user: { id: updatedUser!.id, email: updatedUser!.email, username: updatedUser!.username }, profile });
+  res.json({
+    user: {
+      id: updatedUser!.id,
+      email: updatedUser!.email,
+      username: updatedUser!.username,
+      roleFlags: updatedUser!.roleFlags,
+      platformRole: updatedUser!.platformRole || null,
+    },
+    profile,
+  });
 });
 
 function notifDefaults() {
@@ -218,6 +243,74 @@ router.get("/completeness", authMiddleware, (req: AuthRequest, res) => {
   ];
   const percent = Math.round((checks.filter(Boolean).length / checks.length) * 100);
   res.json({ percent, checks: { avatar: checks[0], bio: checks[1], city: checks[2], name: checks[3], portfolio: checks[4], verified: checks[5], email: checks[6] } });
+});
+
+const PLATFORM_ROLES = new Set(["client", "blogger", "seller"]);
+
+router.get("/role-change-requests", authMiddleware, (req: AuthRequest, res) => {
+  const rows = db
+    .select()
+    .from(schema.moderationRequests)
+    .where(eq(schema.moderationRequests.userId, req.userId!))
+    .all()
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  res.json({ requests: rows });
+});
+
+router.post("/role-change-requests", authMiddleware, (req: AuthRequest, res) => {
+  const user = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
+  if (!user) return res.status(404).json({ error: "User not found" });
+  if (!user.platformRole) {
+    return res.status(400).json({ error: "Сначала выберите роль в онбординге" });
+  }
+
+  const requestedRole = String(req.body.requestedRole || "").trim();
+  const reason = String(req.body.reason || "").trim();
+  const activityExplanation = String(req.body.activityExplanation || "").trim();
+  if (!PLATFORM_ROLES.has(requestedRole)) {
+    return res.status(400).json({ error: "Недопустимая роль" });
+  }
+  if (requestedRole === user.platformRole) {
+    return res.status(400).json({ error: "Вы уже в этой роли" });
+  }
+  if (reason.length < 10) {
+    return res.status(400).json({ error: "Укажите причину подробнее (минимум 10 символов)" });
+  }
+  if (activityExplanation.length < 20) {
+    return res.status(400).json({ error: "Опишите деятельность подробнее (минимум 20 символов)" });
+  }
+
+  const pending = db
+    .select()
+    .from(schema.moderationRequests)
+    .where(
+      and(
+        eq(schema.moderationRequests.userId, user.id),
+        eq(schema.moderationRequests.type, "role_change"),
+        eq(schema.moderationRequests.status, "pending")
+      )
+    )
+    .get();
+  if (pending) {
+    return res.status(409).json({ error: "У вас уже есть заявка на рассмотрении" });
+  }
+
+  const id = uuid();
+  db.insert(schema.moderationRequests)
+    .values({
+      id,
+      userId: user.id,
+      type: "role_change",
+      currentRole: user.platformRole,
+      requestedRole,
+      reason,
+      activityExplanation,
+      status: "pending",
+    })
+    .run();
+
+  const row = db.select().from(schema.moderationRequests).where(eq(schema.moderationRequests.id, id)).get();
+  res.status(201).json({ request: row });
 });
 
 export default router;

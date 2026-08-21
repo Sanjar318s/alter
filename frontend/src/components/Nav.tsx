@@ -23,13 +23,73 @@ import { subscribeRealtime } from "@/lib/realtimeHub";
 import { useSWRConfig } from "swr";
 import { LocaleSettings } from "@/components/LocaleSettings";
 import { useLocale } from "@/lib/LocaleContext";
-import { usePlatformMode } from "@/lib/PlatformModeContext";
+import { panelToggleLabel, useNavPanel, type NavPanel } from "@/lib/NavPanelContext";
+import type { PlatformRole } from "@/lib/AuthContext";
 
-const LINK_DEFS = [
-  { href: "/explore", label: "explore" as const, hint: "exploreHint" as const, short: "explore" as const },
-  { href: "/reels", label: "reels" as const, hint: "reelsHint" as const, short: "reelsShort" as const },
-  { href: "/studio", label: "studio" as const, hint: "studioHint" as const, short: "studioShort" as const, sellerOnly: true },
-  { href: "/messages", label: "messages" as const, hint: "messagesHint" as const, short: "chatShort" as const },
+type LinkDef = {
+  href: string | ((username: string) => string);
+  id?: string;
+  labelKey?: "explore" | "reels" | "studio" | "messages";
+  hintKey?: "exploreHint" | "reelsHint" | "studioHint" | "messagesHint";
+  shortKey?: "explore" | "reelsShort" | "studioShort" | "chatShort";
+  text?: string;
+  hintText?: string;
+  short?: string;
+  roles: PlatformRole[];
+  panel: NavPanel;
+};
+
+const LINK_DEFS: LinkDef[] = [
+  {
+    href: "/explore",
+    labelKey: "explore",
+    hintKey: "exploreHint",
+    shortKey: "explore",
+    text: "Работы",
+    hintText: "Лента работ продавцов",
+    short: "Работы",
+    roles: ["client", "blogger", "seller"],
+    panel: "feed",
+  },
+  {
+    href: "/reels",
+    labelKey: "reels",
+    hintKey: "reelsHint",
+    shortKey: "reelsShort",
+    roles: ["client", "blogger", "seller"],
+    panel: "feed",
+  },
+  {
+    href: "/messages",
+    labelKey: "messages",
+    hintKey: "messagesHint",
+    shortKey: "chatShort",
+    text: "ЛС",
+    hintText: "Личные сообщения",
+    short: "ЛС",
+    roles: ["client", "blogger", "seller"],
+    panel: "feed",
+  },
+  {
+    href: "/studio",
+    labelKey: "studio",
+    hintKey: "studioHint",
+    shortKey: "studioShort",
+    text: "Студия заказов",
+    hintText: "Заказы",
+    short: "Студия",
+    roles: ["client", "seller"],
+    panel: "work",
+  },
+  {
+    href: (u) => `/profile/${u}`,
+    id: "own-profile",
+    text: "Публичный профиль",
+    hintText: "Ваш публичный профиль",
+    short: "Профиль",
+    roles: ["client", "blogger", "seller"],
+    panel: "work",
+  },
 ];
 
 type Notif = { id: string; type: string; payloadJson?: string; read?: boolean; createdAt?: string };
@@ -84,18 +144,38 @@ export function Nav() {
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { t } = useLocale();
-  const { mode, setMode } = usePlatformMode();
+  const { panel, toggle } = useNavPanel();
+  const role = user?.platformRole ?? null;
   const LINKS = LINK_DEFS
-    .filter((link) => !("sellerOnly" in link && link.sellerOnly) || mode === "seller")
-    .map((link) => ({
-      ...link,
-      text: t(link.label),
-      hintText: t(link.hint),
-      short: t(link.short),
-    }));
+    .filter((link) => {
+      if (!role) return link.panel === "feed" && (link.href === "/explore" || link.href === "/reels");
+      if (!link.roles.includes(role)) return false;
+      return link.panel === panel;
+    })
+    .map((link) => {
+      const href =
+        typeof link.href === "function"
+          ? user?.username
+            ? link.href(user.username)
+            : "/me"
+          : link.href;
+      const isOwnProfile = link.id === "own-profile";
+      const clientProfile = isOwnProfile && role === "client";
+      return {
+        href,
+        text: clientProfile
+          ? "Мой профиль"
+          : link.text || (link.labelKey ? t(link.labelKey) : ""),
+        hintText: clientProfile
+          ? "Аватар, информация о себе и настройки"
+          : link.hintText || (link.hintKey ? t(link.hintKey) : ""),
+        short: clientProfile ? "Профиль" : link.short || (link.shortKey ? t(link.shortKey) : ""),
+      };
+    });
   const isAdmin =
     (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
     (user?.username || "").toLowerCase() === "nyx.cosplay";
+  const showPanelToggle = Boolean(role);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -195,6 +275,16 @@ export function Nav() {
                 </div>
               )}
             </div>
+            {showPanelToggle && (
+              <button
+                type="button"
+                onClick={toggle}
+                title="Переключить меню"
+                className="hidden md:inline-flex items-center h-9 px-2.5 text-[11px] font-mono uppercase tracking-wide border border-line text-ink-70 hover:border-magenta hover:text-magenta bg-transparent"
+              >
+                {panelToggleLabel(role, panel)}
+              </button>
+            )}
             <span className="w-px h-5 bg-line mx-0.5 hidden xl:block" />
             <div className="relative">
               <IconButton label={t("notifications")} className="w-9 h-9" onClick={() => setBellOpen((v) => !v)}>
@@ -282,15 +372,19 @@ export function Nav() {
                 </button>
                 {menuOpen && (
                   <div className="absolute right-0 top-full mt-2 w-48 bg-stage border border-line py-1 z-50">
-                    <Link href={`/profile/${user.username}`} className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
-                      {t("publicProfile")}
-                    </Link>
+                    {(role === "seller" || role === "blogger" || role === "client") && (
+                      <Link href={`/profile/${user.username}`} className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
+                        {role === "client" ? "Мой профиль" : t("publicProfile")}
+                      </Link>
+                    )}
                     <Link href="/me" className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
-                      {t("myProfile")}
+                      {role === "client" ? "Настройки" : t("myProfile")}
                     </Link>
-                    <Link href="/studio" className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
-                      {t("studioShort")}
-                    </Link>
+                    {(role === "seller" || role === "client") && (
+                      <Link href="/studio" className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
+                        {t("studioShort")}
+                      </Link>
+                    )}
                     {isAdmin && (
                       <Link href="/admin" className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
                         {t("admin")}
@@ -434,28 +528,15 @@ export function Nav() {
             ))}
 
             <div className="mt-4 pt-4 border-t border-line flex flex-col gap-3">
-              <div className="flex gap-2">
+              {showPanelToggle && (
                 <button
                   type="button"
-                  onClick={() => setMode("viewer")}
-                  className={cn(
-                    "flex-1 py-2 text-[12px] border",
-                    mode === "viewer" ? "border-magenta text-magenta" : "border-line text-ink-45"
-                  )}
+                  onClick={toggle}
+                  className="w-full py-2 text-[12px] border border-line text-ink-70 hover:border-magenta"
                 >
-                  {t("modeViewer")}
+                  Меню: {panelToggleLabel(role, panel)} · нажмите чтобы переключить
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setMode("seller")}
-                  className={cn(
-                    "flex-1 py-2 text-[12px] border",
-                    mode === "seller" ? "border-magenta text-magenta" : "border-line text-ink-45"
-                  )}
-                >
-                  {t("modeSeller")}
-                </button>
-              </div>
+              )}
               <div className="bg-stage border border-line">
                 <LocaleSettings />
               </div>
@@ -464,9 +545,11 @@ export function Nav() {
                   <Link href="/me" className="text-[15px] text-paper no-underline py-2" onClick={() => setMobileOpen(false)}>
                     {t("myProfile")} · {user.username}
                   </Link>
-                  <Link href={`/profile/${user.username}`} className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
-                    {t("publicProfile")}
-                  </Link>
+                    {(user.platformRole === "seller" || user.platformRole === "blogger" || user.platformRole === "client") && (
+                    <Link href={`/profile/${user.username}`} className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
+                      {user.platformRole === "client" ? "Мой профиль" : t("publicProfile")}
+                    </Link>
+                  )}
                   {isAdmin && (
                     <Link href="/admin" className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
                       {t("admin")}

@@ -13,6 +13,7 @@ import { useLocale } from "@/lib/LocaleContext";
 import { AdminDashboard, type HelpTopic, type UserSectionKey } from "@/components/admin/AdminDashboard";
 import { BlockUserModal, BLOCK_REASONS } from "@/components/admin/BlockUserModal";
 import { UserDossierModal } from "@/components/admin/UserDossierModal";
+import { AdminRoleChangePanel } from "@/components/admin/AdminRoleChangePanel";
 
 const ROLE_PRESETS: Record<string, Record<string, boolean>> = {
   support: {
@@ -634,6 +635,12 @@ export default function AdminPage() {
             ))}
           </div>
         </Modal>
+      )}
+
+      {perms.canViewUsers && (
+        <div className="px-4 pb-8 max-w-[1100px] mx-auto w-full">
+          <AdminRoleChangePanel />
+        </div>
       )}
     </StudioShell>
   );

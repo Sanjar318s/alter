@@ -143,7 +143,7 @@ router.get("/:username", optionalAuth, (req: AuthRequest, res) => {
   const vis = privacy.profile || (profile?.isPrivate ? "private" : "public");
   if (vis === "private" && !isOwner) {
     return res.json({
-      user: { id: user.id, username: user.username, roleFlags: user.roleFlags },
+      user: { id: user.id, username: user.username, roleFlags: user.roleFlags, platformRole: user.platformRole || null },
       profile: { displayName: profile?.displayName, avatarUrl: profile?.avatarUrl, isPrivate: true },
       builds: [],
       stories: [],
@@ -179,7 +179,12 @@ router.get("/:username", optionalAuth, (req: AuthRequest, res) => {
   }
 
   res.json({
-    user: { id: user.id, username: user.username, roleFlags: user.roleFlags },
+    user: {
+      id: user.id,
+      username: user.username,
+      roleFlags: user.roleFlags,
+      platformRole: user.platformRole || null,
+    },
     profile: effectiveProfile,
     builds: builds.filter((b) => !b.hidden || isOwner),
     stories,

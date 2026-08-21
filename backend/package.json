@@ -14,7 +14,8 @@
     "telegram:auth": "tsx src/scripts/telegramAuth.ts",
     "telegram:sync": "tsx src/scripts/telegramPoll.ts",
     "telegram:poll": "tsx src/scripts/telegramPoll.ts",
-    "telegram:backfill": "tsx src/scripts/telegramBackfill.ts"
+    "telegram:backfill": "tsx src/scripts/telegramBackfill.ts",
+    "inactivity:purge": "tsx src/scripts/inactivityPurge.ts"
   },
   "keywords": [],
   "author": "",

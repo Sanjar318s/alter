@@ -5,14 +5,14 @@ import { ToastProvider } from "@/components/ui/Toast";
 import { RealtimeProvider } from "@/components/RealtimeProvider";
 import { SWRConfig } from "swr";
 import { LocaleProvider } from "@/lib/LocaleContext";
-import { PlatformModeProvider } from "@/lib/PlatformModeContext";
+import { NavPanelProvider } from "@/lib/NavPanelContext";
 import { ImageEditorProvider } from "@/components/media/ImageEditorProvider";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SWRConfig value={{ revalidateOnFocus: false, shouldRetryOnError: false }}>
       <LocaleProvider>
-        <PlatformModeProvider>
+        <NavPanelProvider>
           <ImageEditorProvider>
             <AuthProvider>
               <RealtimeProvider>
@@ -20,7 +20,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               </RealtimeProvider>
             </AuthProvider>
           </ImageEditorProvider>
-        </PlatformModeProvider>
+        </NavPanelProvider>
       </LocaleProvider>
     </SWRConfig>
   );

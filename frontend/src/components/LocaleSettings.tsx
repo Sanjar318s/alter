@@ -2,42 +2,28 @@
 
 import { UI_CURRENCIES, UI_LANGUAGES } from "@/lib/locale/regions";
 import { useLocale } from "@/lib/LocaleContext";
-import { usePlatformMode } from "@/lib/PlatformModeContext";
+import { useAuth } from "@/lib/AuthContext";
 import { formatSum as formatUzs, uzsPerUnit } from "@/lib/format";
-import { cn } from "@/lib/cn";
+
+const ROLE_LABEL: Record<string, string> = {
+  client: "Клиент",
+  blogger: "Блогер",
+  seller: "Продавец",
+};
 
 export function LocaleSettings() {
   const { lang, currency, setLang, setCurrency, rates, rateUpdated, t } = useLocale();
-  const { mode, setMode } = usePlatformMode();
+  const { user } = useAuth();
   const per = uzsPerUnit(currency, rates);
   return (
     <div className="p-3 flex flex-col gap-3 min-w-[240px]">
       <div className="font-display font-bold text-[14px]">{t("settings")}</div>
-      <div>
-        <div className="text-[12px] text-ink-45 mb-1.5">Режим</div>
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() => setMode("viewer")}
-            className={cn(
-              "flex-1 py-1.5 text-[11px] border",
-              mode === "viewer" ? "border-magenta text-magenta" : "border-line text-ink-45"
-            )}
-          >
-            {t("modeViewer")}
-          </button>
-          <button
-            type="button"
-            onClick={() => setMode("seller")}
-            className={cn(
-              "flex-1 py-1.5 text-[11px] border",
-              mode === "seller" ? "border-magenta text-magenta" : "border-line text-ink-45"
-            )}
-          >
-            {t("modeSeller")}
-          </button>
-        </div>
-      </div>
+      {user?.platformRole && (
+        <p className="text-[12px] text-ink-70">
+          Роль: <span className="text-paper">{ROLE_LABEL[user.platformRole] || user.platformRole}</span>
+          <span className="block text-[11px] text-ink-45 mt-1">Смена — в «Безопасность» → заявка модератору.</span>
+        </p>
+      )}
       <label className="text-[12px] text-ink-45">
         {t("language")}
         <select

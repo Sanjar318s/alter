@@ -183,6 +183,17 @@ export const account = {
     }),
   blocked: () => request<{ users: any[] }>("/api/account/blocked"),
   completeness: () => request<{ percent: number; checks: Record<string, boolean> }>("/api/account/completeness"),
+  roleChangeRequests: () =>
+    request<{ requests: any[] }>("/api/account/role-change-requests"),
+  createRoleChangeRequest: (data: {
+    requestedRole: string;
+    reason: string;
+    activityExplanation: string;
+  }) =>
+    request<{ request: any }>("/api/account/role-change-requests", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
 
 export async function uploadFile(file: Blob, fileName: string, mime: string) {
@@ -354,6 +365,18 @@ export const admin = {
   escalateOverdueReports: () =>
     request<{ ok: boolean; escalated: number; affected: string[] }>("/api/admin/reports/escalate-overdue", {
       method: "POST",
+    }),
+  roleChangeRequests: (status = "pending") =>
+    request<{ requests: any[] }>(`/api/admin/role-change-requests?status=${encodeURIComponent(status)}`),
+  approveRoleChange: (id: string, note?: string) =>
+    request<{ ok: boolean }>(`/api/admin/role-change-requests/${id}/approve`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
+    }),
+  rejectRoleChange: (id: string, note?: string) =>
+    request<{ ok: boolean }>(`/api/admin/role-change-requests/${id}/reject`, {
+      method: "POST",
+      body: JSON.stringify({ note }),
     }),
   withdrawals: () => request<{ withdrawals: any[] }>("/api/admin/withdrawals"),
   patchWithdrawal: (id: string, status: string) =>

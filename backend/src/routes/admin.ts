@@ -10,6 +10,7 @@ import { getActiveBan } from "../lib/blocking";
 import { escalateOverdueReports } from "../lib/reportEscalation";
 import { getModerationSettings, updateModerationSettings } from "../lib/moderationSettings";
 import { purgeDemoUsers } from "../db/purgeDemoUsers";
+import { v4 as uuid } from "uuid";
 
 const router = Router();
 
@@ -660,6 +661,125 @@ router.post("/users/purge-demo", ownerOnly, (_req: AuthRequest, res) => {
     });
   }
   res.json({ ok: true, removedUsers, usernames });
+});
+
+const PLATFORM_ROLES = new Set(["client", "blogger", "seller"]);
+
+router.get("/role-change-requests", requireAdminPermission("canViewUsers"), (req, res) => {
+  const status = String((req.query.status as string) || "pending");
+  let rows = db.select().from(schema.moderationRequests).all();
+  if (status !== "all") {
+    rows = rows.filter((r) => r.status === status);
+  }
+  rows.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  const requests = rows.map((r) => {
+    const u = db.select().from(schema.users).where(eq(schema.users.id, r.userId)).get();
+    const p = u ? db.select().from(schema.profiles).where(eq(schema.profiles.userId, u.id)).get() : null;
+    return {
+      ...r,
+      username: u?.username,
+      displayName: p?.displayName,
+    };
+  });
+  res.json({ requests });
+});
+
+router.post("/role-change-requests/:id/approve", requireAdminPermission("canViewUsers"), (req: AuthRequest, res) => {
+  const row = db.select().from(schema.moderationRequests).where(eq(schema.moderationRequests.id, req.params.id as string)).get();
+  if (!row) return res.status(404).json({ error: "Not found" });
+  if (row.status !== "pending") return res.status(400).json({ error: "Заявка уже обработана" });
+  if (!PLATFORM_ROLES.has(row.requestedRole)) {
+    return res.status(400).json({ error: "Недопустимая роль в заявке" });
+  }
+
+  db.update(schema.users)
+    .set({ platformRole: row.requestedRole })
+    .where(eq(schema.users.id, row.userId))
+    .run();
+  db.update(schema.moderationRequests)
+    .set({
+      status: "approved",
+      reviewerId: req.userId!,
+      reviewNote: String(req.body.note || "") || null,
+      reviewedAt: new Date(),
+    })
+    .where(eq(schema.moderationRequests.id, row.id))
+    .run();
+
+  try {
+    db.insert(schema.notifications)
+      .values({
+        id: uuid(),
+        userId: row.userId,
+        type: "role_change",
+        payloadJson: JSON.stringify({
+          text: `Заявка на роль «${row.requestedRole}» одобрена`,
+          status: "approved",
+          requestedRole: row.requestedRole,
+        }),
+        read: false,
+      })
+      .run();
+  } catch {
+    /* notifications optional */
+  }
+
+  logAuditEvent({
+    actorId: req.userId!,
+    type: "role_change_approve",
+    targetType: "user",
+    targetId: row.userId,
+    severity: "warn",
+    payload: { requestId: row.id, from: row.currentRole, to: row.requestedRole },
+  });
+
+  res.json({ ok: true });
+});
+
+router.post("/role-change-requests/:id/reject", requireAdminPermission("canViewUsers"), (req: AuthRequest, res) => {
+  const row = db.select().from(schema.moderationRequests).where(eq(schema.moderationRequests.id, req.params.id as string)).get();
+  if (!row) return res.status(404).json({ error: "Not found" });
+  if (row.status !== "pending") return res.status(400).json({ error: "Заявка уже обработана" });
+
+  db.update(schema.moderationRequests)
+    .set({
+      status: "rejected",
+      reviewerId: req.userId!,
+      reviewNote: String(req.body.note || "") || null,
+      reviewedAt: new Date(),
+    })
+    .where(eq(schema.moderationRequests.id, row.id))
+    .run();
+
+  try {
+    db.insert(schema.notifications)
+      .values({
+        id: uuid(),
+        userId: row.userId,
+        type: "role_change",
+        payloadJson: JSON.stringify({
+          text: `Заявка на роль «${row.requestedRole}» отклонена`,
+          status: "rejected",
+          requestedRole: row.requestedRole,
+          note: req.body.note || "",
+        }),
+        read: false,
+      })
+      .run();
+  } catch {
+    /* optional */
+  }
+
+  logAuditEvent({
+    actorId: req.userId!,
+    type: "role_change_reject",
+    targetType: "user",
+    targetId: row.userId,
+    severity: "warn",
+    payload: { requestId: row.id, from: row.currentRole, to: row.requestedRole },
+  });
+
+  res.json({ ok: true });
 });
 
 export default router;

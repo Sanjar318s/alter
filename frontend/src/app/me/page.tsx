@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui/Modal";
 import { BrandIcon } from "@/components/ui/BrandIcon";
 import { SmartImage } from "@/components/media/SmartImage";
 import { WithdrawModal } from "@/components/finance/WithdrawModal";
+import { RoleChangeRequestForm } from "@/components/RoleChangeRequestForm";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { account, auth, finance, uploadFile, users } from "@/lib/api";
@@ -19,7 +20,7 @@ import { PAYMENTS_LIVE } from "@/lib/flags";
 import { useLocale } from "@/lib/LocaleContext";
 import { editImageList, useEditImage } from "@/components/media/ImageEditorProvider";
 
-const TABS = [
+const ALL_TABS = [
   { id: "info", label: "Основная информация" },
   { id: "portfolio", label: "Портфолио" },
   { id: "socials", label: "Соцсети" },
@@ -259,11 +260,16 @@ function MeInner() {
   }
 
   const maxBar = Math.max(1, ...activity);
+  const isClient = user?.platformRole === "client";
+  const TABS = ALL_TABS.filter((t) => !(isClient && t.id === "portfolio"));
+  const settingsTab = isClient && tab === "portfolio" ? "info" : tab;
 
   return (
     <StudioShell>
       <div className="p-4 sm:p-6 pb-20 min-w-0 max-w-full">
-        <div className="font-mono text-[11px] text-ink-45 mb-2">Студия заказов &gt; Профиль</div>
+        <div className="font-mono text-[11px] text-ink-45 mb-2">
+          {isClient ? "Кабинет > Мой профиль" : "Студия заказов > Профиль"}
+        </div>
         <PageHeader eyebrow="Мой профиль" title="МОЙ ПРОФИЛЬ">
           <Button href={`/profile/${username || nick}`} variant="outline" size="sm" className="mt-3">
             Смотреть публичный профиль
@@ -278,7 +284,7 @@ function MeInner() {
               onClick={() => setTab(t.id)}
               className={cn(
                 "shrink-0 px-3 py-2 text-[13px] border-b-2 bg-transparent whitespace-nowrap",
-                tab === t.id ? "border-magenta text-paper" : "border-transparent text-ink-45"
+                settingsTab === t.id ? "border-magenta text-paper" : "border-transparent text-ink-45"
               )}
             >
               {t.label}
@@ -288,7 +294,7 @@ function MeInner() {
 
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
           <div>
-            {tab === "info" && (
+            {settingsTab === "info" && (
               <>
                 <div className="relative mb-8">
                   <div className="h-[180px] overflow-hidden bg-stage">
@@ -404,14 +410,14 @@ function MeInner() {
               </>
             )}
 
-            {tab === "portfolio" && (
+            {settingsTab === "portfolio" && !isClient && (
               <div>
                 <p className="text-ink-70 mb-4">Те же работы, что на публичном профиле.</p>
                 <Button href={`/profile/${username || nick}`}>Открыть портфолио работ</Button>
               </div>
             )}
 
-            {tab === "socials" && (
+            {settingsTab === "socials" && (
               <div className="flex flex-col gap-3 max-w-[520px]">
                 {socials.map((s, i) => (
                   <div key={i} className="flex gap-2 items-center">
@@ -430,7 +436,7 @@ function MeInner() {
               </div>
             )}
 
-            {tab === "security" && (
+            {settingsTab === "security" && (
               <form
                 className="flex flex-col gap-4 max-w-[420px]"
                 onSubmit={async (e) => {
@@ -454,10 +460,11 @@ function MeInner() {
                 <Button variant="outline" type="button" onClick={() => { logout(); }}>
                   Выйти
                 </Button>
+                <RoleChangeRequestForm />
               </form>
             )}
 
-            {tab === "notifications" && (
+            {settingsTab === "notifications" && (
               <div className="flex flex-col gap-3 max-w-[420px]">
                 {(Object.keys(NOTIF_LABELS) as string[]).map((k) => (
                   <label key={k} className="flex items-center justify-between text-[13px] border-b border-line py-2">
@@ -489,7 +496,9 @@ function MeInner() {
                 <li>{complete.checks?.avatar ? "Аватар есть" : "Добавьте аватар"}</li>
                 <li>{complete.checks?.bio ? "Bio заполнено" : "Напишите bio"}</li>
                 <li>{complete.checks?.city ? "Город указан" : "Укажите город"}</li>
-                <li>{complete.checks?.portfolio ? "Есть работы" : "Добавьте работу"}</li>
+                {!isClient && (
+                  <li>{complete.checks?.portfolio ? "Есть работы" : "Добавьте работу"}</li>
+                )}
               </ul>
             </Frame>
             <Frame className="p-4 bg-stage">

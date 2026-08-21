@@ -3,12 +3,15 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { auth } from "@/lib/api";
 
+export type PlatformRole = "client" | "blogger" | "seller";
+
 interface User {
   id: string;
   email: string;
   username: string;
   roleFlags?: string;
   avatarUrl?: string;
+  platformRole?: PlatformRole | null;
 }
 
 type RegisterStart = {
@@ -39,12 +42,16 @@ interface AuthContextType {
 }
 
 function mapUser(data: { user: any; profile?: any }): User {
+  const raw = data.user.platformRole;
+  const platformRole: PlatformRole | null =
+    raw === "client" || raw === "blogger" || raw === "seller" ? raw : null;
   return {
     id: data.user.id,
     email: data.user.email,
     username: data.user.username,
     roleFlags: data.user.roleFlags,
     avatarUrl: data.profile?.avatarUrl,
+    platformRole,
   };
 }
 
@@ -107,7 +114,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await loadMe();
     } catch {
-      setUser(data.user);
+      setUser(mapUser({ user: data.user }));
     }
   };
 
@@ -119,9 +126,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await loadMe();
     } catch {
-      setUser(data.user);
+      setUser(mapUser({ user: data.user }));
     }
-    return data.user;
+    return mapUser({ user: data.user });
   };
 
   const resendRegister: AuthContextType["resendRegister"] = (pendingId) =>

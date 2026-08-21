@@ -33,7 +33,14 @@ function lookupUserByPhone(phone: string) {
   return db.select().from(schema.users).where(eq(schema.users.phone, phone)).get();
 }
 
-function issueToken(user: { id: string; email: string; username: string; roleFlags: string | null; phone?: string | null }) {
+function issueToken(user: {
+  id: string;
+  email: string;
+  username: string;
+  roleFlags: string | null;
+  phone?: string | null;
+  platformRole?: string | null;
+}) {
   const jti = uuid();
   const token = jwt.sign({ userId: user.id, jti }, JWT_SECRET, { expiresIn: "7d" });
   return {
@@ -44,6 +51,7 @@ function issueToken(user: { id: string; email: string; username: string; roleFla
       username: user.username,
       roleFlags: user.roleFlags || "cosplayer",
       phone: user.phone || null,
+      platformRole: user.platformRole || null,
     },
   };
 }
@@ -272,6 +280,7 @@ router.get("/me", authMiddleware, (req: AuthRequest, res) => {
       username: user.username,
       roleFlags: user.roleFlags,
       phone: user.phone,
+      platformRole: user.platformRole || null,
     },
     profile,
   });

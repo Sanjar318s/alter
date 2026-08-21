@@ -11,7 +11,6 @@ import {
 import { Button } from "@/components/ui/Button";
 import { PartnerAdSlot } from "@/components/marketing/PartnerAdSlot";
 import { useLocale } from "@/lib/LocaleContext";
-import { usePlatformMode } from "@/lib/PlatformModeContext";
 
 const SHELL = "max-w-[1360px] mx-auto px-5 sm:px-8 lg:px-10";
 
@@ -28,7 +27,6 @@ export default function LandingPage() {
 
 function Hero() {
   const { t } = useLocale();
-  const { mode, setMode } = usePlatformMode();
 
   return (
     <section className="hero-wash border-b border-line py-14 md:py-20 lg:py-24">
@@ -54,22 +52,6 @@ function Hero() {
             <Button href="/register" variant="ghost">
               {t("createProfile")}
             </Button>
-          </div>
-          <div className="flex flex-wrap gap-2 mt-6">
-            <button
-              type="button"
-              onClick={() => setMode("viewer")}
-              className={`px-3 py-1.5 text-[12px] border ${mode === "viewer" ? "border-magenta text-magenta" : "border-line text-ink-45"}`}
-            >
-              {t("modeViewer")}: смотреть и заказывать
-            </button>
-            <button
-              type="button"
-              onClick={() => setMode("seller")}
-              className={`px-3 py-1.5 text-[12px] border ${mode === "seller" ? "border-magenta text-magenta" : "border-line text-ink-45"}`}
-            >
-              {t("modeSeller")}: выкладывать работы
-            </button>
           </div>
         </div>
       </div>
