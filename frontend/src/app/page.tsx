@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   ClipboardList,
   Compass,
@@ -11,10 +13,30 @@ import {
 import { Button } from "@/components/ui/Button";
 import { PartnerAdSlot } from "@/components/marketing/PartnerAdSlot";
 import { useLocale } from "@/lib/LocaleContext";
+import { useAuth } from "@/lib/AuthContext";
+import { APP_FEED_HOME } from "@/lib/appHome";
 
 const SHELL = "max-w-[1360px] mx-auto px-5 sm:px-8 lg:px-10";
 
 export default function LandingPage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (loading) return;
+    if (user?.platformRole) {
+      router.replace(APP_FEED_HOME);
+    }
+  }, [loading, user?.platformRole, router]);
+
+  if (!loading && user?.platformRole) {
+    return (
+      <div className="flex flex-1 items-center justify-center p-8 font-mono text-[13px] text-ink-45">
+        Переходим в ленту…
+      </div>
+    );
+  }
+
   return (
     <>
       <Hero />

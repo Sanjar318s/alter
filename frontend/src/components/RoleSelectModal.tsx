@@ -8,6 +8,8 @@ import { account } from "@/lib/api";
 import { useAuth, type PlatformRole } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
+import { useRouter } from "next/navigation";
+import { APP_FEED_HOME } from "@/lib/appHome";
 
 const ROLES: {
   id: PlatformRole;
@@ -38,6 +40,7 @@ const ROLES: {
 export function RoleSelectModal() {
   const { user, loading, refresh } = useAuth();
   const toast = useToast();
+  const router = useRouter();
   const [selected, setSelected] = useState<PlatformRole | null>(null);
   const [agreed, setAgreed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -52,6 +55,7 @@ export function RoleSelectModal() {
       await account.patch({ platformRole: selected });
       await refresh();
       toast("Роль сохранена");
+      router.replace(APP_FEED_HOME);
     } catch (e) {
       toast(e instanceof Error ? e.message : "Не удалось сохранить роль", true);
     } finally {

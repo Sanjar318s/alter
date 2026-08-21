@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, Suspense, useState } from "react";
+import { FormEvent, Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button";
 import { Frame } from "@/components/Frame";
 import { auth } from "@/lib/api";
 import { useLocale } from "@/lib/LocaleContext";
+import { APP_FEED_HOME } from "@/lib/appHome";
 
 export default function LoginPage() {
   return (
@@ -18,7 +19,7 @@ export default function LoginPage() {
 }
 
 function LoginInner() {
-  const { login } = useAuth();
+  const { login, user, loading } = useAuth();
   const { t } = useLocale();
   const router = useRouter();
   const sp = useSearchParams();
@@ -37,13 +38,18 @@ function LoginInner() {
   const [newPassword, setNewPassword] = useState("");
   const [hint, setHint] = useState("");
 
+  useEffect(() => {
+    if (loading) return;
+    if (user?.platformRole) router.replace(APP_FEED_HOME);
+  }, [loading, user?.platformRole, router]);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
     setPending(true);
     try {
       await login(email, password);
-      router.push("/explore");
+      router.push(APP_FEED_HOME);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Не удалось войти");
     } finally {

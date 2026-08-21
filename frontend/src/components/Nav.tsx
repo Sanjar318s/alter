@@ -25,6 +25,7 @@ import { LocaleSettings } from "@/components/LocaleSettings";
 import { useLocale } from "@/lib/LocaleContext";
 import { panelToggleLabel, useNavPanel, type NavPanel } from "@/lib/NavPanelContext";
 import type { PlatformRole } from "@/lib/AuthContext";
+import { homePathForUser } from "@/lib/appHome";
 
 type LinkDef = {
   href: string | ((username: string) => string);
@@ -176,6 +177,7 @@ export function Nav() {
     (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
     (user?.username || "").toLowerCase() === "nyx.cosplay";
   const showPanelToggle = Boolean(role);
+  const brandHref = homePathForUser(user);
 
   const isActive = (href: string) =>
     pathname === href || pathname.startsWith(`${href}/`);
@@ -225,7 +227,7 @@ export function Nav() {
     <>
       <nav className={cn("sticky top-0 w-full bg-ink/95 backdrop-blur-sm border-b border-line px-4 sm:px-6 lg:px-8 py-3 overflow-x-clip", mobileOpen ? "z-[80]" : "z-50")}>
         <div className="max-w-[1360px] mx-auto w-full min-w-0 flex items-center gap-2">
-          <Link href="/" className="flex items-center gap-2 text-paper no-underline shrink-0">
+          <Link href={brandHref} className="flex items-center gap-2 text-paper no-underline shrink-0">
             <span className="w-2.5 h-2.5 rounded-[1px] bg-gradient-to-br from-magenta to-amber" />
             <span className="font-display font-extrabold text-lg tracking-tight">AlterCosPlay</span>
           </Link>
@@ -499,15 +501,15 @@ export function Nav() {
               </button>
             </div>
             <Link
-              href="/"
+              href={brandHref}
               className={cn(
                 "no-underline px-1 py-3 border-b border-line/60",
-                pathname === "/" ? "text-paper" : "text-ink-45"
+                pathname === brandHref || (brandHref === "/" && pathname === "/") ? "text-paper" : "text-ink-45"
               )}
               onClick={() => setMobileOpen(false)}
             >
-              <div className="text-[15px] font-medium">{t("home")}</div>
-              <div className="text-[12px] text-ink-45 mt-0.5">{t("homeHint")}</div>
+              <div className="text-[15px] font-medium">{role ? "Лента" : t("home")}</div>
+              <div className="text-[12px] text-ink-45 mt-0.5">{role ? "Рилсы и сообщения" : t("homeHint")}</div>
             </Link>
             {LINKS.map((link) => (
               <Link
