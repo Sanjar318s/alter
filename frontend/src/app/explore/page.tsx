@@ -402,8 +402,16 @@ function ExploreClient() {
                     href={`/build/${item.id}`}
                     className="flex items-center gap-3 sm:gap-4 py-3 border-b border-line no-underline text-paper hover:bg-stage/50 min-w-0"
                   >
-                    <div className="w-12 h-[60px] sm:w-14 sm:h-[70px] shrink-0 overflow-hidden">
-                      <SmartImage src={item.coverImageUrl} alt={item.character || item.title} fallback={item.title} />
+                    <div className="w-12 h-[60px] sm:w-14 sm:h-[70px] shrink-0 overflow-hidden relative">
+                      <SmartImage
+                        src={item.coverImageUrl}
+                        alt={
+                          item.author
+                            ? `${item.character || item.title} — косплей от ${item.author}`
+                            : item.character || item.title
+                        }
+                        fallback={item.title}
+                      />
                     </div>
                     <div className="flex-1 min-w-0 md:hidden">
                       <div className="font-display font-bold truncate">{item.character}</div>
@@ -446,7 +454,15 @@ function ExploreClient() {
                           hover
                           className="aspect-[4/5] overflow-hidden group-hover:scale-[1.02] transition-transform"
                         >
-                          <SmartImage src={item.coverImageUrl} alt={item.character || item.title} fallback={item.title} />
+                          <SmartImage
+                            src={item.coverImageUrl}
+                            alt={
+                              item.author
+                                ? `${item.character || item.title} — косплей от ${item.author}`
+                                : item.character || item.title
+                            }
+                            fallback={item.title}
+                          />
                           <span className="absolute top-2 right-2 z-[3] font-mono text-[9px] uppercase px-1.5 py-0.5 bg-ink/80">
                             {item.status === "open" ? "Открыто" : item.status === "waitlist" ? "Лист" : "Закрыто"}
                           </span>
@@ -455,7 +471,11 @@ function ExploreClient() {
                             <div className="font-mono text-[10px] text-ink-70 uppercase">{item.franchise}</div>
                             <div className="flex items-center gap-1.5 mt-1.5">
                               <span className="w-6 h-6 bg-stage border border-line shrink-0 overflow-hidden">
-                                <SmartImage src={item.authorAvatar} alt={item.author || ""} fallback={item.author || "?"} />
+                                <SmartImage
+                                  src={item.authorAvatar}
+                                  alt={item.author ? `Аватар ${item.author}` : "Аватар автора"}
+                                  fallback={item.author || "?"}
+                                />
                               </span>
                               <span className="text-[12px] truncate">{item.author}</span>
                               {item.isVerified && <BadgeCheck size={12} className="text-magenta shrink-0" />}

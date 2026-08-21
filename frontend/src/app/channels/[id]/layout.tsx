@@ -10,7 +10,7 @@ export async function generateMetadata({
 
   return pageMetadata({
     title: "Канал сообщества",
-    description: "Канал косплей-сообщества на платформе ALTER.",
+    description: "Канал косплей-сообщества на AlterCosPlay.",
     path: `/channels/${id}`,
     noIndex: true,
   });

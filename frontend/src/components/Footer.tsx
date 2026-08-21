@@ -76,7 +76,7 @@ export function Footer() {
         <div className="col-span-2 lg:col-span-1">
           <div className="flex items-center gap-2 text-paper mb-3">
             <span className="w-2.5 h-2.5 rounded-[1px] bg-gradient-to-br from-magenta to-amber" />
-            <span className="font-display font-extrabold text-lg">ALTER</span>
+            <span className="font-display font-extrabold text-lg">AlterCosPlay</span>
           </div>
           <p className="text-[11px] text-ink-45 font-mono leading-relaxed max-w-[260px]">
             {t("footerTagline")}

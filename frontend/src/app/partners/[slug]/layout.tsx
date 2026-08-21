@@ -24,7 +24,7 @@ export async function generateMetadata({
   if (!data?.partner) {
     return pageMetadata({
       title: "Партнёр не найден",
-      description: "Партнёрская страница не найдена на платформе ALTER.",
+      description: "Партнёрская страница не найдена на AlterCosPlay.",
       path: `/partners/${slug}`,
       noIndex: true,
     });
@@ -36,10 +36,10 @@ export async function generateMetadata({
     ? truncate(partner.description)
     : partner.tagline
       ? truncate(partner.tagline)
-      : `${name}${partner.city ? ` · ${partner.city}` : ""} — партнёр платформы для косплееров ALTER.`;
+      : `${name}${partner.city ? ` · ${partner.city}` : ""} — партнёр AlterCosPlay.`;
 
   return pageMetadata({
-    title: `${name} — партнёр ALTER`,
+    title: `${name} — партнёр AlterCosPlay`,
     description,
     path: `/partners/${slug}`,
   });

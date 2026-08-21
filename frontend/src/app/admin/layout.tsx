@@ -3,7 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "Админ-панель",
-  description: "Администрирование платформы ALTER.",
+  description: "Администрирование платформы AlterCosPlay.",
   path: "/admin",
   noIndex: true,
 });

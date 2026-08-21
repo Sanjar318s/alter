@@ -72,7 +72,11 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
         <ArrowLeft size={16} /> Исследовать
       </Link>
       <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.8fr] gap-10">
-        <BuildGallery photos={photos} title={b.character || b.title} />
+        <BuildGallery
+          photos={photos}
+          title={b.character || b.title}
+          makerUsername={data.author?.username}
+        />
         <div>
           {b.commissionStatus && <Badge status={b.commissionStatus} />}
           <h1 className="font-display font-extrabold text-[clamp(24px,5vw,36px)] mt-3">{b.character || b.title}</h1>

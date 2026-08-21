@@ -4,7 +4,7 @@ import { pageMetadata } from "@/lib/seo";
 export const metadata: Metadata = pageMetadata({
   title: "Регистрация — создать профиль косплеера",
   description:
-    "Создайте профиль на платформе для косплееров ALTER: портфолио, коммишены и приём заказов на костюмы косплей.",
+    "Создайте профиль на AlterCosPlay: портфолио, коммишены и приём заказов на костюмы косплей.",
   path: "/register",
   noIndex: true,
 });

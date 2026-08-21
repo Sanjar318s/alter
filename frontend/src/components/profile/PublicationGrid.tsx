@@ -9,9 +9,11 @@ import type { Publication } from "@/lib/demo/publications";
 export function PublicationGrid({
   posts,
   onSelect,
+  username,
 }: {
   posts: Publication[];
   onSelect: (post: Publication) => void;
+  username?: string;
 }) {
   if (!posts.length) {
     return (
@@ -23,7 +25,7 @@ export function PublicationGrid({
 
   return (
     <div className="grid grid-cols-3 gap-1">
-      {posts.map((post) => (
+      {posts.map((post, index) => (
         <button
           key={post.id}
           type="button"
@@ -31,7 +33,15 @@ export function PublicationGrid({
           className="relative aspect-square group bg-transparent border-0 p-0 cursor-pointer"
         >
           <Frame className="w-full h-full overflow-hidden">
-            <SmartImage src={post.mediaUrls[0]} alt="" fallback={post.id} />
+            <SmartImage
+              src={post.mediaUrls[0]}
+              alt={
+                username
+                  ? `Публикация ${index + 1} от ${username}`
+                  : `Публикация ${index + 1}`
+              }
+              fallback={post.id}
+            />
             <div className="absolute inset-0 bg-ink/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-[1]">
               <span className="flex items-center gap-1 text-[12px] text-paper">
                 <Heart size={14} /> {formatCount(post.likesCount)}

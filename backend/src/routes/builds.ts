@@ -72,7 +72,14 @@ router.get("/", (req, res) => {
   let builds = db.select().from(schema.builds).all().filter((b) => !b.hidden);
   if (franchise) builds = builds.filter((b) => b.franchise === franchise);
   if (userId) builds = builds.filter((b) => b.userId === userId);
-  res.json({ builds });
+  const users = db.select().from(schema.users).all();
+  const usernameById = new Map(users.map((u) => [u.id, u.username]));
+  res.json({
+    builds: builds.map((b) => ({
+      ...b,
+      username: usernameById.get(b.userId) || null,
+    })),
+  });
 });
 
 router.get("/:id", optionalAuth, (req: AuthRequest, res) => {

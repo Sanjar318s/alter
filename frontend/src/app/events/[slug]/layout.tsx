@@ -22,7 +22,7 @@ export async function generateMetadata({
   if (!data?.event) {
     return pageMetadata({
       title: "Событие не найдено",
-      description: "Косплей-мероприятие не найдено на платформе ALTER.",
+      description: "Косплей-мероприятие не найдено на AlterCosPlay.",
       path: `/events/${slug}`,
       noIndex: true,
     });
@@ -32,7 +32,7 @@ export async function generateMetadata({
   const title = event.title || "Косплей-событие";
   const description = event.description
     ? truncate(event.description)
-    : `${title}${event.city ? ` · ${event.city}` : ""} — мероприятие для косплееров на платформе ALTER.`;
+    : `${title}${event.city ? ` · ${event.city}` : ""} — мероприятие для косплееров на AlterCosPlay.`;
 
   return pageMetadata({
     title: `${title} — косплей-ивент`,

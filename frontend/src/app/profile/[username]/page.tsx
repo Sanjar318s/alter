@@ -222,6 +222,15 @@ function ProfileHub({ username }: { username: string }) {
 
   async function share() {
     const url = window.location.href;
+    const title = document.title;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title, url });
+        return;
+      } catch {
+        /* user cancelled or unsupported payload */
+      }
+    }
     await navigator.clipboard.writeText(url);
     toast("Ссылка скопирована");
   }
@@ -232,7 +241,11 @@ function ProfileHub({ username }: { username: string }) {
         <div className="max-w-[1240px] mx-auto flex flex-wrap gap-6 items-start min-w-0">
           <div className="relative">
             <Frame className="w-[104px] h-[104px] overflow-hidden">
-              <SmartImage src={profile?.profile?.avatarUrl} alt={username} fallback={username} />
+              <SmartImage
+                src={profile?.profile?.avatarUrl}
+                alt={`Аватар косплеера ${username}`}
+                fallback={username}
+              />
             </Frame>
             <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-magenta border-2 border-ink" />
           </div>
@@ -388,6 +401,7 @@ function ProfileHub({ username }: { username: string }) {
                         cover={b.coverImageUrl}
                         status={b.commissionStatus}
                         likes={b.likesCount}
+                        makerUsername={username}
                       />
                     ))}
                   </div>
@@ -395,7 +409,11 @@ function ProfileHub({ username }: { username: string }) {
                   cards.map((b: any) => (
                     <Link key={b.id || b.title} href={`/build/${b.id || "jinx"}`} className="flex items-center gap-3 py-3 border-b border-line no-underline text-paper">
                       <div className="w-12 h-14 overflow-hidden">
-                        <SmartImage src={b.coverImageUrl} alt={b.title} fallback={b.title} />
+                        <SmartImage
+                          src={b.coverImageUrl}
+                          alt={`${b.character || b.title} — косплей от ${username}`}
+                          fallback={b.title}
+                        />
                       </div>
                       <div className="flex-1">
                         <div>{b.character || b.title}</div>
@@ -485,7 +503,7 @@ function ProfileHub({ username }: { username: string }) {
                     </Button>
                   )}
                 </div>
-                <PublicationGrid posts={posts} onSelect={setSelectedPost} />
+                <PublicationGrid posts={posts} onSelect={setSelectedPost} username={username} />
               </>
             )}
           </div>

@@ -3,7 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "Партнёрский кабинет",
-  description: "Управление партнёрским профилем на платформе ALTER.",
+  description: "Управление партнёрским профилем на AlterCosPlay.",
   path: "/partner",
   noIndex: true,
 });

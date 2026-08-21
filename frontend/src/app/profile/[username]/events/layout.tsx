@@ -11,7 +11,7 @@ export async function generateMetadata({
 
   return pageMetadata({
     title: `События и выступления @${username}`,
-    description: `Календарь косплей-событий мастера @${username}: фестивали, конвенты и встречи сообщества на платформе ALTER.`,
+    description: `Календарь косплей-событий мастера @${username}: фестивали, конвенты и встречи сообщества на AlterCosPlay.`,
     path: `/profile/${username}/events`,
   });
 }

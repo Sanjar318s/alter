@@ -3,7 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "Вход в аккаунт",
-  description: "Вход на платформу ALTER для косплееров и мастеров.",
+  description: "Вход на AlterCosPlay для косплееров и мастеров.",
   path: "/login",
   noIndex: true,
 });

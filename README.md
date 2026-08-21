@@ -17,8 +17,10 @@ cd backend && npm install && npm run dev
 cd frontend && npm install && npm run dev
 ```
 
-## Cloudflare Pages
+## Deploy (Vercel / Cloudflare Pages)
 
 - **Root directory:** `frontend`
 - **Build command:** `npm ci && npm run build`
-- **Environment:** set `ALTER_API_ORIGIN` / `NEXT_PUBLIC_API_URL` to your API URL
+- **Environment:**
+  - `NEXT_PUBLIC_SITE_URL=https://altercosplay.vercel.app` (SEO / canonical / sitemap)
+  - `ALTER_API_ORIGIN` / `NEXT_PUBLIC_API_URL` → your API URL

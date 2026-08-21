@@ -3,7 +3,7 @@ import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
   title: "Студия — рабочая доска заказов",
-  description: "Управление заказами, клиентами и финансами мастера косплея в ALTER.",
+  description: "Управление заказами, клиентами и финансами мастера косплея в AlterCosPlay.",
   path: "/studio",
   noIndex: true,
 });

@@ -12,7 +12,12 @@ const STATIC_ROUTES: MetadataRoute.Sitemap = [
   { url: `${SITE_URL}/partners`, changeFrequency: "weekly", priority: 0.7 },
 ];
 
-type BuildRow = { id: string; updatedAt?: string | null };
+type BuildRow = {
+  id: string;
+  username?: string | null;
+  updatedAt?: string | null;
+  hidden?: boolean | null;
+};
 type PartnerRow = { slug: string; updatedAt?: string | null };
 type EventRow = { slug: string; startsAt?: string | null };
 
@@ -23,12 +28,28 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     fetchPublicJson<{ events?: EventRow[] }>("/api/partners/events"),
   ]);
 
-  const builds = (buildsData?.builds ?? []).map((b) => ({
+  const visibleBuilds = (buildsData?.builds ?? []).filter((b) => !b.hidden);
+
+  const builds = visibleBuilds.map((b) => ({
     url: `${SITE_URL}/build/${b.id}`,
     lastModified: b.updatedAt ? new Date(b.updatedAt) : new Date(),
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));
+
+  const profileSeen = new Set<string>();
+  const profiles: MetadataRoute.Sitemap = [];
+  for (const b of visibleBuilds) {
+    const username = b.username?.trim();
+    if (!username || profileSeen.has(username)) continue;
+    profileSeen.add(username);
+    profiles.push({
+      url: `${SITE_URL}/profile/${encodeURIComponent(username)}`,
+      lastModified: b.updatedAt ? new Date(b.updatedAt) : new Date(),
+      changeFrequency: "weekly",
+      priority: 0.85,
+    });
+  }
 
   const partners = (partnersData?.partners ?? []).map((p) => ({
     url: `${SITE_URL}/partners/${p.slug}`,
@@ -44,5 +65,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.75,
   }));
 
-  return [...STATIC_ROUTES, ...builds, ...partners, ...events];
+  return [...STATIC_ROUTES, ...profiles, ...builds, ...partners, ...events];
 }

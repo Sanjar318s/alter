@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { pageMetadata } from "@/lib/seo";
 
 export const metadata: Metadata = pageMetadata({
-  title: "Контакты — связаться с командой ALTER",
+  title: "Контакты — связаться с командой AlterCosPlay",
   description:
-    "Свяжитесь с платформой для косплееров ALTER: поддержка, партнёрство, вопросы по заказам костюмов и коммишенам.",
+    "Свяжитесь с AlterCosPlay: поддержка, партнёрство, вопросы по заказам костюмов и коммишенам.",
   path: "/contacts",
 });
 

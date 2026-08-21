@@ -18,7 +18,13 @@ export function SmartImage({
   if (url) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={url} alt={alt} className={cn("object-cover w-full h-full", className)} />
+      <img
+        src={url}
+        alt={alt}
+        className={cn("object-cover w-full h-full", className)}
+        loading="lazy"
+        decoding="async"
+      />
     );
   }
   const letter = (fallback || alt || "?").replace(/^@/, "").slice(0, 1).toUpperCase();

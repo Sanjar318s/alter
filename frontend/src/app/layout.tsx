@@ -4,7 +4,15 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Shell } from "@/components/Shell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { SEO_KEYWORDS, SITE_NAME, SITE_URL } from "@/lib/seo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import {
+  OG_IMAGE_PATH,
+  organizationJsonLd,
+  SEO_KEYWORDS,
+  SITE_NAME,
+  SITE_URL,
+  websiteJsonLd,
+} from "@/lib/seo";
 
 // Syne / Space Grotesk / Space Mono ship no Cyrillic, so every Russian string fell
 // back to a system sans. These three carry the same character with cyrillic subsets.
@@ -44,28 +52,30 @@ const notoKr = Noto_Sans_KR({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "ALTER — платформа для косплееров | портфолио, заказы, коммишены",
-    template: "%s | ALTER",
+    default: "AlterCosPlay — Биржа услуг, портфолио и соцсеть для косплееров",
+    template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Платформа для косплееров: портфолио костюмов, заказать костюм косплей у фриланс мастеров косплея, коммишены и заказы — в одном профиле.",
+    "Биржа услуг и соцсеть для косплееров: портфолио костюмов, заказать костюм косплей у фриланс мастеров, коммишены и заказы — в одном профиле.",
   keywords: SEO_KEYWORDS,
   applicationName: SITE_NAME,
   alternates: { canonical: "/" },
   openGraph: {
-    title: "ALTER — платформа для косплееров",
+    title: "AlterCosPlay — Биржа услуг, портфолио и соцсеть для косплееров",
     description:
       "Портфолио, заказать костюм косплей, фриланс мастера косплея и коммишены — всё на одной площадке.",
     url: SITE_URL,
     siteName: SITE_NAME,
     locale: "ru_RU",
     type: "website",
+    images: [{ url: OG_IMAGE_PATH, width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ALTER — платформа для косплееров",
+    title: "AlterCosPlay — Биржа услуг, портфолио и соцсеть для косплееров",
     description:
       "Портфолио, заказы на костюмы и фриланс мастера косплея в одном профиле.",
+    images: [OG_IMAGE_PATH],
   },
   verification: {
     google: "qNUgd24c8iXQfJxmLDVSbw6PwNFvUn8csntW5gANVys",
@@ -95,6 +105,7 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-dvh flex flex-col">
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <Providers>
           <ErrorBoundary>
             <Shell>{children}</Shell>

@@ -142,7 +142,7 @@ export function Nav() {
         <div className="max-w-[1360px] mx-auto w-full min-w-0 flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2 text-paper no-underline shrink-0">
             <span className="w-2.5 h-2.5 rounded-[1px] bg-gradient-to-br from-magenta to-amber" />
-            <span className="font-display font-extrabold text-lg tracking-tight">ALTER</span>
+            <span className="font-display font-extrabold text-lg tracking-tight">AlterCosPlay</span>
           </Link>
 
           <div className="hidden md:flex flex-1 justify-center items-center gap-0.5 min-w-0 overflow-hidden px-1">

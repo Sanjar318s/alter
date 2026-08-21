@@ -416,7 +416,7 @@ function Comparison() {
           <div className="flex items-center justify-between gap-3 px-4 sm:px-6 py-4 border-b border-magenta/25 bg-magenta/[0.07]">
             <div>
               <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-magenta">
-                ALTER
+                {t("alterNow")}
               </span>
               <p className="text-[12px] text-paper/85 mt-1">{t("alterSub")}</p>
             </div>
