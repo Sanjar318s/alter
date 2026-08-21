@@ -18,7 +18,6 @@ import {
   MessageCircle,
   MessagesSquare,
   Package,
-  Plus,
   Send,
   Settings,
   X,
@@ -45,9 +44,10 @@ import {
   type OrderStatus,
   type StudioOrder,
 } from "@/lib/studio";
-import { admin, messages as messagesApi, orders as ordersApi, users } from "@/lib/api";
+import { admin, messages as messagesApi, orders as ordersApi } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from "@/lib/AuthContext";
 
 const STEPS = [
   { id: "new" as const, label: "Новая заявка", icon: FileText },
@@ -58,6 +58,8 @@ const STEPS = [
   { id: "done" as const, label: "Готово", icon: CheckCircle },
   { id: "shipped" as const, label: "Отправлено", icon: Send },
 ];
+
+const ARCHIVED: OrderStatus[] = ["done", "shipped", "archive", "cancelled"];
 
 export default function StudioPage() {
   return (
@@ -70,6 +72,7 @@ export default function StudioPage() {
 function StudioInner() {
   const toast = useToast();
   const { formatSum, t } = useLocale();
+  const { user } = useAuth();
   const router = useRouter();
   const sp = useSearchParams();
   const isGhostView = sp.get("ghost") === "1";
@@ -79,17 +82,35 @@ function StudioInner() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [active, setActive] = useState<StudioOrder | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [prefillClient, setPrefillClient] = useState("");
   const [shipOpen, setShipOpen] = useState<StudioOrder | null>(null);
   const [filterCol, setFilterCol] = useState<OrderStatus | "">("");
   const [mobileCol, setMobileCol] = useState(0);
   const [ghostIntervene, setGhostIntervene] = useState(false);
   const [ghostCanIntervene, setGhostCanIntervene] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
   const canMutate = !isGhostView || (ghostIntervene && ghostCanIntervene);
   const ghostParams = isGhostView
     ? { ghost: true, intervene: ghostIntervene, targetUser: ghostTargetUser || undefined }
     : undefined;
+
+  async function shareProfile() {
+    const username = user?.username;
+    if (!username) {
+      toast("Войдите, чтобы поделиться профилем", true);
+      return;
+    }
+    const url = `${window.location.origin}/profile/${username}`;
+    if (typeof navigator.share === "function") {
+      try {
+        await navigator.share({ title: `AlterCosPlay · ${username}`, url });
+        return;
+      } catch {
+        /* cancelled */
+      }
+    }
+    await navigator.clipboard.writeText(url);
+    toast("Ссылка на профиль скопирована");
+  }
 
   async function reload() {
     setError("");
@@ -175,8 +196,14 @@ function StudioInner() {
     toast("CSV скачан");
   }
 
-  const visible = filterCol ? items.filter((o) => o.status === filterCol) : items;
+  const boardItems = showCompleted
+    ? items
+    : items.filter((o) => !ARCHIVED.includes(o.status));
+  const visible = filterCol ? boardItems.filter((o) => o.status === filterCol) : boardItems;
   const totalSum = items.reduce((s, o) => s + o.budget, 0);
+  const boardColumns = showCompleted
+    ? COLUMNS
+    : COLUMNS.filter((c) => !ARCHIVED.includes(c.id));
 
   return (
     <StudioShell>
@@ -198,8 +225,8 @@ function StudioInner() {
         )}
         <div className="flex flex-wrap items-start justify-between gap-4">
           <PageHeader
-            eyebrow="Maker Studio"
-            title="Управляйте заказами, сроками и процессом создания."
+            eyebrow="Студия продавца"
+            title="Заказы от клиентов: статусы, сроки и переписка."
             className="mb-4"
           />
           <div className="flex flex-wrap gap-4 sm:gap-6">
@@ -209,7 +236,7 @@ function StudioInner() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-1 -mx-1 px-1">
+        <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1 -mx-1 px-1">
           {STEPS.map((s, i) => (
             <button
               key={s.label}
@@ -224,13 +251,24 @@ function StudioInner() {
           ))}
         </div>
 
-        <div className="flex border-b border-line mb-5">
-          <span className="px-4 py-2 text-[13px] border-b-2 border-magenta">Доска заказов</span>
-          <a href="/studio/calendar" className="px-4 py-2 text-[13px] text-ink-45 no-underline">Календарь</a>
+        <div className="flex flex-wrap items-center gap-3 mb-5">
+          <div className="flex border-b border-line">
+            <span className="px-4 py-2 text-[13px] border-b-2 border-magenta">Доска заказов</span>
+            <a href="/studio/calendar" className="px-4 py-2 text-[13px] text-ink-45 no-underline">Календарь</a>
+          </div>
+          <label className="ml-auto flex items-center gap-2 text-[12px] text-ink-70 cursor-pointer">
+            <input type="checkbox" checked={showCompleted} onChange={(e) => setShowCompleted(e.target.checked)} />
+            Показать завершённые
+          </label>
+          {filterCol && (
+            <button type="button" className="text-[12px] text-magenta bg-transparent border-0" onClick={() => setFilterCol("")}>
+              Сбросить фильтр
+            </button>
+          )}
         </div>
 
         <div className="xl:hidden flex flex-wrap gap-2 pb-3 mb-3">
-          {COLUMNS.map((c, i) => (
+          {boardColumns.map((c, i) => (
             <button
               key={c.id}
               type="button"
@@ -256,35 +294,33 @@ function StudioInner() {
         {loading && <div className="font-mono text-[12px] text-ink-45 mb-4">Загрузка заказов…</div>}
         {!loading && items.length === 0 && !error && (
           <EmptyState
-            title="У вас пока нет заказов"
+            title="Пока нет заказов"
+            description="Клиенты оставляют заявки с вашего профиля. Поделитесь ссылкой, чтобы получить первый заказ."
             action={
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => setCreateOpen(true)}>Создать первый заказ</Button>
-                <Button size="sm" variant="outline" href="/me">Поделиться профилем</Button>
-              </div>
+              <Button size="sm" variant="outline" onClick={shareProfile}>
+                Поделиться профилем
+              </Button>
             }
           />
         )}
 
         <DndContext sensors={sensors} onDragEnd={onDragEnd}>
           <div className="hidden xl:grid xl:grid-cols-3 2xl:grid-cols-9 gap-3 min-w-0">
-            {COLUMNS.map((col) => (
+            {boardColumns.map((col) => (
               <Column
                 key={col.id}
                 col={col}
                 cards={visible.filter((o) => o.status === col.id)}
                 onOpen={setActive}
-                onAdd={() => setCreateOpen(true)}
                 readOnly={!canMutate}
               />
             ))}
           </div>
           <div className="xl:hidden min-w-0">
             <Column
-              col={COLUMNS[mobileCol]}
-              cards={visible.filter((o) => o.status === COLUMNS[mobileCol].id)}
+              col={boardColumns[Math.min(mobileCol, boardColumns.length - 1)]}
+              cards={visible.filter((o) => o.status === boardColumns[Math.min(mobileCol, boardColumns.length - 1)]?.id)}
               onOpen={setActive}
-              onAdd={() => setCreateOpen(true)}
               readOnly={!canMutate}
             />
           </div>
@@ -318,17 +354,6 @@ function StudioInner() {
         />
       )}
 
-      {createOpen && canMutate && (
-        <CreateOrderModal
-          onClose={() => setCreateOpen(false)}
-          prefill={prefillClient}
-          onCreated={() => {
-            setCreateOpen(false);
-            reload();
-          }}
-        />
-      )}
-
       {shipOpen && (
         <Modal title="Данные отправки" onClose={() => setShipOpen(null)}>
           <form
@@ -359,131 +384,6 @@ function StudioInner() {
   );
 }
 
-function CreateOrderModal({
-  onClose,
-  onCreated,
-  prefill,
-}: {
-  onClose: () => void;
-  onCreated: () => void;
-  prefill?: string;
-}) {
-  const toast = useToast();
-  const [q, setQ] = useState(prefill || "");
-  const [hits, setHits] = useState<{ id: string; username: string; displayName?: string }[]>([]);
-  const [clientId, setClientId] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [dirty, setDirty] = useState(false);
-
-  function pickClient(h: { id: string; username: string; displayName?: string }) {
-    setClientId(h.id);
-    setQ(h.displayName ? `${h.username} · ${h.displayName}` : h.username);
-    setHits([]);
-  }
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      const nq = q.trim().replace(/^@+/, "");
-      if (nq.length < 2 || clientId) return;
-      users.search(nq).then((r) => setHits(r.users || [])).catch(() => setHits([]));
-    }, 250);
-    return () => clearTimeout(t);
-  }, [q, clientId]);
-
-  function askClose() {
-    if (dirty && !confirm("Закрыть без сохранения?")) return;
-    onClose();
-  }
-
-  return (
-    <Modal title="Новый заказ" onClose={askClose}>
-      <form
-        className="flex flex-col gap-3"
-        onChange={() => setDirty(true)}
-        onSubmit={async (e) => {
-          e.preventDefault();
-          const fd = new FormData(e.currentTarget);
-          let resolved = clientId;
-          if (!resolved) {
-            const nq = q.trim().replace(/^@+/, "").split("·")[0].trim();
-            try {
-              const r = await users.search(nq);
-              const list = r.users || [];
-              const exact = list.find(
-                (h) =>
-                  h.username.toLowerCase() === nq.toLowerCase() ||
-                  (h.displayName || "").toLowerCase() === nq.toLowerCase()
-              );
-              resolved = exact?.id || (list.length === 1 ? list[0].id : "");
-              if (!resolved) {
-                toast(list.length ? "Нажмите на клиента в списке ниже" : "Такого пользователя на ALTER нет", true);
-                setHits(list);
-                return;
-              }
-            } catch {
-              toast("Не удалось найти клиента", true);
-              return;
-            }
-          }
-          setBusy(true);
-          try {
-            const res = await ordersApi.create({
-              clientId: resolved,
-              title: String(fd.get("title")),
-              franchise: String(fd.get("franchise") || ""),
-              notes: String(fd.get("notes") || ""),
-              deadline: String(fd.get("deadline")),
-              budget: Number(fd.get("budget")),
-              depositAmount: Number(fd.get("deposit") || 0),
-            });
-            onCreated();
-          } catch (err) {
-            toast(err instanceof Error ? err.message : "Не удалось создать заказ", true);
-          } finally {
-            setBusy(false);
-          }
-        }}
-      >
-        <label className="text-[12px] text-ink-45">
-          Клиент
-          <input
-            className="field mt-1"
-            value={q}
-            onChange={(e) => { setQ(e.target.value); setClientId(""); }}
-            placeholder="@username или имя"
-            required={!clientId}
-          />
-        </label>
-        {!clientId && (
-          <p className="text-[11px] text-ink-45 -mt-1">Нужен аккаунт ALTER: введите ник и выберите человека из списка.</p>
-        )}
-        {hits.length > 0 && !clientId && (
-          <ul className="border border-line max-h-32 overflow-auto">
-            {hits.map((h) => (
-              <li key={h.id}>
-                <button type="button" className="w-full text-left px-2 py-1.5 text-[13px] bg-transparent border-0 hover:bg-ink" onClick={() => pickClient(h)}>
-                  @{h.username}{h.displayName ? ` · ${h.displayName}` : ""}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {clientId && <p className="text-[12px] text-success">Клиент выбран: {q}</p>}
-        <input name="title" className="field" placeholder="Название / персонаж" required />
-        <input name="franchise" className="field" placeholder="Франшиза" />
-        <input name="budget" className="field" type="number" placeholder="Цена" required min={1} />
-        <input name="deposit" className="field" type="number" placeholder="Предоплата" />
-        <input name="deadline" className="field" type="date" required />
-        <textarea name="notes" className="field-box" rows={3} placeholder="Описание" />
-        <div className="flex gap-2">
-          <Button type="submit" disabled={busy}>{busy ? "Создаём…" : "Создать"}</Button>
-          <Button type="button" variant="outline" onClick={askClose}>Отмена</Button>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
 function Stat({ n, l, warn }: { n: string; l: string; warn?: boolean }) {
   return (
     <div>
@@ -497,13 +397,11 @@ function Column({
   col,
   cards,
   onOpen,
-  onAdd,
   readOnly,
 }: {
   col: (typeof COLUMNS)[number];
   cards: StudioOrder[];
   onOpen: (o: StudioOrder) => void;
-  onAdd: () => void;
   readOnly?: boolean;
 }) {
   const { t } = useLocale();
@@ -522,13 +420,10 @@ function Column({
         <div className="font-mono text-[11px] uppercase text-ink-45">
           {t(`col_${col.id}` as MsgKey)} <span className="text-paper">{cards.length}</span>
         </div>
-        <button type="button" onClick={onAdd} disabled={readOnly} className="bg-transparent border-0 text-ink-45 hover:text-paper disabled:opacity-40">
-          <Plus size={14} />
-        </button>
       </div>
       <div className="text-[11px] text-ink-45 mb-3 pb-2 border-b border-line">{col.hint}</div>
       {cards.length === 0 ? (
-        <EmptyState compact title="Нет заказов" action={!readOnly ? <Button size="sm" variant="outline" onClick={onAdd}>Добавить</Button> : undefined} />
+        <EmptyState compact title="Нет заказов" />
       ) : (
         cards.map((c) => <OrderCard key={c.id} order={c} accent={accent} onOpen={onOpen} readOnly={readOnly} />)
       )}
@@ -785,6 +680,24 @@ function Drawer({
           ))}
         </select>
       </label>
+      {canAct && order.status !== "new" && order.status !== "waiting" && (
+        <div className="flex flex-wrap gap-1.5 mt-2">
+          {COLUMNS.filter((c) => !["new", "waiting", "cancelled"].includes(c.id)).map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              disabled={order.status === c.id}
+              onClick={() => onMove(c.id)}
+              className={cn(
+                "px-2 py-1 text-[11px] border bg-transparent",
+                order.status === c.id ? "border-magenta text-magenta" : "border-line text-ink-45 hover:text-paper"
+              )}
+            >
+              {c.title}
+            </button>
+          ))}
+        </div>
+      )}
       <div className="mt-4">
         <div className="font-mono text-[11px] uppercase text-ink-45 mb-2">История изменений</div>
         {(order.history || []).length === 0 ? (

@@ -12,11 +12,13 @@ export function CommissionRequestForm({
   commissionId,
   characterDefault,
   extraNotes,
+  serviceWorks,
   onClose,
 }: {
   commissionId: string;
   characterDefault?: string;
   extraNotes?: string;
+  serviceWorks?: { id: string; title?: string; character?: string; franchise?: string; price?: number }[];
   onClose: () => void;
 }) {
   const toast = useToast();
@@ -27,11 +29,14 @@ export function CommissionRequestForm({
   const [files, setFiles] = useState<File[]>([]);
   const [link, setLink] = useState("");
   const [links, setLinks] = useState<string[]>([]);
+  const [workId, setWorkId] = useState("");
 
   async function addPhotos(list: FileList | File[]) {
     const edited = await editImageList(edit, Array.from(list).slice(0, 8 - files.length));
     setFiles((prev) => [...prev, ...edited].slice(0, 8));
   }
+
+  const selectedWork = serviceWorks?.find((w) => w.id === workId);
 
   return (
     <form
@@ -53,10 +58,15 @@ export function CommissionRequestForm({
           }
           const extraLinks = [...links];
           if (link.trim()) extraLinks.push(link.trim());
-          const description = [String(fd.get("description") || "").trim(), extraNotes].filter(Boolean).join("\n");
+          const workLine = selectedWork
+            ? `Работа: ${selectedWork.title || selectedWork.character || selectedWork.id}`
+            : workId === "custom"
+              ? "Индивидуальный запрос"
+              : "";
+          const description = [workLine, String(fd.get("description") || "").trim(), extraNotes].filter(Boolean).join("\n");
           const res = await commissions.request(commissionId, {
-            character: String(fd.get("character") || characterDefault || ""),
-            budget: Number(fd.get("budget") || 0) || undefined,
+            character: String(fd.get("character") || selectedWork?.character || characterDefault || ""),
+            budget: Number(fd.get("budget") || selectedWork?.price || 0) || undefined,
             description,
             notes: description,
             referenceUrls: urls,
@@ -72,6 +82,26 @@ export function CommissionRequestForm({
         }
       }}
     >
+      {serviceWorks && serviceWorks.length > 0 && (
+        <label className="flex flex-col gap-1 text-[12px] text-ink-45">
+          Работа / услуга
+          <select
+            className="field"
+            value={workId}
+            onChange={(e) => setWorkId(e.target.value)}
+          >
+            <option value="">Выберите работу</option>
+            {serviceWorks.map((w) => (
+              <option key={w.id} value={w.id}>
+                {w.title || w.character || "Работа"}
+                {w.franchise ? ` · ${w.franchise}` : ""}
+                {w.price ? ` · от ${w.price}` : ""}
+              </option>
+            ))}
+            <option value="custom">Индивидуальный запрос</option>
+          </select>
+        </label>
+      )}
       <div>
         <div className="text-[12px] text-ink-45 mb-1">Референсы</div>
         <div className="flex gap-2">
@@ -150,13 +180,22 @@ export function CommissionRequestForm({
           className="field"
           required
           defaultValue={characterDefault || ""}
+          key={selectedWork?.character || characterDefault || "char"}
           placeholder="Raiden Shogun"
-          readOnly={Boolean(characterDefault)}
+          readOnly={Boolean(characterDefault) && !selectedWork}
         />
       </label>
       <label className="flex flex-col gap-1 text-[12px] text-ink-45">
         Бюджет, сум
-        <input name="budget" className="field" type="number" min={0} placeholder="800000" />
+        <input
+          name="budget"
+          className="field"
+          type="number"
+          min={0}
+          placeholder="800000"
+          defaultValue={selectedWork?.price || undefined}
+          key={selectedWork?.id || "budget"}
+        />
       </label>
       <label className="flex flex-col gap-1 text-[12px] text-ink-45">
         Срок выполнения до

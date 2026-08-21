@@ -519,7 +519,7 @@ function ExploreClient() {
               </div>
             )}
             {total > 0 && (
-              <div className="font-mono text-[11px] text-ink-45 text-center mt-4">{total} билдов</div>
+              <div className="font-mono text-[11px] text-ink-45 text-center mt-4">{total} работ</div>
             )}
           </div>
         </div>

@@ -14,15 +14,13 @@ type CreatePayload = {
   mediaUrls: string[];
   tags: string[];
   mentions: MentionChip[];
-  kind: "post" | "story";
+  kind: "post";
 };
 
 export function CreatePublicationModal({
-  kind = "post",
   onClose,
   onSubmit,
 }: {
-  kind?: "post" | "story";
   onClose: () => void;
   onSubmit: (payload: CreatePayload) => Promise<void>;
 }) {
@@ -35,7 +33,7 @@ export function CreatePublicationModal({
   const edit = useEditImage();
 
   async function handleFiles(list: FileList | File[]) {
-    const raw = Array.from(list).slice(0, kind === "story" ? 1 : 10);
+    const raw = Array.from(list).slice(0, 10 - files.length);
     const items = await editImageList(edit, raw);
     for (const file of items) {
       const preview = URL.createObjectURL(file);
@@ -46,7 +44,7 @@ export function CreatePublicationModal({
       } catch {
         /* local preview */
       }
-      setFiles((prev) => [...prev, { id: `${file.name}-${Date.now()}`, preview, url }].slice(0, kind === "story" ? 1 : 10));
+      setFiles((prev) => [...prev, { id: `${file.name}-${Date.now()}`, preview, url }].slice(0, 10));
     }
   }
 
@@ -67,7 +65,7 @@ export function CreatePublicationModal({
         mediaUrls: files.map((f) => f.url || f.preview),
         tags: allTags,
         mentions: [...mentions, ...captionMentions],
-        kind,
+        kind: "post",
       });
       onClose();
     } finally {
@@ -76,13 +74,13 @@ export function CreatePublicationModal({
   }
 
   return (
-    <Modal title={kind === "story" ? "Новая история" : "Новая публикация"} onClose={onClose} wide>
+    <Modal title="Новый рилс" onClose={onClose} wide>
       <form className="flex flex-col gap-4" onSubmit={handleSubmit}>
         <input
           ref={fileRef}
           type="file"
           accept="image/*,video/*"
-          multiple={kind === "post"}
+          multiple
           className="hidden"
           onChange={(e) => e.target.files && handleFiles(e.target.files)}
         />
@@ -119,7 +117,7 @@ export function CreatePublicationModal({
                   </button>
                 </div>
               ))}
-              {kind === "post" && files.length < 10 && (
+              {files.length < 10 && (
                 <button type="button" className="aspect-square border border-dashed border-line flex items-center justify-center text-ink-45 bg-transparent" onClick={() => fileRef.current?.click()}>
                   <ImagePlus size={20} />
                 </button>
@@ -140,14 +138,12 @@ export function CreatePublicationModal({
           <span className="block mt-1 font-mono text-[10px] text-ink-45 text-right">{caption.length}/2200</span>
         </label>
 
-        {kind === "post" && (
-          <MentionTagInput tags={tags} mentions={mentions} onTagsChange={setTags} onMentionsChange={setMentions} />
-        )}
+        <MentionTagInput tags={tags} mentions={mentions} onTagsChange={setTags} onMentionsChange={setMentions} />
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>Отмена</Button>
           <Button type="submit" disabled={!files.length || submitting}>
-            {submitting ? "Публикация…" : kind === "story" ? "Опубликовать историю" : "Опубликовать"}
+            {submitting ? "Публикация…" : "Опубликовать"}
           </Button>
         </div>
       </form>

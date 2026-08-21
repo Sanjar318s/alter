@@ -4,7 +4,7 @@ import { cn } from "@/lib/cn";
 
 const variants = {
   primary:
-    "bg-gradient-to-r from-magenta to-amber text-paper hover:opacity-90 border-0 glow-magenta",
+    "bg-gradient-to-r from-magenta to-amber text-paper hover:opacity-90 border-0",
   danger:
     "border border-[#FF426F] text-[#FF426F] bg-transparent hover:bg-[#FF426F]/10",
   outline:

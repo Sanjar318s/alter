@@ -15,7 +15,6 @@ import {
   LayoutGrid,
   List,
   MapPin,
-  MessageCircle,
   Send,
   Share2,
   Sparkles,
@@ -32,8 +31,6 @@ import { BrandIcon } from "@/components/ui/BrandIcon";
 import { CreatePublicationModal } from "@/components/profile/CreatePublicationModal";
 import { PostLightbox } from "@/components/profile/PostLightbox";
 import { PublicationGrid } from "@/components/profile/PublicationGrid";
-import { StoryRingStrip } from "@/components/profile/StoryRingStrip";
-import { StoryViewer } from "@/components/profile/StoryViewer";
 import { CreateBuildModal } from "@/components/builds/CreateBuildModal";
 import { BuildCard } from "@/components/builds/BuildCard";
 import { CommissionRequestForm } from "@/components/orders/CommissionRequestForm";
@@ -49,7 +46,20 @@ import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { subscribeRealtime } from "@/lib/realtimeHub";
 
-type Tab = "builds" | "orders" | "stories" | "about" | "publications";
+type Tab = "builds" | "orders" | "about" | "reels";
+
+const TAB_LABELS: Record<Tab, string> = {
+  builds: "Работы",
+  orders: "Заказы",
+  about: "О себе",
+  reels: "Рилсы",
+};
+
+function normalizeTab(raw: string | null): Tab {
+  if (raw === "publications" || raw === "stories") return "reels";
+  if (raw === "orders" || raw === "about" || raw === "reels" || raw === "builds") return raw;
+  return "builds";
+}
 
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params);
@@ -66,7 +76,7 @@ function ProfileHub({ username }: { username: string }) {
   const toast = useToast();
   const router = useRouter();
   const sp = useSearchParams();
-  const tab = (sp.get("tab") as Tab) || "builds";
+  const [tab, setTabState] = useState<Tab>(() => normalizeTab(sp.get("tab")));
   const [view, setView] = useState<"grid" | "list">("grid");
   const [commissionOpen, setCommissionOpen] = useState(false);
   const [buildOpen, setBuildOpen] = useState(false);
@@ -81,13 +91,14 @@ function ProfileHub({ username }: { username: string }) {
   const [events, setEvents] = useState<any[]>([]);
   const [notFound, setNotFound] = useState(false);
   const [posts, setPosts] = useState<Publication[]>([]);
-  const [activeStories, setActiveStories] = useState<Publication[]>([]);
   const [selectedPost, setSelectedPost] = useState<Publication | null>(null);
-  const [storyIndex, setStoryIndex] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [createKind, setCreateKind] = useState<"post" | "story">("post");
   const [historyOrders, setHistoryOrders] = useState<any[]>([]);
   const [orderMeta, setOrderMeta] = useState<{ avgBudget: number | null; deadlineCount: number }>({ avgBudget: null, deadlineCount: 0 });
+
+  useEffect(() => {
+    setTabState(normalizeTab(sp.get("tab")));
+  }, [sp]);
 
   const isOwner = user?.username === username;
   const isPlatformOwner = username.toLowerCase() === "nyx.cosplay" || profile?.profile?.staffRole === "owner";
@@ -159,18 +170,12 @@ function ProfileHub({ username }: { username: string }) {
       .then((d) => {
         if (d.publications?.length) {
           setPosts(d.publications.map(normalizePublication));
+        } else {
+          setPosts([]);
         }
       })
       .catch(() => {
         setPosts([]);
-      });
-    publicationsApi
-      .activeStories(username)
-      .then((d) => {
-        setActiveStories((d.stories || []).map(normalizePublication));
-      })
-      .catch(() => {
-        setActiveStories([]);
       });
   }, [username]);
 
@@ -199,7 +204,9 @@ function ProfileHub({ username }: { username: string }) {
   }
 
   function setTab(next: Tab) {
-    router.replace(`/profile/${username}?tab=${next}`, { scroll: false });
+    setTabState(next);
+    const url = next === "builds" ? `/profile/${username}` : `/profile/${username}?tab=${next}`;
+    window.history.replaceState(null, "", url);
   }
 
   async function message() {
@@ -291,19 +298,16 @@ function ProfileHub({ username }: { username: string }) {
           <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:ml-auto relative justify-end">
             {isOwner ? (
               <>
+                <Button size="sm" onClick={() => setBuildOpen(true)}>Добавить работу</Button>
                 <Button href="/me" variant="outline" size="sm" className="hidden sm:inline-flex">Редактировать профиль</Button>
-                <Button href="/me?tab=security" variant="outline" size="sm" className="hidden md:inline-flex">Настройки</Button>
-                <Button size="sm" onClick={() => setBuildOpen(true)} className="hidden sm:inline-flex">+ Добавить билд</Button>
-                <Button href="/me" variant="outline" size="sm" className="sm:hidden">Редактировать</Button>
-                <Button size="sm" onClick={() => setBuildOpen(true)} className="sm:hidden">+ Билд</Button>
               </>
             ) : (
               <>
                 <Button size="sm" onClick={() => setCommissionOpen(true)} className="w-full sm:w-auto">
-                  <Sparkles size={14} className="mr-1" /> Запросить коммишен
+                  <Sparkles size={14} className="mr-1" /> Заказать
                 </Button>
                 <Button variant="outline" size="sm" onClick={message} className="hidden sm:inline-flex">
-                  <Send size={14} className="mr-1" /> Написать сообщение
+                  <Send size={14} className="mr-1" /> Написать
                 </Button>
                 <Button
                   variant="ghost"
@@ -357,7 +361,7 @@ function ProfileHub({ username }: { username: string }) {
         <div className="max-w-[1240px] mx-auto grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
           <div>
             <div className="flex border-b border-line mb-5 overflow-x-auto">
-              {(["builds", "orders", "stories", "about", "publications"] as Tab[]).map((t) => (
+              {(["builds", "reels", "orders", "about"] as Tab[]).map((t) => (
                 <button
                   key={t}
                   type="button"
@@ -367,7 +371,7 @@ function ProfileHub({ username }: { username: string }) {
                     tab === t ? "border-magenta text-paper" : "border-transparent text-ink-45"
                   )}
                 >
-                  {t === "builds" ? "Билды" : t === "orders" ? "Заказы" : t === "stories" ? "Истории" : t === "about" ? "О себе" : "Публикации"}
+                  {TAB_LABELS[t]}
                 </button>
               ))}
             </div>
@@ -375,7 +379,7 @@ function ProfileHub({ username }: { username: string }) {
             {tab === "builds" && (
               <>
                 <div className="flex items-center mb-4">
-                  <span className="text-[13px] text-ink-45">{stats.builds || cards.length} билдов</span>
+                  <span className="text-[13px] text-ink-45">{stats.builds || cards.length} работ</span>
                   <div className="ml-auto flex">
                     <IconButton label="Сетка" onClick={() => setView("grid")}>
                       <LayoutGrid size={16} className={view === "grid" ? "text-magenta" : ""} />
@@ -387,8 +391,9 @@ function ProfileHub({ username }: { username: string }) {
                 </div>
                 {cards.length === 0 ? (
                   <EmptyState
-                    title={isOwner ? "Пока нет билдов" : "пока нет опубликованных билдов"}
-                    action={isOwner ? <Button size="sm" onClick={() => setBuildOpen(true)}>+ Добавить билд</Button> : undefined}
+                    title={isOwner ? "Пока нет работ" : "Пока нет опубликованных работ"}
+                    description={isOwner ? "Добавьте первую работу в портфолио — это основа профиля." : undefined}
+                    action={isOwner ? <Button size="sm" onClick={() => setBuildOpen(true)}>Добавить работу</Button> : undefined}
                   />
                 ) : view === "grid" ? (
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -447,21 +452,6 @@ function ProfileHub({ username }: { username: string }) {
               </div>
             )}
 
-            {tab === "stories" && (
-              <div>
-                <StoryRingStrip
-                  stories={activeStories}
-                  isOwner={isOwner}
-                  onOpen={(i) => setStoryIndex(i)}
-                  onAdd={() => {
-                    setCreateKind("story");
-                    setCreateOpen(true);
-                  }}
-                />
-                {activeStories.length === 0 && !isOwner && <EmptyState title="Пока нет историй" />}
-              </div>
-            )}
-
             {tab === "about" && (
               <div className="text-[14px] text-ink-70 leading-relaxed space-y-3">
                 {bio && <p className="whitespace-pre-wrap">{bio}</p>}
@@ -486,24 +476,25 @@ function ProfileHub({ username }: { username: string }) {
               </div>
             )}
 
-            {tab === "publications" && (
+            {tab === "reels" && (
               <>
                 <div className="flex items-center mb-4">
-                  <span className="text-[13px] text-ink-45">{posts.length} публикаций</span>
+                  <span className="text-[13px] text-ink-45">{posts.length} рилсов</span>
                   {isOwner && (
-                    <Button
-                      size="sm"
-                      className="ml-auto"
-                      onClick={() => {
-                        setCreateKind("post");
-                        setCreateOpen(true);
-                      }}
-                    >
-                      + Публикация
+                    <Button size="sm" className="ml-auto" onClick={() => setCreateOpen(true)}>
+                      + Рилс
                     </Button>
                   )}
                 </div>
-                <PublicationGrid posts={posts} onSelect={setSelectedPost} username={username} />
+                {posts.length === 0 ? (
+                  <EmptyState
+                    title={isOwner ? "Пока нет рилсов" : "У автора пока нет рилсов"}
+                    description={isOwner ? "Короткие фото и видео косплея — лента для вдохновения." : undefined}
+                    action={isOwner ? <Button size="sm" onClick={() => setCreateOpen(true)}>+ Рилс</Button> : <Button size="sm" variant="outline" href="/reels">Смотреть ленту</Button>}
+                  />
+                ) : (
+                  <PublicationGrid posts={posts} onSelect={setSelectedPost} username={username} />
+                )}
               </>
             )}
           </div>
@@ -532,7 +523,7 @@ function ProfileHub({ username }: { username: string }) {
             <Frame className="p-4 bg-stage">
               <div className="font-mono text-[11px] uppercase text-ink-45 mb-3">Статистика</div>
               {[
-                { icon: GalleryVerticalEnd, n: stats.builds, l: "Билдов" },
+                { icon: GalleryVerticalEnd, n: stats.builds, l: "Работ" },
                 { icon: Users, n: stats.followers, l: "Подписчиков", open: "followers" as const },
                 { icon: UserPlus, n: stats.following, l: "Подписок", open: "following" as const },
                 { icon: Heart, n: formatCount(stats.likes), l: "Лайков" },
@@ -580,21 +571,23 @@ function ProfileHub({ username }: { username: string }) {
 
       {isOwner ? null : (
         <div className="md:hidden sticky bottom-0 p-3 bg-ink border-t border-line">
-          <Button className="w-full" onClick={() => setCommissionOpen(true)}>Запросить коммишен</Button>
+          <Button className="w-full" onClick={() => setCommissionOpen(true)}>Заказать</Button>
         </div>
       )}
 
       {commissionOpen && (
-        <Modal title="Заявка на коммишен" onClose={() => setCommissionOpen(false)}>
+        <Modal title="Заявка на заказ" onClose={() => setCommissionOpen(false)}>
           {(() => {
             const list = profile?.commissions || [];
             const mine = list.find((c: any) => c.status === "open") || list[0];
             if (!mine) {
-              return <p className="text-[13px] text-ink-45">У продавца нет открытой комиссии.</p>;
+              return <p className="text-[13px] text-ink-45">У продавца сейчас нет открытых заказов. Напишите в сообщения.</p>;
             }
+            const serviceWorks = (apiBuilds || []).filter((b: any) => b.commissionStatus === "open");
             return (
               <CommissionRequestForm
                 commissionId={mine.id}
+                serviceWorks={serviceWorks}
                 onClose={() => setCommissionOpen(false)}
               />
             );
@@ -627,27 +620,20 @@ function ProfileHub({ username }: { username: string }) {
         />
       )}
 
-      {storyIndex !== null && (
-        <StoryViewer
-          stories={activeStories}
-          startIndex={storyIndex}
-          username={username}
-          onClose={() => setStoryIndex(null)}
-        />
-      )}
-
       {buildOpen && isOwner && (
         <CreateBuildModal
           onClose={() => setBuildOpen(false)}
           onSaved={() => {
-            users.get(username).then((d) => setApiBuilds(d.builds));
+            users.get(username).then((d) => {
+              setApiBuilds(d.builds);
+              if (d.stats) setStats((s) => ({ ...s, builds: d.stats.builds }));
+            });
           }}
         />
       )}
 
       {createOpen && isOwner && (
         <CreatePublicationModal
-          kind={createKind}
           onClose={() => setCreateOpen(false)}
           onSubmit={async (payload) => {
             try {
@@ -660,15 +646,11 @@ function ProfileHub({ username }: { username: string }) {
                   displayName: m.displayName,
                   type: m.type,
                 })),
-                kind: payload.kind,
+                kind: "post",
               });
               const pub = normalizePublication(res.publication);
-              if (payload.kind === "story") {
-                setActiveStories((s) => [...s, pub]);
-              } else {
-                setPosts((p) => [pub, ...p]);
-              }
-              toast(payload.kind === "story" ? "История опубликована" : "Публикация создана");
+              setPosts((p) => [pub, ...p]);
+              toast("Рилс опубликован");
             } catch (err) {
               toast(err instanceof Error ? err.message : "Не удалось опубликовать", true);
             }

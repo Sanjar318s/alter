@@ -23,10 +23,12 @@ import { subscribeRealtime } from "@/lib/realtimeHub";
 import { useSWRConfig } from "swr";
 import { LocaleSettings } from "@/components/LocaleSettings";
 import { useLocale } from "@/lib/LocaleContext";
+import { usePlatformMode } from "@/lib/PlatformModeContext";
 
 const LINK_DEFS = [
   { href: "/explore", label: "explore" as const, hint: "exploreHint" as const, short: "explore" as const },
-  { href: "/studio", label: "studio" as const, hint: "studioHint" as const, short: "studioShort" as const },
+  { href: "/reels", label: "reels" as const, hint: "reelsHint" as const, short: "reelsShort" as const },
+  { href: "/studio", label: "studio" as const, hint: "studioHint" as const, short: "studioShort" as const, sellerOnly: true },
   { href: "/messages", label: "messages" as const, hint: "messagesHint" as const, short: "chatShort" as const },
 ];
 
@@ -82,12 +84,15 @@ export function Nav() {
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { t } = useLocale();
-  const LINKS = LINK_DEFS.map((link) => ({
-    ...link,
-    text: t(link.label),
-    hintText: t(link.hint),
-    short: t(link.short),
-  }));
+  const { mode, setMode } = usePlatformMode();
+  const LINKS = LINK_DEFS
+    .filter((link) => !("sellerOnly" in link && link.sellerOnly) || mode === "seller")
+    .map((link) => ({
+      ...link,
+      text: t(link.label),
+      hintText: t(link.hint),
+      short: t(link.short),
+    }));
   const isAdmin =
     (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
     (user?.username || "").toLowerCase() === "nyx.cosplay";
@@ -138,7 +143,7 @@ export function Nav() {
 
   return (
     <>
-      <nav className="sticky top-0 z-50 w-full bg-ink/95 backdrop-blur-sm border-b border-line px-4 sm:px-6 lg:px-8 py-3 overflow-x-clip">
+      <nav className={cn("sticky top-0 w-full bg-ink/95 backdrop-blur-sm border-b border-line px-4 sm:px-6 lg:px-8 py-3 overflow-x-clip", mobileOpen ? "z-[80]" : "z-50")}>
         <div className="max-w-[1360px] mx-auto w-full min-w-0 flex items-center gap-2">
           <Link href="/" className="flex items-center gap-2 text-paper no-underline shrink-0">
             <span className="w-2.5 h-2.5 rounded-[1px] bg-gradient-to-br from-magenta to-amber" />
@@ -380,7 +385,7 @@ export function Nav() {
       </nav>
 
       {mobileOpen && (
-        <div className="fixed inset-0 z-[60] md:hidden">
+        <div className="fixed inset-0 z-[70] md:hidden">
           <button
             type="button"
             className="absolute inset-0 bg-ink/80 backdrop-blur-sm border-0 cursor-default"
@@ -388,6 +393,28 @@ export function Nav() {
             onClick={() => setMobileOpen(false)}
           />
           <div className="absolute inset-x-0 top-[57px] bottom-0 bg-ink border-t border-line overflow-y-auto px-5 py-6 flex flex-col gap-1">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-mono text-[11px] uppercase tracking-wide text-ink-45">Меню</span>
+              <button
+                type="button"
+                className="text-paper w-10 h-10 flex items-center justify-center bg-transparent border border-line"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Закрыть"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <Link
+              href="/"
+              className={cn(
+                "no-underline px-1 py-3 border-b border-line/60",
+                pathname === "/" ? "text-paper" : "text-ink-45"
+              )}
+              onClick={() => setMobileOpen(false)}
+            >
+              <div className="text-[15px] font-medium">{t("home")}</div>
+              <div className="text-[12px] text-ink-45 mt-0.5">{t("homeHint")}</div>
+            </Link>
             {LINKS.map((link) => (
               <Link
                 key={link.href}
@@ -407,6 +434,28 @@ export function Nav() {
             ))}
 
             <div className="mt-4 pt-4 border-t border-line flex flex-col gap-3">
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMode("viewer")}
+                  className={cn(
+                    "flex-1 py-2 text-[12px] border",
+                    mode === "viewer" ? "border-magenta text-magenta" : "border-line text-ink-45"
+                  )}
+                >
+                  {t("modeViewer")}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMode("seller")}
+                  className={cn(
+                    "flex-1 py-2 text-[12px] border",
+                    mode === "seller" ? "border-magenta text-magenta" : "border-line text-ink-45"
+                  )}
+                >
+                  {t("modeSeller")}
+                </button>
+              </div>
               <div className="bg-stage border border-line">
                 <LocaleSettings />
               </div>

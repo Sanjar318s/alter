@@ -707,10 +707,9 @@ export const notifications = {
 
 // Publications
 export const publications = {
+  feed: () => request<{ publications: any[] }>("/api/publications/feed"),
   list: (username: string) =>
     request<{ publications: any[] }>(`/api/publications/user/${encodeURIComponent(username)}`),
-  activeStories: (username: string) =>
-    request<{ stories: any[] }>(`/api/publications/user/${encodeURIComponent(username)}/stories`),
   create: (data: {
     caption?: string;
     mediaUrls: string[];

@@ -42,7 +42,7 @@ export async function generateMetadata({
   const displayName = data.profile?.displayName || username;
   const bio = data.profile?.bio
     ? truncate(data.profile.bio)
-    : `Портфолио ${displayName}: билды косплея, заказать костюм и крафт на ${SITE_NAME}.`;
+    : `Портфолио ${displayName}: работы косплея, заказать костюм и крафт на ${SITE_NAME}.`;
 
   return pageMetadata({
     title: `Косплеер ${displayName} — Заказать костюм и крафт | ${SITE_NAME}`,

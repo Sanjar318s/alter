@@ -43,7 +43,7 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
   if (error && !data) {
     return (
       <div className="pt-16 px-6 max-w-[640px] mx-auto text-center">
-        <h1 className="font-display font-extrabold text-[28px]">Билд не найден</h1>
+        <h1 className="font-display font-extrabold text-[28px]">Работа не найдена</h1>
         <p className="text-ink-70 mt-2">{error}</p>
         <Button href="/explore" className="mt-6">Вернуться в Explore</Button>
       </div>
@@ -112,7 +112,7 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
           </div>
           {isOwner && (
             <div className="mt-6 border border-line p-4">
-              <div className="font-mono text-[11px] uppercase text-ink-45 mb-3">Управление билдом</div>
+              <div className="font-mono text-[11px] uppercase text-ink-45 mb-3">Управление работой</div>
               <div className="flex flex-col gap-2">
                 <Button size="sm" onClick={() => setEdit(true)}>Редактировать</Button>
                 <Button size="sm" variant="outline" onClick={async () => {
@@ -120,10 +120,10 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
                   load();
                 }}>{b.hidden ? "Показать" : "Скрыть"} в Explore</Button>
                 <Button size="sm" variant="danger" onClick={async () => {
-                  if (!confirm("Удалить билд? Это нельзя отменить.")) return;
+                  if (!confirm("Удалить работу? Это нельзя отменить.")) return;
                   await buildsApi.remove(id);
                   router.push(`/profile/${user?.username}`);
-                }}>Удалить билд</Button>
+                }}>Удалить работу</Button>
               </div>
             </div>
           )}
@@ -199,7 +199,7 @@ function BuildCommissionForm({
     <CommissionRequestForm
       commissionId={commissionId}
       characterDefault={character}
-      extraNotes={buildUrl ? `Билд: ${buildUrl}` : undefined}
+      extraNotes={buildUrl ? `Работа: ${buildUrl}` : undefined}
       onClose={onClose}
     />
   );
