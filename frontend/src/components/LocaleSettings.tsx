@@ -2,14 +2,42 @@
 
 import { UI_CURRENCIES, UI_LANGUAGES } from "@/lib/locale/regions";
 import { useLocale } from "@/lib/LocaleContext";
+import { usePlatformMode } from "@/lib/PlatformModeContext";
 import { formatSum as formatUzs, uzsPerUnit } from "@/lib/format";
+import { cn } from "@/lib/cn";
 
 export function LocaleSettings() {
   const { lang, currency, setLang, setCurrency, rates, rateUpdated, t } = useLocale();
+  const { mode, setMode } = usePlatformMode();
   const per = uzsPerUnit(currency, rates);
   return (
     <div className="p-3 flex flex-col gap-3 min-w-[240px]">
       <div className="font-display font-bold text-[14px]">{t("settings")}</div>
+      <div>
+        <div className="text-[12px] text-ink-45 mb-1.5">Режим</div>
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setMode("viewer")}
+            className={cn(
+              "flex-1 py-1.5 text-[11px] border",
+              mode === "viewer" ? "border-magenta text-magenta" : "border-line text-ink-45"
+            )}
+          >
+            {t("modeViewer")}
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("seller")}
+            className={cn(
+              "flex-1 py-1.5 text-[11px] border",
+              mode === "seller" ? "border-magenta text-magenta" : "border-line text-ink-45"
+            )}
+          >
+            {t("modeSeller")}
+          </button>
+        </div>
+      </div>
       <label className="text-[12px] text-ink-45">
         {t("language")}
         <select

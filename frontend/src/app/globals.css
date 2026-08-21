@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-ink: #12101A;
-  --color-stage: #1D1A29;
-  --color-stage-elevated: #252131;
-  --color-paper: #F2EEE9;
-  --color-magenta: #E5487A;
-  --color-amber: #F2A93B;
-  --color-line: #3A3550;
+  --color-ink: #14121a;
+  --color-stage: #1f1b24;
+  --color-stage-elevated: #2a2430;
+  --color-paper: #F5F0EA;
+  --color-magenta: #D4567A;
+  --color-amber: #E8A04A;
+  --color-line: #3d3648;
   --color-success: #45D483;
-  --color-ink-45: rgba(242, 238, 233, 0.45);
-  --color-ink-70: rgba(242, 238, 233, 0.7);
+  --color-ink-45: rgba(245, 240, 234, 0.45);
+  --color-ink-70: rgba(245, 240, 234, 0.7);
   --font-display: var(--font-unbounded);
   --font-body: var(--font-onest);
   --font-mono: var(--font-jetbrains-mono);
@@ -62,16 +62,16 @@
     background-color: var(--color-ink);
     background-image:
       radial-gradient(
-        ellipse 70% 42% at 6% 0%,
-        rgba(229, 72, 122, 0.16),
-        transparent 62%
+        ellipse 75% 48% at 8% 0%,
+        rgba(212, 86, 122, 0.12),
+        transparent 65%
       ),
       radial-gradient(
-        ellipse 55% 34% at 94% 3%,
-        rgba(166, 74, 214, 0.13),
-        transparent 60%
+        ellipse 50% 36% at 92% 8%,
+        rgba(232, 160, 74, 0.08),
+        transparent 58%
       ),
-      linear-gradient(180deg, #1a1428 0%, #12101a 42%);
+      linear-gradient(180deg, #1a161f 0%, #14121a 48%);
     background-repeat: no-repeat;
     color: var(--color-paper);
     font-family: var(--font-body), sans-serif;
@@ -296,18 +296,13 @@
     background:
       radial-gradient(
         ellipse 55% 90% at 2% 42%,
-        rgba(229, 72, 122, 0.34),
+        rgba(212, 86, 122, 0.22),
         transparent 62%
       ),
       radial-gradient(
-        ellipse 50% 80% at 78% 0%,
-        rgba(166, 74, 214, 0.22),
-        transparent 60%
-      ),
-      radial-gradient(
-        ellipse 40% 60% at 98% 12%,
-        rgba(242, 169, 59, 0.14),
-        transparent 55%
+        ellipse 48% 70% at 88% 8%,
+        rgba(232, 160, 74, 0.12),
+        transparent 58%
       );
     pointer-events: none;
   }

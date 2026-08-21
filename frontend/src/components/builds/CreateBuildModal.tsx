@@ -40,6 +40,21 @@ const ROLES = [
 
 type Photo = { url: string; preview: string };
 
+function parseWorkTypes(raw?: string | null): string[] {
+  if (!raw) return ["cosplay"];
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.length) return parsed.map(String);
+  } catch {
+    /* comma-separated fallback */
+  }
+  return raw.split(",").map((s) => s.trim()).filter(Boolean);
+}
+
+function serializeWorkTypes(ids: string[]) {
+  return JSON.stringify(ids.length ? ids : ["cosplay"]);
+}
+
 export function CreateBuildModal({
   onClose,
   onSaved,
@@ -57,11 +72,11 @@ export function CreateBuildModal({
   const [title, setTitle] = useState(initial?.title || "");
   const [franchise, setFranchise] = useState(initial?.franchise || "");
   const [character, setCharacter] = useState(initial?.character || "");
-  const [year, setYear] = useState(String(initial?.year || new Date().getFullYear()));
+  const [year, setYear] = useState(initial?.year ? String(initial.year) : "");
   const [description, setDescription] = useState(initial?.description || "");
-  const [workType, setWorkType] = useState(initial?.workType || "cosplay");
-  const [status, setStatus] = useState(initial?.commissionStatus || "closed");
-  const [price, setPrice] = useState(String(initial?.price || 0));
+  const [workTypes, setWorkTypes] = useState<string[]>(() => parseWorkTypes(initial?.workType));
+  const [offerServices, setOfferServices] = useState(initial?.commissionStatus === "open");
+  const [price, setPrice] = useState(String(initial?.price || ""));
   const [credits, setCredits] = useState<{ username: string; role: string }[]>([]);
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<any[]>([]);
@@ -73,7 +88,25 @@ export function CreateBuildModal({
       const p = initial.photos.map((x: any) => ({ url: x.imageUrl, preview: x.imageUrl }));
       setPhotos(p);
     }
+    if (initial?.credits?.length) {
+      setCredits(
+        initial.credits.map((c: any) => ({
+          username: c.username || c.user?.username || "",
+          role: c.role || "photographer",
+        })).filter((c: { username: string }) => c.username)
+      );
+    }
   }, [initial]);
+
+  function toggleWorkType(id: string) {
+    setWorkTypes((prev) => {
+      if (prev.includes(id)) {
+        const next = prev.filter((x) => x !== id);
+        return next.length ? next : prev;
+      }
+      return [...prev, id];
+    });
+  }
 
   async function addFiles(list: FileList | File[]) {
     const edited = await editImageList(edit, Array.from(list).slice(0, 10 - photos.length), 4 / 5);
@@ -95,7 +128,7 @@ export function CreateBuildModal({
 
   async function save() {
     if (!title.trim()) {
-      toast("Нужно название", true);
+      toast("Нужно название работы", true);
       return;
     }
     setBusy(true);
@@ -106,11 +139,11 @@ export function CreateBuildModal({
         character,
         description,
         coverImageUrl: cover,
-        year: Number(year) || null,
-        price: status === "open" ? Number(price) : 0,
+        year: year.trim() ? Number(year) || null : null,
+        price: offerServices ? Number(price) || 0 : 0,
         currency: "UZS",
-        workType,
-        commissionStatus: status,
+        workType: serializeWorkTypes(workTypes),
+        commissionStatus: offerServices ? "open" : "closed",
         photos: photos.map((p) => ({ imageUrl: p.url })),
         credits,
       };
@@ -126,8 +159,8 @@ export function CreateBuildModal({
   }
 
   return (
-    <Modal title={initial ? "Редактировать билд" : "Новый билд"} onClose={onClose} wide>
-      <Stepper steps={["Фото", "Детали", "Статус"]} current={step} />
+    <Modal title={initial ? "Редактировать работу" : "Новая работа"} onClose={onClose} wide>
+      <Stepper steps={["Фото", "О работе"]} current={step} />
       {step === 1 && (
         <div
           className="border border-dashed border-line p-6 text-center"
@@ -165,70 +198,108 @@ export function CreateBuildModal({
       )}
       {step === 2 && (
         <div className="flex flex-col gap-3">
-          <input className="field" placeholder="Название" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <input className="field" list="fr" placeholder="Франшиза" value={franchise} onChange={(e) => setFranchise(e.target.value)} />
-          <datalist id="fr">{FRANCHISES.map((f) => <option key={f} value={f} />)}</datalist>
+          <input className="field" placeholder="Название работы" value={title} onChange={(e) => setTitle(e.target.value)} />
           <input className="field" placeholder="Персонаж" value={character} onChange={(e) => setCharacter(e.target.value)} />
-          <input className="field" type="number" placeholder="Год" value={year} onChange={(e) => setYear(e.target.value)} />
-          <textarea className="field-box" rows={4} placeholder="История создания" value={description} onChange={(e) => setDescription(e.target.value)} />
-          <div className="flex flex-wrap gap-2">
-            {WORK.map((w) => (
-              <button key={w.id} type="button" onClick={() => setWorkType(w.id)} className={cn("px-2 py-1 text-[12px] border", workType === w.id ? "border-magenta" : "border-line")}>
-                {w.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-      {step === 3 && (
-        <div className="flex flex-col gap-3">
           <input
             className="field"
-            placeholder="@username соавтора"
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              if (e.target.value.length > 1) users.search(e.target.value).then((r) => setHits(r.users)).catch(() => {});
-            }}
+            list="fr"
+            placeholder="Вселенная / франшиза (например Genshin Impact)"
+            value={franchise}
+            onChange={(e) => setFranchise(e.target.value)}
           />
-          {hits.map((h) => (
-            <button
-              key={h.id}
-              type="button"
-              className="text-left text-[13px] bg-transparent border-0"
-              onClick={() => {
-                setCredits((p) => [...p, { username: h.username, role: "photographer" }]);
-                setHits([]);
-                setQ("");
-              }}
-            >
-              {h.username}
-            </button>
-          ))}
-          {credits.map((c, i) => (
-            <div key={c.username + i} className="flex gap-2 items-center text-[13px]">
-              @{c.username}
-              <select className="field-box" value={c.role} onChange={(e) => setCredits((p) => p.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}>
-                {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
-              </select>
+          <datalist id="fr">{FRANCHISES.map((f) => <option key={f} value={f} />)}</datalist>
+          <textarea
+            className="field-box"
+            rows={4}
+            placeholder="Коротко о работе: что сделали, материалы, особенности"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+          />
+          <input
+            className="field"
+            type="number"
+            placeholder="Год костюма (необязательно)"
+            value={year}
+            onChange={(e) => setYear(e.target.value)}
+          />
+          <div>
+            <p className="font-mono text-[11px] text-ink-45 mb-2">Типы работы (можно несколько)</p>
+            <div className="flex flex-wrap gap-2">
+              {WORK.map((w) => (
+                <button
+                  key={w.id}
+                  type="button"
+                  onClick={() => toggleWorkType(w.id)}
+                  className={cn("px-2 py-1 text-[12px] border", workTypes.includes(w.id) ? "border-magenta text-magenta" : "border-line")}
+                >
+                  {w.label}
+                </button>
+              ))}
             </div>
-          ))}
-          <div className="flex gap-2">
-            {(["closed", "waitlist", "open"] as const).map((s) => (
-              <button key={s} type="button" onClick={() => setStatus(s)} className={cn("px-2 py-1 text-[12px] border", status === s ? "border-magenta" : "border-line")}>
-                {s}
+          </div>
+          <label className="flex items-start gap-2 text-[13px] text-ink-70 cursor-pointer">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={offerServices}
+              onChange={(e) => setOfferServices(e.target.checked)}
+            />
+            <span>
+              <span className="text-paper">Предлагаю услуги по этой работе</span>
+              <span className="block text-[12px] text-ink-45">Клиенты смогут заказать похожий костюм или услугу</span>
+            </span>
+          </label>
+          {offerServices && (
+            <input
+              className="field"
+              type="number"
+              placeholder="Цена от, сум (необязательно)"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+            />
+          )}
+          <div className="border-t border-line pt-3">
+            <p className="font-mono text-[11px] text-ink-45 mb-2">Соавторы (необязательно)</p>
+            <input
+              className="field"
+              placeholder="@username соавтора"
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                if (e.target.value.length > 1) users.search(e.target.value).then((r) => setHits(r.users)).catch(() => {});
+              }}
+            />
+            {hits.map((h) => (
+              <button
+                key={h.id}
+                type="button"
+                className="text-left text-[13px] bg-transparent border-0 block w-full py-1"
+                onClick={() => {
+                  setCredits((p) => [...p, { username: h.username, role: "photographer" }]);
+                  setHits([]);
+                  setQ("");
+                }}
+              >
+                {h.username}
               </button>
             ))}
+            {credits.map((c, i) => (
+              <div key={c.username + i} className="flex gap-2 items-center text-[13px] mt-1">
+                @{c.username}
+                <select className="field-box" value={c.role} onChange={(e) => setCredits((p) => p.map((x, j) => (j === i ? { ...x, role: e.target.value } : x)))}>
+                  {ROLES.map((r) => <option key={r.id} value={r.id}>{r.label}</option>)}
+                </select>
+              </div>
+            ))}
           </div>
-          {status === "open" && <input className="field" type="number" placeholder="Цена, сум" value={price} onChange={(e) => setPrice(e.target.value)} />}
         </div>
       )}
       <div className="flex justify-between mt-5">
         <Button variant="outline" type="button" onClick={() => (step > 1 ? setStep(step - 1) : onClose())}>
           {step > 1 ? "Назад" : "Отмена"}
         </Button>
-        {step < 3 ? (
-          <Button type="button" onClick={() => setStep(step + 1)}>Далее</Button>
+        {step < 2 ? (
+          <Button type="button" onClick={() => setStep(2)}>Далее</Button>
         ) : (
           <Button type="button" disabled={busy} onClick={save}>{busy ? "Сохраняем…" : "Опубликовать"}</Button>
         )}

@@ -31,7 +31,7 @@ export async function generateMetadata({
 
   if (!data?.build) {
     return pageMetadata({
-      title: "Билд не найден",
+      title: "Работа не найдена",
       description: `Костюм косплей не найден на платформе ${SITE_NAME}.`,
       path: `/build/${id}`,
       noIndex: true,
@@ -39,14 +39,14 @@ export async function generateMetadata({
   }
 
   const { build, author } = data;
-  const title = build.title || build.character || "Билд косплей";
+  const title = build.title || build.character || "Работа косплей";
   const maker = author?.displayName || author?.username || "мастер";
   const description = build.description
     ? truncate(build.description)
     : `${title}${build.franchise ? ` · ${build.franchise}` : ""} — работа ${maker}. Заказать похожий костюм косплей у фриланс мастеров на ${SITE_NAME}.`;
 
   return pageMetadata({
-    title: `${title} — билд косплей`,
+    title: `${title} — работа косплей`,
     description,
     path: `/build/${id}`,
     image: build.coverImageUrl || undefined,
@@ -64,7 +64,7 @@ export default async function BuildLayout({
   const data = await fetchPublicJson<BuildResponse>(`/api/builds/${encodeURIComponent(id)}`);
   const build = data?.build;
   const author = data?.author;
-  const name = build?.title || build?.character || "Билд косплей";
+  const name = build?.title || build?.character || "Работа косплей";
   const maker = author?.displayName || author?.username;
   const authorUrl = author?.username
     ? `${SITE_URL}/profile/${encodeURIComponent(author.username)}`

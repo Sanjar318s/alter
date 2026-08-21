@@ -310,7 +310,7 @@ function MeInner() {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-12 mb-8">
                   {[
-                    [String(stats.builds), "Билдов"],
+                    [String(stats.builds), "Работ"],
                     [String(stats.orders), "Заказов"],
                     [stats.rating, "Рейтинг"],
                     [String(stats.likes), "Лайков"],
@@ -406,8 +406,8 @@ function MeInner() {
 
             {tab === "portfolio" && (
               <div>
-                <p className="text-ink-70 mb-4">Те же билды, что на публичном профиле.</p>
-                <Button href={`/profile/${username || nick}`}>Открыть редактор билдов</Button>
+                <p className="text-ink-70 mb-4">Те же работы, что на публичном профиле.</p>
+                <Button href={`/profile/${username || nick}`}>Открыть портфолио работ</Button>
               </div>
             )}
 
@@ -489,7 +489,7 @@ function MeInner() {
                 <li>{complete.checks?.avatar ? "Аватар есть" : "Добавьте аватар"}</li>
                 <li>{complete.checks?.bio ? "Bio заполнено" : "Напишите bio"}</li>
                 <li>{complete.checks?.city ? "Город указан" : "Укажите город"}</li>
-                <li>{complete.checks?.portfolio ? "Есть билды" : "Добавьте билд"}</li>
+                <li>{complete.checks?.portfolio ? "Есть работы" : "Добавьте работу"}</li>
               </ul>
             </Frame>
             <Frame className="p-4 bg-stage">

@@ -44,6 +44,38 @@ function getUserByUsername(username: string) {
   return db.select().from(schema.users).where(eq(schema.users.username, username)).get();
 }
 
+// GET /api/publications/feed — global reels/posts feed
+router.get("/feed", (_req, res) => {
+  const limit = 40;
+  const posts = db
+    .select()
+    .from(schema.publications)
+    .where(eq(schema.publications.kind, "post"))
+    .all()
+    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+    .slice(0, limit);
+
+  const enriched = posts.map((pub) => {
+    const author = db.select().from(schema.users).where(eq(schema.users.id, pub.userId)).get();
+    const profile = author
+      ? db.select().from(schema.profiles).where(eq(schema.profiles.userId, author.id)).get()
+      : null;
+    return {
+      ...enrichPublication(pub),
+      author: author
+        ? {
+            id: author.id,
+            username: author.username,
+            displayName: profile?.displayName || author.username,
+            avatarUrl: profile?.avatarUrl || null,
+          }
+        : null,
+    };
+  });
+
+  res.json({ publications: enriched });
+});
+
 // GET /api/publications/user/:username — posts
 router.get("/user/:username", (req, res) => {
   const user = getUserByUsername(req.params.username as string);

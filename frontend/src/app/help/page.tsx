@@ -10,7 +10,7 @@ export default function HelpPage() {
         Заявка создаёт чат и заказ в Студии.
       </p>
       <p>
-        <strong className="text-paper">Как добавить билд.</strong> В своём профиле нажмите «+ Добавить билд».
+        <strong className="text-paper">Как добавить работу.</strong> В своём профиле нажмите «Добавить работу».
         Это портфолио костюма, не заказ.
       </p>
       <p>

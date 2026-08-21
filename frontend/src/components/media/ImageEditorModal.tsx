@@ -44,13 +44,21 @@ export function ImageEditorModal({
   const ratio = aspect && aspect > 0 ? aspect : null;
   const viewW = 320;
   const viewH = ratio ? Math.round(320 / ratio) : 320;
+  const [natW, setNatW] = useState(0);
+  const [natH, setNatH] = useState(0);
 
   useEffect(() => {
     const u = URL.createObjectURL(file);
     setUrl(u);
+    setReady(false);
+    setScale(1);
+    setOx(0);
+    setOy(0);
     const img = new Image();
     img.onload = () => {
       imgRef.current = img;
+      setNatW(img.naturalWidth);
+      setNatH(img.naturalHeight);
       setReady(true);
     };
     img.src = u;
@@ -58,6 +66,10 @@ export function ImageEditorModal({
   }, [file]);
 
   const filterCss = `brightness(${bright}%) contrast(${contrast}%) saturate(${sat}%) ${FILTERS.find((f) => f.id === filter)?.css || ""}`;
+  /** Cover scale so the image fills the crop frame at zoom=1 (matches export). */
+  const cover =
+    natW > 0 && natH > 0 ? Math.max(viewW / natW, viewH / natH) : 1;
+  const previewScale = cover * scale;
 
   async function save() {
     const img = imgRef.current;
@@ -77,7 +89,6 @@ export function ImageEditorModal({
       ctx.save();
       ctx.translate(outW / 2, outH / 2);
       ctx.rotate((rot * Math.PI) / 180);
-      const cover = Math.max(viewW / img.naturalWidth, viewH / img.naturalHeight);
       const drawScale = cover * scale;
       const dw = img.naturalWidth * drawScale * (outW / viewW);
       const dh = img.naturalHeight * drawScale * (outH / viewH);
@@ -115,15 +126,17 @@ export function ImageEditorModal({
             drag.current = null;
           }}
         >
-          {url && (
+          {url && natW > 0 && (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={url}
               alt=""
               draggable={false}
+              width={natW}
+              height={natH}
               className="absolute left-1/2 top-1/2 max-w-none select-none pointer-events-none"
               style={{
-                transform: `translate(-50%, -50%) translate(${ox}px, ${oy}px) rotate(${rot}deg) scale(${scale})`,
+                transform: `translate(-50%, -50%) translate(${ox}px, ${oy}px) rotate(${rot}deg) scale(${previewScale})`,
                 filter: filterCss,
               }}
             />
@@ -132,7 +145,15 @@ export function ImageEditorModal({
         </div>
         <label className="font-mono text-[11px] text-ink-45">
           Зум
-          <input className="w-full" type="range" min={1} max={3} step={0.02} value={scale} onChange={(e) => setScale(Number(e.target.value))} />
+          <input
+            className="w-full"
+            type="range"
+            min={0.5}
+            max={3}
+            step={0.02}
+            value={scale}
+            onChange={(e) => setScale(Number(e.target.value))}
+          />
         </label>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setRot((r) => (r + 90) % 360)}>
