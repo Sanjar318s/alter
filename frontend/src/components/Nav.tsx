@@ -42,13 +42,13 @@ type LinkDef = {
 
 const LINK_DEFS: LinkDef[] = [
   {
-    href: "/explore",
-    labelKey: "explore",
-    hintKey: "exploreHint",
-    shortKey: "explore",
-    text: "Работы",
-    hintText: "Лента работ продавцов",
-    short: "Работы",
+    href: "/messages",
+    labelKey: "messages",
+    hintKey: "messagesHint",
+    shortKey: "chatShort",
+    text: "Чаты-Топики",
+    hintText: "Личные диалоги и каналы/топики",
+    short: "Чаты",
     roles: ["client", "blogger", "seller"],
     panel: "feed",
   },
@@ -61,25 +61,36 @@ const LINK_DEFS: LinkDef[] = [
     panel: "feed",
   },
   {
-    href: "/messages",
-    labelKey: "messages",
-    hintKey: "messagesHint",
-    shortKey: "chatShort",
-    text: "ЛС",
-    hintText: "Личные сообщения",
-    short: "ЛС",
+    href: "/explore",
+    labelKey: "explore",
+    hintKey: "exploreHint",
+    shortKey: "explore",
+    text: "Работы",
+    hintText: "Лента работ продавцов",
+    short: "Работы",
     roles: ["client", "blogger", "seller"],
-    panel: "feed",
+    panel: "work",
   },
   {
     href: "/studio",
     labelKey: "studio",
     hintKey: "studioHint",
     shortKey: "studioShort",
-    text: "Студия заказов",
-    hintText: "Заказы",
-    short: "Студия",
+    text: "Статус заказов",
+    hintText: "Студия заказов клиента или продавца",
+    short: "Заказы",
     roles: ["client", "seller"],
+    panel: "work",
+  },
+  {
+    href: "/messages",
+    labelKey: "messages",
+    hintKey: "messagesHint",
+    shortKey: "chatShort",
+    text: "ЛС с продавцами",
+    hintText: "Диалоги по заказам; вместо каналов — рилсы",
+    short: "ЛС",
+    roles: ["client", "blogger", "seller"],
     panel: "work",
   },
   {
@@ -90,6 +101,28 @@ const LINK_DEFS: LinkDef[] = [
     short: "Профиль",
     roles: ["client", "blogger", "seller"],
     panel: "work",
+  },
+];
+
+const GUEST_LINKS: LinkDef[] = [
+  {
+    href: "/explore",
+    labelKey: "explore",
+    hintKey: "exploreHint",
+    shortKey: "explore",
+    text: "Работы",
+    hintText: "Лента работ продавцов",
+    short: "Работы",
+    roles: [],
+    panel: "work",
+  },
+  {
+    href: "/reels",
+    labelKey: "reels",
+    hintKey: "reelsHint",
+    shortKey: "reelsShort",
+    roles: [],
+    panel: "feed",
   },
 ];
 
@@ -147,12 +180,13 @@ export function Nav() {
   const { t } = useLocale();
   const { panel, toggle } = useNavPanel();
   const role = user?.platformRole ?? null;
-  const LINKS = LINK_DEFS
-    .filter((link) => {
-      if (!role) return link.panel === "feed" && (link.href === "/explore" || link.href === "/reels");
-      if (!link.roles.includes(role)) return false;
-      return link.panel === panel;
-    })
+  const LINKS = (role
+    ? LINK_DEFS.filter((link) => {
+        if (!link.roles.includes(role)) return false;
+        return link.panel === panel;
+      })
+    : GUEST_LINKS
+  )
     .map((link) => {
       const href =
         typeof link.href === "function"
@@ -179,8 +213,10 @@ export function Nav() {
   const showPanelToggle = Boolean(role);
   const brandHref = homePathForUser(user);
 
-  const isActive = (href: string) =>
-    pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (href: string) => {
+    if (href === "/messages" && pathname.startsWith("/channels/")) return true;
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
 
   useEffect(() => {
     setMobileOpen(false);

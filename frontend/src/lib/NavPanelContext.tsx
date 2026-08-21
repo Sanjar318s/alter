@@ -52,9 +52,6 @@ export function useNavPanel() {
   return useContext(Ctx);
 }
 
-export function panelToggleLabel(role: PlatformRole | null | undefined, panel: NavPanel): string {
-  if (!role) return panel === "feed" ? "Лента" : "Кабинет";
-  if (role === "client") return panel === "feed" ? "Лента" : "Мои заказы";
-  if (role === "blogger") return panel === "feed" ? "Лента" : "Мой профиль";
-  return panel === "feed" ? "Лента" : "Кабинет продавца";
+export function panelToggleLabel(_role: PlatformRole | null | undefined, panel: NavPanel): string {
+  return panel === "feed" ? "Лента" : "Фриланс Биржа";
 }

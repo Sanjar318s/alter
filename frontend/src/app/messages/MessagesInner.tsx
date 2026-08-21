@@ -74,6 +74,8 @@ import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/AuthContext";
 import { editImageList, useEditImage } from "@/components/media/ImageEditorProvider";
 import { subscribeRealtime } from "@/lib/realtimeHub";
+import { useNavPanel } from "@/lib/NavPanelContext";
+import { ReelsFeed } from "@/components/reels/ReelsFeed";
 
 type Msg = ChatMsg;
 
@@ -117,9 +119,12 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
   const edit = useEditImage();
   const router = useRouter();
   const sp = useSearchParams();
+  const { panel } = useNavPanel();
   const isGhostView = sp.get("ghost") === "1";
   const ghostTargetUser = sp.get("targetUser") || "";
-  const [tab, setTab] = useState<"dm" | "channels">(sp.get("tab") === "channels" ? "channels" : "dm");
+  const [tab, setTab] = useState<"dm" | "channels" | "reels">(
+    sp.get("tab") === "channels" ? "channels" : sp.get("tab") === "reels" ? "reels" : "dm"
+  );
   const [chip, setChip] = useState<"all" | "unread" | "mentions">("all");
   const [active, setActive] = useState(sp.get("c") || conversationId || "");
   const [channelListMode, setChannelListMode] = useState<"topics" | "regions">("topics");
@@ -330,6 +335,9 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
       } else {
         setPane("list");
       }
+    } else if (urlTab === "reels") {
+      setTab("reels");
+      setPane("list");
     } else if (urlC || conversationId) {
       setActive(urlC || conversationId || "");
       setPane("thread");
@@ -337,6 +345,17 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
       setPane("list");
     }
   }, [sp, conversationId]);
+
+  useEffect(() => {
+    if ((panel === "work" && tab === "channels") || (panel === "feed" && tab === "reels")) {
+      const activeIsChannel =
+        Boolean(getChannelById(active)) ||
+        apiChannelsRef.current.some((c) => c.id === active || c.conversationId === active);
+      setTab("dm");
+      if (isMobileViewport()) setPane("list");
+      router.replace(active && !activeIsChannel ? `/messages?c=${active}` : "/messages", { scroll: false });
+    }
+  }, [panel, tab, active, router]);
 
   useEffect(() => {
     const onMessage = (_event: string, raw: unknown) => {
@@ -917,7 +936,13 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
           ОТПУСТИТЕ ФАЙЛ
         </div>
       )}
-      <aside className={cn("w-full md:w-[min(100%,260px)] lg:w-[300px] shrink-0 bg-stage/90 backdrop-blur-sm border-r border-line flex flex-col min-h-0 h-full overflow-hidden", hydrated && pane !== "list" && "hidden md:flex")}>
+      <aside
+        className={cn(
+          "shrink-0 bg-stage/90 backdrop-blur-sm border-r border-line flex flex-col min-h-0 h-full overflow-hidden",
+          tab === "reels" ? "w-full" : "w-full md:w-[min(100%,260px)] lg:w-[300px]",
+          hydrated && pane !== "list" && "hidden md:flex"
+        )}
+      >
         <div className="flex shrink-0 border-b border-line px-1 pt-1">
           <button
             type="button"
@@ -937,24 +962,41 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
           >
             Личные {dms.length || 1}
           </button>
-          <button
-            type="button"
-            onClick={() => {
-              setTab("channels");
-              if (isMobileViewport()) {
-                setPane("list");
-                router.replace("/messages?tab=channels", { scroll: false });
-              } else {
-                selectChannel(getChannelById(active) ? active : "ch-obshalka");
-              }
-            }}
-            className={cn(
-              "flex-1 py-3 text-[13px] border-b-2 bg-transparent transition-colors",
-              tab === "channels" ? "border-magenta text-paper font-medium" : "border-transparent text-ink-45 hover:text-paper"
-            )}
-          >
-            Каналы {COMMUNITY_CHANNEL_COUNT}
-          </button>
+          {panel === "feed" ? (
+            <button
+              type="button"
+              onClick={() => {
+                setTab("channels");
+                if (isMobileViewport()) {
+                  setPane("list");
+                  router.replace("/messages?tab=channels", { scroll: false });
+                } else {
+                  selectChannel(getChannelById(active) ? active : "ch-obshalka");
+                }
+              }}
+              className={cn(
+                "flex-1 py-3 text-[13px] border-b-2 bg-transparent transition-colors",
+                tab === "channels" ? "border-magenta text-paper font-medium" : "border-transparent text-ink-45 hover:text-paper"
+              )}
+            >
+              Каналы {COMMUNITY_CHANNEL_COUNT}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setTab("reels");
+                if (isMobileViewport()) setPane("list");
+                router.replace("/messages?tab=reels", { scroll: false });
+              }}
+              className={cn(
+                "flex-1 py-3 text-[13px] border-b-2 bg-transparent transition-colors",
+                tab === "reels" ? "border-magenta text-paper font-medium" : "border-transparent text-ink-45 hover:text-paper"
+              )}
+            >
+              Рилсы
+            </button>
+          )}
         </div>
         <div className="shrink-0 p-3 border-b border-line">
           <div className="relative">
@@ -1013,7 +1055,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
               </button>
             ))}
           </div>
-        ) : (
+        ) : tab === "channels" ? (
           <ChannelSidebar
             query={query}
             chip={chip}
@@ -1023,12 +1065,16 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
             channels={sidebarChannels}
             onSelect={(ch) => selectChannel(ch.id)}
           />
+        ) : (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            <ReelsFeed compact className="h-full" />
+          </div>
         )}
       </aside>
       <section
         className={cn(
           "flex flex-1 min-w-0 min-h-0 overflow-hidden flex-col",
-          (!hydrated || pane === "profile" || pane === "list") && "hidden md:flex"
+          tab === "reels" ? "hidden" : (!hydrated || pane === "profile" || pane === "list") && "hidden md:flex"
         )}
       >
         {isGhostView && (
