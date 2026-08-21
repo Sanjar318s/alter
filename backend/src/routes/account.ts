@@ -110,34 +110,37 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
     db.update(schema.users).set({ roleFlags: nextFlags }).where(eq(schema.users.id, user.id)).run();
   }
 
-  db.update(schema.profiles)
-    .set({
-      ...(displayName !== undefined && { displayName }),
-      ...(bio !== undefined && { bio }),
-      ...(city !== undefined && { city }),
-      ...(country !== undefined && { country }),
-      ...(phone !== undefined && { phone }),
-      ...(languagesJson !== undefined && { languagesJson }),
-      ...(specializationsJson !== undefined && { specializationsJson }),
-      ...(availability !== undefined && { availability }),
-      ...(maxActiveOrders !== undefined && { maxActiveOrders }),
-      ...(dateOfBirth !== undefined && { dateOfBirth }),
-      ...(showAge !== undefined && { showAge }),
-      ...(commissionStatus !== undefined && { commissionStatus }),
-      ...(avatarUrl !== undefined && { avatarUrl }),
-      ...(coverUrl !== undefined && { coverUrl }),
-      ...(linksJson !== undefined && { linksJson }),
-      ...(privacySettings !== undefined && { privacySettings }),
-      ...(commissionComplexity !== undefined && { commissionComplexity }),
-      ...(commissionTypes !== undefined && { commissionTypes }),
-      ...(commissionDuration !== undefined && { commissionDuration }),
-      ...(experienceYears !== undefined && { experienceYears: experienceYears === "" || experienceYears == null ? null : Number(experienceYears) }),
-      ...(materialsJson !== undefined && { materialsJson }),
-      ...(uiLocale !== undefined && { uiLocale }),
-      ...(uiCurrency !== undefined && { uiCurrency }),
-    })
-    .where(eq(schema.profiles.userId, user.id))
-    .run();
+  const profilePatch: Record<string, unknown> = {
+    ...(displayName !== undefined && { displayName }),
+    ...(bio !== undefined && { bio }),
+    ...(city !== undefined && { city }),
+    ...(country !== undefined && { country }),
+    ...(phone !== undefined && { phone }),
+    ...(languagesJson !== undefined && { languagesJson }),
+    ...(specializationsJson !== undefined && { specializationsJson }),
+    ...(availability !== undefined && { availability }),
+    ...(maxActiveOrders !== undefined && { maxActiveOrders }),
+    ...(dateOfBirth !== undefined && { dateOfBirth }),
+    ...(showAge !== undefined && { showAge }),
+    ...(commissionStatus !== undefined && { commissionStatus }),
+    ...(avatarUrl !== undefined && { avatarUrl }),
+    ...(coverUrl !== undefined && { coverUrl }),
+    ...(linksJson !== undefined && { linksJson }),
+    ...(privacySettings !== undefined && { privacySettings }),
+    ...(commissionComplexity !== undefined && { commissionComplexity }),
+    ...(commissionTypes !== undefined && { commissionTypes }),
+    ...(commissionDuration !== undefined && { commissionDuration }),
+    ...(experienceYears !== undefined && { experienceYears: experienceYears === "" || experienceYears == null ? null : Number(experienceYears) }),
+    ...(materialsJson !== undefined && { materialsJson }),
+    ...(uiLocale !== undefined && { uiLocale }),
+    ...(uiCurrency !== undefined && { uiCurrency }),
+  };
+  if (Object.keys(profilePatch).length > 0) {
+    db.update(schema.profiles)
+      .set(profilePatch)
+      .where(eq(schema.profiles.userId, user.id))
+      .run();
+  }
 
   const updatedUser = db.select().from(schema.users).where(eq(schema.users.id, user.id)).get();
   const profile = db.select().from(schema.profiles).where(eq(schema.profiles.userId, user.id)).get();
