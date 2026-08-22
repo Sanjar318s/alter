@@ -89,20 +89,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const token = localStorage.getItem("alter_token");
-    if (token) {
-      loadMe()
-        .catch((err) => {
-          const msg = err instanceof Error ? err.message : "";
-          if (typeof window !== "undefined" && msg.includes("заблокированы")) {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function tryLoad(): Promise<"ok" | "fatal" | "transient"> {
+      try {
+        const data = await auth.me();
+        if (cancelled) return "ok";
+        setUser(mapUser(data));
+        return "ok";
+      } catch (err) {
+        if (cancelled) return "ok";
+        const status = (err as { status?: number }).status;
+        const msg = err instanceof Error ? err.message : "";
+        if (status === 401 || (typeof window !== "undefined" && msg.includes("заблокированы"))) {
+          if (msg.includes("заблокированы")) {
             sessionStorage.setItem("alter_block_notice", msg);
           }
           localStorage.removeItem("alter_token");
           setUser(null);
-        })
-        .finally(() => setLoading(false));
-    } else {
-      setLoading(false);
+          return "fatal";
+        }
+        return "transient";
+      }
     }
+
+    (async () => {
+      let result = await tryLoad();
+      for (let attempt = 0; attempt < 2 && result === "transient" && !cancelled; attempt++) {
+        await new Promise((r) => setTimeout(r, 1500));
+        result = await tryLoad();
+      }
+      if (!cancelled) setLoading(false);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const login = async (emailOrPhone: string, password: string) => {
