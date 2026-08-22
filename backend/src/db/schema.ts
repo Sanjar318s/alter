@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, real } from "drizzle-orm/sqlite-core";
+import { sqliteTable, text, integer, real, unique } from "drizzle-orm/sqlite-core";
 
 // ─── Users & Auth ───────────────────────────────────────────
 
@@ -11,6 +11,8 @@ export const users = sqliteTable("users", {
   phone: text("phone"),
   /** One-time platform role: client | blogger | seller */
   platformRole: text("platform_role"),
+  /** Opt-in to cross-posting new reels/builds to AlterCosPlay brand social accounts */
+  socialCrosspostOptIn: integer("social_crosspost_opt_in").default(1),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -725,6 +727,104 @@ export const adEvents = sqliteTable("ad_events", {
   sessionId: text("session_id"),
   city: text("city"),
   createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+// ─── Social auto-publish ────────────────────────────────────
+
+export const socialModeration = sqliteTable(
+  "social_moderation",
+  {
+    id: text("id").primaryKey(),
+    /** 'publication' | 'build' */
+    contentType: text("content_type").notNull(),
+    contentId: text("content_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    status: text("status").notNull().default("pending"), // pending | approved | rejected | review
+    confidence: text("confidence"), // high | medium | low
+    reason: text("reason"),
+    geminiModel: text("gemini_model"),
+    geminiRawJson: text("gemini_raw_json"),
+    reviewedBy: text("reviewed_by").references(() => users.id),
+    reviewedAt: integer("reviewed_at", { mode: "timestamp" }),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [unique("social_moderation_content_unique").on(table.contentType, table.contentId)]
+);
+
+export const socialJobs = sqliteTable("social_jobs", {
+  id: text("id").primaryKey(),
+  /** moderate | publish | sync | tiktok_public_repost */
+  kind: text("kind").notNull(),
+  /** youtube | instagram | facebook | tiktok | null for moderate */
+  platform: text("platform"),
+  contentType: text("content_type").notNull(),
+  contentId: text("content_id").notNull(),
+  status: text("status").notNull().default("queued"), // queued | running | done | failed | deferred
+  attempts: integer("attempts").default(0),
+  maxAttempts: integer("max_attempts").default(5),
+  runAfter: integer("run_after", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  lockedAt: integer("locked_at", { mode: "timestamp" }),
+  lastError: text("last_error"),
+  payloadJson: text("payload_json"),
+  createdAt: integer("created_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+export const socialPosts = sqliteTable(
+  "social_posts",
+  {
+    id: text("id").primaryKey(),
+    contentType: text("content_type").notNull(),
+    contentId: text("content_id").notNull(),
+    platform: text("platform").notNull(), // youtube | instagram | facebook | tiktok
+    status: text("status").notNull(), // queued | publishing | published | failed | private_pending_audit | superseded
+    externalId: text("external_id"),
+    externalUrl: text("external_url"),
+    tiktokVisibility: text("tiktok_visibility"), // private_pending_audit | public
+    tiktokLegacyPublishId: text("tiktok_legacy_publish_id"),
+    sourceMediaUrl: text("source_media_url"),
+    title: text("title"),
+    description: text("description"),
+    hashtagsJson: text("hashtags_json"),
+    likesCount: integer("likes_count").default(0),
+    commentsCount: integer("comments_count").default(0),
+    lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
+    publishedAt: integer("published_at", { mode: "timestamp" }),
+    error: text("error"),
+    createdAt: integer("created_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer("updated_at", { mode: "timestamp" })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (table) => [
+    unique("social_posts_content_platform_unique").on(table.contentType, table.contentId, table.platform),
+  ]
+);
+
+export const socialOauthTokens = sqliteTable("social_oauth_tokens", {
+  provider: text("provider").primaryKey(), // youtube | meta | tiktok
+  accessToken: text("access_token").notNull(),
+  refreshToken: text("refresh_token"),
+  expiresAt: integer("expires_at", { mode: "timestamp" }),
+  extraJson: text("extra_json"),
+  updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
 });

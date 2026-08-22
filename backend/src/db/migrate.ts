@@ -444,5 +444,78 @@ export function migrate() {
     CREATE INDEX IF NOT EXISTS idx_ad_placements_slot ON ad_placements(slot_id);
     CREATE INDEX IF NOT EXISTS idx_ad_events_placement ON ad_events(placement_id);
     CREATE INDEX IF NOT EXISTS idx_partner_events_starts ON partner_events(starts_at);
+
+    CREATE TABLE IF NOT EXISTS social_moderation (
+      id TEXT PRIMARY KEY,
+      content_type TEXT NOT NULL,
+      content_id TEXT NOT NULL,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      status TEXT NOT NULL DEFAULT 'pending',
+      confidence TEXT,
+      reason TEXT,
+      gemini_model TEXT,
+      gemini_raw_json TEXT,
+      reviewed_by TEXT REFERENCES users(id),
+      reviewed_at INTEGER,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      UNIQUE (content_type, content_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_social_moderation_status ON social_moderation(status);
+
+    CREATE TABLE IF NOT EXISTS social_jobs (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      platform TEXT,
+      content_type TEXT NOT NULL,
+      content_id TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'queued',
+      attempts INTEGER DEFAULT 0,
+      max_attempts INTEGER DEFAULT 5,
+      run_after INTEGER NOT NULL DEFAULT (unixepoch()),
+      locked_at INTEGER,
+      last_error TEXT,
+      payload_json TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_social_jobs_poll ON social_jobs(status, run_after);
+
+    CREATE TABLE IF NOT EXISTS social_posts (
+      id TEXT PRIMARY KEY,
+      content_type TEXT NOT NULL,
+      content_id TEXT NOT NULL,
+      platform TEXT NOT NULL,
+      status TEXT NOT NULL,
+      external_id TEXT,
+      external_url TEXT,
+      tiktok_visibility TEXT,
+      tiktok_legacy_publish_id TEXT,
+      source_media_url TEXT,
+      title TEXT,
+      description TEXT,
+      hashtags_json TEXT,
+      likes_count INTEGER DEFAULT 0,
+      comments_count INTEGER DEFAULT 0,
+      last_synced_at INTEGER,
+      published_at INTEGER,
+      error TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      UNIQUE (content_type, content_id, platform)
+    );
+    CREATE INDEX IF NOT EXISTS idx_social_posts_content ON social_posts(content_type, content_id);
+    CREATE INDEX IF NOT EXISTS idx_social_posts_sync ON social_posts(status, last_synced_at);
+
+    CREATE TABLE IF NOT EXISTS social_oauth_tokens (
+      provider TEXT PRIMARY KEY,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      expires_at INTEGER,
+      extra_json TEXT,
+      updated_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
   `);
+
+  addColumn("users", "social_crosspost_opt_in", "INTEGER DEFAULT 1");
 }

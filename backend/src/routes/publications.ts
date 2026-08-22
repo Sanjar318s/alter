@@ -3,6 +3,7 @@ import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { v4 as uuid } from "uuid";
 import { eq, and, inArray } from "drizzle-orm";
+import { enqueueSocialModeration } from "../lib/social/queue";
 
 const router = Router();
 
@@ -229,6 +230,9 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   }
 
   const pub = db.select().from(schema.publications).where(eq(schema.publications.id, id)).get();
+  if (pubKind === "post" && me?.socialCrosspostOptIn !== 0) {
+    enqueueSocialModeration("publication", id, req.userId!);
+  }
   res.status(201).json({ publication: enrichPublication(pub!) });
 });
 

@@ -5,6 +5,7 @@ import { v4 as uuid } from "uuid";
 import { eq, and } from "drizzle-orm";
 import { franchiseSlug, notify, unlinkUpload } from "../lib/notify";
 import { pushStats } from "../lib/pushRealtime";
+import { enqueueSocialModeration } from "../lib/social/queue";
 
 const router = Router();
 
@@ -139,6 +140,9 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   syncPhotos(id, body.photos);
   syncCredits(id, req.userId!, body.credits);
   const build = db.select().from(schema.builds).where(eq(schema.builds.id, id)).get();
+  if (build && !build.hidden && me?.socialCrosspostOptIn !== 0) {
+    enqueueSocialModeration("build", id, req.userId!);
+  }
   res.status(201).json({ build, photos: db.select().from(schema.buildPhotos).where(eq(schema.buildPhotos.buildId, id)).all(), credits: enrichCredits(id) });
 });
 
