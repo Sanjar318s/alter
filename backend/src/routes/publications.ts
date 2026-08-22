@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { v4 as uuid } from "uuid";
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 
 const router = Router();
 
@@ -44,6 +44,93 @@ function getUserByUsername(username: string) {
   return db.select().from(schema.users).where(eq(schema.users.username, username)).get();
 }
 
+type PubRow = typeof schema.publications.$inferSelect;
+
+// The libsql driver blocks the process per query (remote round-trip), so every
+// endpoint here must issue a fixed number of batched queries, never N+1.
+function enrichBatched(pubs: PubRow[], withAuthor: boolean) {
+  const userIds = [...new Set(pubs.map((p) => p.userId).filter((id): id is string => Boolean(id)))];
+  const usersById = new Map<string, typeof schema.users.$inferSelect>();
+  const profilesByUserId = new Map<string, typeof schema.profiles.$inferSelect>();
+  if (userIds.length) {
+    for (const u of db.select().from(schema.users).where(inArray(schema.users.id, userIds)).all()) {
+      usersById.set(u.id, u);
+    }
+    for (const p of db.select().from(schema.profiles).where(inArray(schema.profiles.userId, userIds)).all()) {
+      profilesByUserId.set(p.userId, p);
+    }
+  }
+
+  const mentionsByPubId = new Map<string, (typeof schema.publicationMentions.$inferSelect)[]>();
+  const pubIds = pubs.map((p) => p.id);
+  if (pubIds.length) {
+    for (const m of db
+      .select()
+      .from(schema.publicationMentions)
+      .where(inArray(schema.publicationMentions.publicationId, pubIds))
+      .all()) {
+      const arr = mentionsByPubId.get(m.publicationId);
+      if (arr) arr.push(m);
+      else mentionsByPubId.set(m.publicationId, [m]);
+    }
+  }
+
+  const mentionUserIds = [
+    ...new Set([...mentionsByPubId.values()].flat().map((m) => m.userId).filter((id): id is string => Boolean(id))),
+  ];
+  const usernamesById = new Map<string, string>();
+  if (mentionUserIds.length) {
+    for (const row of db
+      .select({ id: schema.users.id, username: schema.users.username })
+      .from(schema.users)
+      .where(inArray(schema.users.id, mentionUserIds))
+      .all()) {
+      usernamesById.set(row.id, row.username);
+    }
+  }
+
+  return pubs.map((pub) => {
+    let mediaUrls: string[] = [];
+    let tags: string[] = [];
+    try {
+      mediaUrls = JSON.parse(pub.mediaJson || "[]");
+    } catch {
+      mediaUrls = [];
+    }
+    try {
+      tags = JSON.parse(pub.tagsJson || "[]");
+    } catch {
+      tags = [];
+    }
+    const base = {
+      ...pub,
+      mediaUrls,
+      tags,
+      mentions: (mentionsByPubId.get(pub.id) || []).map((m) => ({
+        id: m.id,
+        userId: m.userId,
+        displayName: m.displayName,
+        type: m.type,
+        username: m.userId ? usernamesById.get(m.userId) : undefined,
+      })),
+    };
+    if (!withAuthor) return base;
+    const author = pub.userId ? usersById.get(pub.userId) : undefined;
+    const profile = author ? profilesByUserId.get(author.id) : undefined;
+    return {
+      ...base,
+      author: author
+        ? {
+            id: author.id,
+            username: author.username,
+            displayName: profile?.displayName || author.username,
+            avatarUrl: profile?.avatarUrl || null,
+          }
+        : null,
+    };
+  });
+}
+
 // GET /api/publications/feed — global reels/posts feed
 router.get("/feed", (_req, res) => {
   const limit = 40;
@@ -55,25 +142,7 @@ router.get("/feed", (_req, res) => {
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
     .slice(0, limit);
 
-  const enriched = posts.map((pub) => {
-    const author = db.select().from(schema.users).where(eq(schema.users.id, pub.userId)).get();
-    const profile = author
-      ? db.select().from(schema.profiles).where(eq(schema.profiles.userId, author.id)).get()
-      : null;
-    return {
-      ...enrichPublication(pub),
-      author: author
-        ? {
-            id: author.id,
-            username: author.username,
-            displayName: profile?.displayName || author.username,
-            avatarUrl: profile?.avatarUrl || null,
-          }
-        : null,
-    };
-  });
-
-  res.json({ publications: enriched });
+  res.json({ publications: enrichBatched(posts, true) });
 });
 
 // GET /api/publications/user/:username — posts
@@ -88,7 +157,7 @@ router.get("/user/:username", (req, res) => {
     .all()
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
 
-  res.json({ publications: posts.map(enrichPublication) });
+  res.json({ publications: enrichBatched(posts, false) });
 });
 
 // GET /api/publications/user/:username/stories — active stories (<24h)
@@ -105,7 +174,7 @@ router.get("/user/:username/stories", (req, res) => {
     .filter((s) => !s.expiresAt || s.expiresAt > now)
     .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
 
-  res.json({ stories: stories.map(enrichPublication) });
+  res.json({ stories: enrichBatched(stories, false) });
 });
 
 // POST /api/publications — create
