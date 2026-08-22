@@ -90,6 +90,10 @@ router.get("/", authMiddleware, (req: AuthRequest, res) => {
 
 // POST /api/orders — maker creates a studio order
 router.post("/", authMiddleware, (req: AuthRequest, res) => {
+  const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
+  if (me?.platformRole && me.platformRole !== "seller") {
+    return res.status(403).json({ error: "Создавать студийные заказы может только продавец" });
+  }
   const { clientId, title, character, franchise, notes, deadline, budget, depositAmount, filesJson } = req.body;
   if (!clientId || !title || !deadline || budget == null) {
     return res.status(400).json({ error: "client, title, deadline and price required" });
@@ -318,6 +322,13 @@ router.post("/:id/decision", authMiddleware, (req: AuthRequest, res) => {
     notify(order.makerId, "order_status", { orderId: order.id, status: "cancelled", title: order.title, text });
     const updated = db.select().from(schema.orders).where(eq(schema.orders.id, order.id)).get()!;
     return res.json({ order: enrichOrder(updated, req.userId!) });
+  }
+
+  if (!moderator) {
+    const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
+    if (me?.platformRole && me.platformRole !== "seller") {
+      return res.status(403).json({ error: "Принимать заказы может только продавец" });
+    }
   }
 
   if (order.status !== "new" && order.status !== "waiting") {

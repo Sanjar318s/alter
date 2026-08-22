@@ -72,24 +72,19 @@ const LINK_DEFS: LinkDef[] = [
     panel: "work",
   },
   {
-    href: "/studio",
-    labelKey: "studio",
-    hintKey: "studioHint",
-    shortKey: "studioShort",
-    text: "Статус заказов",
-    hintText: "Студия заказов клиента или продавца",
-    short: "Заказы",
-    roles: ["client", "seller"],
-    panel: "work",
-  },
-  {
     href: "/messages",
     labelKey: "messages",
     hintKey: "messagesHint",
     shortKey: "chatShort",
-    text: "ЛС с продавцами",
-    hintText: "Диалоги по заказам; вместо каналов — рилсы",
-    short: "ЛС",
+    roles: ["client", "blogger", "seller"],
+    panel: "work",
+  },
+  {
+    href: "/studio",
+    id: "orders-hub",
+    labelKey: "studio",
+    hintKey: "studioHint",
+    shortKey: "studioShort",
     roles: ["client", "blogger", "seller"],
     panel: "work",
   },
@@ -196,15 +191,32 @@ export function Nav() {
           : link.href;
       const isOwnProfile = link.id === "own-profile";
       const clientProfile = isOwnProfile && role === "client";
+      let text = clientProfile
+        ? "Мой профиль"
+        : link.text || (link.labelKey ? t(link.labelKey) : "");
+      let hintText = clientProfile
+        ? "Аватар, информация о себе и настройки"
+        : link.hintText || (link.hintKey ? t(link.hintKey) : "");
+      let short = clientProfile ? "Профиль" : link.short || (link.shortKey ? t(link.shortKey) : "");
+      if (!clientProfile && link.panel === "work" && link.href === "/messages") {
+        text = role === "seller" ? "Чат-кл" : "ЛС с продавцами";
+        short = role === "seller" ? "Чат-кл" : "ЛС";
+        hintText = role === "seller"
+          ? "Чаты с клиентами по заказам"
+          : "Диалоги с продавцами по заказам";
+      }
+      if (!clientProfile && link.id === "orders-hub") {
+        text = role === "seller" ? "Статус заказов" : "Мои заказы";
+        short = role === "seller" ? "Заказы" : "Мои заказы";
+        hintText = role === "seller"
+          ? "Входящие заказы и статусы исполнения"
+          : "Заказы, которые вы разместили как заказчик";
+      }
       return {
         href,
-        text: clientProfile
-          ? "Мой профиль"
-          : link.text || (link.labelKey ? t(link.labelKey) : ""),
-        hintText: clientProfile
-          ? "Аватар, информация о себе и настройки"
-          : link.hintText || (link.hintKey ? t(link.hintKey) : ""),
-        short: clientProfile ? "Профиль" : link.short || (link.shortKey ? t(link.shortKey) : ""),
+        text,
+        hintText,
+        short,
       };
     });
   const isAdmin =
@@ -418,9 +430,9 @@ export function Nav() {
                     <Link href="/me" className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
                       {role === "client" ? "Настройки" : t("myProfile")}
                     </Link>
-                    {(role === "seller" || role === "client") && (
+                    {(role === "seller" || role === "blogger" || role === "client") && (
                       <Link href="/studio" className="block px-3 py-2 text-[13px] no-underline text-paper hover:bg-ink" onClick={() => setMenuOpen(false)}>
-                        {t("studioShort")}
+                        {role === "seller" ? "Статус заказов" : "Мои заказы"}
                       </Link>
                     )}
                     {isAdmin && (
@@ -584,10 +596,15 @@ export function Nav() {
                     {t("myProfile")} · {user.username}
                   </Link>
                     {(user.platformRole === "seller" || user.platformRole === "blogger" || user.platformRole === "client") && (
-                    <Link href={`/profile/${user.username}`} className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
-                      {user.platformRole === "client" ? "Мой профиль" : t("publicProfile")}
-                    </Link>
-                  )}
+                      <Link href={`/profile/${user.username}`} className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
+                        {user.platformRole === "client" ? "Мой профиль" : t("publicProfile")}
+                      </Link>
+                    )}
+                    {(user.platformRole === "seller" || user.platformRole === "blogger" || user.platformRole === "client") && (
+                      <Link href="/studio" className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
+                        {user.platformRole === "seller" ? "Статус заказов" : "Мои заказы"}
+                      </Link>
+                    )}
                   {isAdmin && (
                     <Link href="/admin" className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
                       {t("admin")}

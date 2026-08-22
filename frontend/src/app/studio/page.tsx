@@ -120,10 +120,10 @@ function StudioInner() {
         targetUser: ghostTargetUser || undefined,
       });
       const mapped = (res.orders || []).map(mapApiOrder);
-      const roleFiltered =
-        user?.platformRole === "client"
-          ? mapped.filter((o) => o.viewerRole === "client" || o.clientId === user.id)
-          : mapped;
+      const isBuyerRole = user?.platformRole === "client" || user?.platformRole === "blogger";
+      const roleFiltered = isBuyerRole
+        ? mapped.filter((o) => o.viewerRole === "client" || o.clientId === user.id)
+        : mapped;
       roleFiltered.sort((a, b) => Number(b.pinned) - Number(a.pinned));
       setItems(roleFiltered);
     } catch (e) {

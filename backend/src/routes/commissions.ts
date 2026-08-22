@@ -40,6 +40,10 @@ router.get("/:id", (req, res) => {
 
 // POST /api/commissions — create (maker only)
 router.post("/", authMiddleware, (req: AuthRequest, res) => {
+  const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
+  if (me?.platformRole && me.platformRole !== "seller") {
+    return res.status(403).json({ error: "Создавать комиссии может только продавец" });
+  }
   const { title, description, priceFrom, turnaroundDays } = req.body;
   if (!title) return res.status(400).json({ error: "title required" });
 
