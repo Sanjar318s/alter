@@ -42,8 +42,9 @@ export default function PartnersPage() {
   return (
     <LegalPage eyebrow="Партнёрам" title="Конвенты, ателье, медиа">
       <p>
-        Ищем партнёров: организаторов фестов, ателье, фотостудии и медиа. Можем сделать канал мероприятия,
-        каталог аренды и отдельную витрину мейкеров.
+        AlterCosPlay растёт: косплееры, мейкеры и блогеры уже ведут здесь портфолио и заказы, а скоро платформа
+        начнёт автоматически продвигать их рилсы и работы на YouTube, в Instagram и Facebook — аудитория будет
+        приходить сама. Ищем партнёров, кому это интересно: организаторов фестов, ателье, фотостудии и медиа.
       </p>
       <ul className="list-disc pl-5 space-y-2 text-ink-70 my-6">
         <li>Канал мероприятия и страница феста</li>
@@ -54,7 +55,9 @@ export default function PartnersPage() {
 
       <section id="apply" className="mt-10 pt-8 border-t border-line">
         <h2 className="font-display font-extrabold text-xl mb-2">Стать партнёром</h2>
-        <p className="text-ink-70 text-[14px] mb-6">Заполните форму — мы свяжемся и обсудим пакет размещения.</p>
+        <p className="text-ink-70 text-[14px] mb-6">
+          Расскажите о себе в двух строчках — вернёмся с конкретным предложением и пакетом размещения.
+        </p>
 
         {sent ? (
           <p className="text-magenta font-mono text-[13px]">Заявка принята. Мы напишем на указанный email.</p>
