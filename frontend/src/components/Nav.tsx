@@ -31,7 +31,7 @@ import { subscribeRealtime } from "@/lib/realtimeHub";
 import { useSWRConfig } from "swr";
 import { LocaleSettings } from "@/components/LocaleSettings";
 import { useLocale } from "@/lib/LocaleContext";
-import { panelToggleLabel, useNavPanel } from "@/lib/NavPanelContext";
+import { panelToggleLabel, useNavPanel, type NavPanel } from "@/lib/NavPanelContext";
 import type { PlatformRole } from "@/lib/AuthContext";
 import { homePathForUser } from "@/lib/appHome";
 import { isPlatformOwnerUser } from "@/lib/owner";
