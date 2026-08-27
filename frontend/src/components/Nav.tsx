@@ -640,14 +640,6 @@ export function Nav() {
                 {showPanelToggle ? (panel === "feed" ? "Лента" : "Биржа") : "Меню"}
               </div>
               <nav className="flex flex-col">
-                <MobileNavRow
-                  href={brandHref}
-                  icon={Clapperboard}
-                  title={role ? (panel === "work" ? "Главная биржи" : "Лента") : t("home")}
-                  hint={role ? (panel === "work" ? "Обзор работ и заказов" : "Рилсы и сообщения") : t("homeHint")}
-                  active={pathname === brandHref || (brandHref === "/" && pathname === "/")}
-                  onNavigate={() => setMobileOpen(false)}
-                />
                 {LINKS.map((link) => {
                   const Icon = mobileLinkIcon(link.href);
                   return (
