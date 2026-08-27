@@ -21,7 +21,6 @@ export default function RegisterPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [verifyError, setVerifyError] = useState("");
-  const [roles, setRoles] = useState<string[]>(["cosplayer"]);
   const [pending, setPending] = useState(false);
   const [verifyPending, setVerifyPending] = useState(false);
   const [otp, setOtp] = useState<{
@@ -39,7 +38,7 @@ export default function RegisterPage() {
       const res = await startRegister({
         username,
         password,
-        roleFlags: roles.join(",") || "cosplayer",
+        roleFlags: "cosplayer",
         method,
         email: method === "email" ? email : undefined,
         phone: method === "phone" ? phone : undefined,
@@ -214,31 +213,9 @@ export default function RegisterPage() {
                 suppressHydrationWarning
               />
             </label>
-            <label className="block">
-              <span className="font-mono text-[11px] uppercase tracking-[0.08em] text-ink-45">
-                {t("roles")}
-              </span>
-              <div className="flex flex-wrap gap-3 mt-2">
-                {[
-                  { id: "cosplayer", label: t("cosplayer") },
-                  { id: "maker", label: t("maker") },
-                  { id: "photographer", label: t("photographer") },
-                ].map((r) => (
-                  <label key={r.id} className="flex items-center gap-2 text-[13px] cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={roles.includes(r.id)}
-                      onChange={() =>
-                        setRoles((prev) =>
-                          prev.includes(r.id) ? prev.filter((x) => x !== r.id) : [...prev, r.id]
-                        )
-                      }
-                    />
-                    {r.label}
-                  </label>
-                ))}
-              </div>
-            </label>
+            <p className="font-mono text-[11px] text-ink-45">
+              Роль на платформе (клиент / блогер / продавец) выберете один раз после входа.
+            </p>
             {error && (
               <p className="font-mono text-[12px] text-amber">{error}</p>
             )}

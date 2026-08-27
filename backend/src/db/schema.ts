@@ -135,6 +135,8 @@ export const publications = sqliteTable("publications", {
   expiresAt: integer("expires_at", { mode: "timestamp" }),
   likesCount: integer("likes_count").default(0),
   commentsCount: integer("comments_count").default(0),
+  /** Sum of antifraud-counted platform views (for Premium). */
+  countedViews: integer("counted_views").default(0),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -149,6 +151,8 @@ export const comments = sqliteTable("comments", {
     .references(() => users.id, { onDelete: "cascade" }),
   text: text("text").notNull(),
   parentId: text("parent_id"),
+  /** 1 if passes Premium antispam filter */
+  countsForPremium: integer("counts_for_premium").default(0),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
@@ -803,6 +807,7 @@ export const socialPosts = sqliteTable(
     hashtagsJson: text("hashtags_json"),
     likesCount: integer("likes_count").default(0),
     commentsCount: integer("comments_count").default(0),
+    viewsCount: integer("views_count").default(0),
     lastSyncedAt: integer("last_synced_at", { mode: "timestamp" }),
     publishedAt: integer("published_at", { mode: "timestamp" }),
     error: text("error"),
@@ -825,6 +830,39 @@ export const socialOauthTokens = sqliteTable("social_oauth_tokens", {
   expiresAt: integer("expires_at", { mode: "timestamp" }),
   extraJson: text("extra_json"),
   updatedAt: integer("updated_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+/** Antifraud platform views: max 3 counted per (viewer, publication) per 30d window */
+export const publicationViews = sqliteTable("publication_views", {
+  id: text("id").primaryKey(),
+  publicationId: text("publication_id")
+    .notNull()
+    .references(() => publications.id, { onDelete: "cascade" }),
+  viewerUserId: text("viewer_user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  countedAt: integer("counted_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  windowStartedAt: integer("window_started_at", { mode: "timestamp" })
+    .notNull()
+    .$defaultFn(() => new Date()),
+});
+
+/** Earned Premium grants (blogger_v1 now; seller_* later) */
+export const premiumGrants = sqliteTable("premium_grants", {
+  id: text("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+  ruleSet: text("rule_set").notNull(), // blogger_v1 | seller_v1 (future)
+  status: text("status").notNull().default("active"), // active | expired
+  startsAt: integer("starts_at", { mode: "timestamp" }).notNull(),
+  endsAt: integer("ends_at", { mode: "timestamp" }).notNull(),
+  snapshotJson: text("snapshot_json"),
+  createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
     .$defaultFn(() => new Date()),
 });

@@ -27,6 +27,7 @@ import analyticsRoutes from "./routes/analytics";
 import calendarRoutes from "./routes/calendar";
 import adminRoutes from "./routes/admin";
 import adminPartnersRoutes from "./routes/adminPartners";
+import adminSocialRoutes from "./routes/adminSocial";
 import partnersRoutes from "./routes/partners";
 import placementsRoutes from "./routes/placements";
 import partnerPortalRoutes from "./routes/partnerPortal";
@@ -61,11 +62,28 @@ app.use(
 app.use(express.json({ limit: "10mb" }));
 
 app.get("/api/health", (_req, res) => {
+  const telegramSession = Boolean(process.env.TELEGRAM_SESSION || process.env.TELEGRAM_SESSION_STRING);
+  const socialOAuthHints = {
+    youtube: Boolean(process.env.GOOGLE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID),
+    meta: Boolean(process.env.META_APP_ID || process.env.FACEBOOK_APP_ID),
+    tiktok: Boolean(process.env.TIKTOK_CLIENT_KEY),
+    gemini: Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
+  };
   res.json({
     status: "ok",
     db: dbDriver,
     storage: storageDriver(),
     timestamp: new Date().toISOString(),
+    paymentsLive: process.env.PAYMENTS_LIVE === "true" || process.env.PAYMENTS_LIVE === "1",
+    workers: {
+      web: "Fly process app — API",
+      telegram: telegramSession
+        ? "Fly process telegram — сессия задана; синк активен при живом процессе"
+        : "Fly process telegram — без TELEGRAM_SESSION процесс падает при старте; деплой не ломает app",
+      social:
+        "Fly process social — очередь модерации/публикации; без OAuth токенов джобы откладываются",
+    },
+    socialOAuthConfigured: socialOAuthHints,
   });
 });
 
@@ -101,6 +119,7 @@ app.use("/api/analytics", analyticsRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/admin/partners", adminPartnersRoutes);
+app.use("/api/admin/social", adminSocialRoutes);
 app.use("/api/partners", partnersRoutes);
 app.use("/api/placements", placementsRoutes);
 app.use("/api/partner-portal", partnerPortalRoutes);

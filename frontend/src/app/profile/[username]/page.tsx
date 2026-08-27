@@ -43,6 +43,7 @@ import { useLocale } from "@/lib/LocaleContext";
 import { normalizePublication, type Publication } from "@/lib/demo/publications";
 import { messages, publications as publicationsApi, users } from "@/lib/api";
 import { useAuth } from "@/lib/AuthContext";
+import { isOwnerUsername, isPlatformOwnerUser } from "@/lib/owner";
 import { useToast } from "@/components/ui/Toast";
 import { subscribeRealtime } from "@/lib/realtimeHub";
 
@@ -101,7 +102,8 @@ function ProfileHub({ username }: { username: string }) {
   }, [sp]);
 
   const isOwner = user?.username === username;
-  const isPlatformOwner = username.toLowerCase() === "nyx.cosplay" || profile?.profile?.staffRole === "owner";
+  const isPlatformOwner = isOwnerUsername(username) || profile?.profile?.staffRole === "owner";
+  const viewerIsPlatformOwner = isPlatformOwnerUser(user);
   const cards = apiBuilds || [];
 
   useEffect(() => {
@@ -200,18 +202,23 @@ function ProfileHub({ username }: { username: string }) {
     | "seller"
     | null;
   /** Until profile loads, hide content tabs to avoid flashing Works/Reels for clients. */
-  const roleReady = Boolean(profile?.user) || (isOwner && Boolean(user?.platformRole));
-  const canShowWorks = roleReady && subjectPlatformRole === "seller";
-  const canShowReels = roleReady && (subjectPlatformRole === "seller" || subjectPlatformRole === "blogger");
-  const canPublishWorks = isOwner && user?.platformRole === "seller";
-  const canPublishReels = isOwner && (user?.platformRole === "seller" || user?.platformRole === "blogger");
-  const isClientProfile = subjectPlatformRole === "client";
-  const canOrderFromProfile = roleReady && subjectPlatformRole === "seller";
+  const roleReady =
+    Boolean(profile?.user) || (isOwner && (Boolean(user?.platformRole) || viewerIsPlatformOwner));
+  const canShowWorks = roleReady && (subjectPlatformRole === "seller" || isPlatformOwner);
+  const canShowReels =
+    roleReady &&
+    (subjectPlatformRole === "seller" || subjectPlatformRole === "blogger" || isPlatformOwner);
+  const canPublishWorks = isOwner && (user?.platformRole === "seller" || viewerIsPlatformOwner);
+  const canPublishReels =
+    isOwner &&
+    (user?.platformRole === "seller" || user?.platformRole === "blogger" || viewerIsPlatformOwner);
+  const isClientProfile = subjectPlatformRole === "client" && !isPlatformOwner;
+  const canOrderFromProfile = roleReady && subjectPlatformRole === "seller" && !isPlatformOwner;
   const profileTabs = (
     [
       ...(canShowWorks ? (["builds"] as const) : []),
       ...(canShowReels ? (["reels"] as const) : []),
-      ...(subjectPlatformRole === "seller" ? (["orders"] as const) : []),
+      ...(subjectPlatformRole === "seller" || isPlatformOwner ? (["orders"] as const) : []),
       "about",
     ] as Tab[]
   );
@@ -286,6 +293,11 @@ function ProfileHub({ username }: { username: string }) {
               <h1 className="font-display font-extrabold text-[clamp(28px,6vw,52px)] leading-none break-all">{username}</h1>
               {p?.isVerified && <BadgeCheck className="text-magenta" size={22} />}
               <StaffBadge role={p?.staffRole || "none"} hidden={p?.staffBadgeHidden} />
+              {profile?.user?.premiumActive && (
+                <span className="font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-1 bg-amber text-ink">
+                  Premium
+                </span>
+              )}
               <Badge status={status} />
             </div>
             <div className="flex gap-2 mt-3">
@@ -669,6 +681,7 @@ function ProfileHub({ username }: { username: string }) {
       {createOpen && canPublishReels && (
         <CreatePublicationModal
           onClose={() => setCreateOpen(false)}
+          defaultSocialOptIn={user?.socialCrosspostOptIn !== false}
           onSubmit={async (payload) => {
             try {
               const res = await publicationsApi.create({
@@ -681,6 +694,7 @@ function ProfileHub({ username }: { username: string }) {
                   type: m.type,
                 })),
                 kind: "post",
+                socialCrosspostOptIn: payload.socialCrosspostOptIn,
               });
               const pub = normalizePublication(res.publication);
               setPosts((p) => [pub, ...p]);

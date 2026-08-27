@@ -185,6 +185,20 @@ export const account = {
     }),
   blocked: () => request<{ users: any[] }>("/api/account/blocked"),
   completeness: () => request<{ percent: number; checks: Record<string, boolean> }>("/api/account/completeness"),
+  premium: () =>
+    request<{
+      progress: {
+        youtubeReelsAt1M: number;
+        youtubeReelsNeeded: number;
+        platformViews: number;
+        platformViewsNeeded: number;
+        platformComments: number;
+        platformCommentsNeeded: number;
+        qualifies: boolean;
+        activeGrant: { id: string; startsAt: string; endsAt: string } | null;
+      } | null;
+      message?: string;
+    }>("/api/account/premium"),
   roleChangeRequests: () =>
     request<{ requests: any[] }>("/api/account/role-change-requests"),
   createRoleChangeRequest: (data: {
@@ -334,6 +348,16 @@ export const calendar = {
   remove: (id: string) => request<{ ok: boolean }>(`/api/calendar/events/${id}`, { method: "DELETE" }),
 };
 
+export const health = {
+  get: () =>
+    request<{
+      status: string;
+      workers?: Record<string, string>;
+      paymentsLive?: boolean;
+      socialOAuthConfigured?: Record<string, boolean>;
+    }>("/api/health"),
+};
+
 export const admin = {
   buildAuditCsvUrl: (params?: { type?: string; severity?: string; actor?: string; q?: string; limit?: number }) => {
     const qs = new URLSearchParams();
@@ -413,6 +437,29 @@ export const admin = {
     request<{ history: Array<{ id: string; createdAt: string; actor?: { id: string; username: string } | null; payload?: any }> }>(
       "/api/admin/moderation/settings/history"
     ),
+};
+
+export const adminSocial = {
+  review: () => request<{ items: any[]; rejected: any[] }>("/api/admin/social/review"),
+  reviewDecision: (id: string, decision: "approved" | "rejected", note?: string) =>
+    request<{ ok: boolean }>(`/api/admin/social/review/${id}`, {
+      method: "POST",
+      body: JSON.stringify({ decision, note }),
+    }),
+  settings: () =>
+    request<{
+      settings: { tiktokAuditApproved: boolean; metaLiveMode: boolean; youtubeDailyUploadCap: number };
+      oauth: { youtube: boolean; meta: boolean; tiktok: boolean };
+    }>("/api/admin/social/settings"),
+  patchSettings: (data: Partial<{ tiktokAuditApproved: boolean; metaLiveMode: boolean; youtubeDailyUploadCap: number }>) =>
+    request<{ settings: any }>("/api/admin/social/settings", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  syncNow: () => request<{ ok: boolean; synced: number }>("/api/admin/social/sync-now", { method: "POST" }),
+  posts: () => request<{ posts: any[] }>("/api/admin/social/posts"),
+  tiktokRepublishPublic: () =>
+    request<{ ok: boolean; queued: number }>("/api/admin/social/tiktok/republish-public", { method: "POST" }),
 };
 
 // Partners & placements
@@ -741,6 +788,7 @@ export const publications = {
     tags?: string[];
     mentions?: { username?: string; displayName: string; type: "user" | "person" }[];
     kind?: "post" | "story";
+    socialCrosspostOptIn?: boolean;
   }) =>
     request<{ publication: any }>("/api/publications", {
       method: "POST",
@@ -752,6 +800,8 @@ export const publications = {
     request<{ liked: boolean; likesCount: number }>(`/api/publications/${id}/like`, { method: "POST" }),
   unlike: (id: string) =>
     request<{ liked: boolean; likesCount: number }>(`/api/publications/${id}/like`, { method: "DELETE" }),
+  view: (id: string) =>
+    request<{ counted: boolean; countedViews: number }>(`/api/publications/${id}/view`, { method: "POST" }),
 };
 
 export const comments = {

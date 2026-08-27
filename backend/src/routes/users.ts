@@ -6,8 +6,18 @@ import { notify } from "../lib/notify";
 import { pushStats } from "../lib/pushRealtime";
 import { getUserStats } from "../lib/userStats";
 import { isOwnerUsername } from "../lib/owner";
+import { getBloggerPremiumProgress } from "../lib/premium/evaluateBloggerV1";
 
 const router = Router();
+
+function hasActiveBloggerPremium(userId: string, platformRole: string | null | undefined) {
+  if (platformRole !== "blogger") return false;
+  try {
+    return Boolean(getBloggerPremiumProgress(userId).activeGrant);
+  } catch {
+    return false;
+  }
+}
 
 function publicUser(id: string) {
   const u = db.select().from(schema.users).where(eq(schema.users.id, id)).get();
@@ -184,6 +194,7 @@ router.get("/:username", optionalAuth, (req: AuthRequest, res) => {
       username: user.username,
       roleFlags: user.roleFlags,
       platformRole: user.platformRole || null,
+      premiumActive: hasActiveBloggerPremium(user.id, user.platformRole),
     },
     profile: effectiveProfile,
     builds: builds.filter((b) => !b.hidden || isOwner),

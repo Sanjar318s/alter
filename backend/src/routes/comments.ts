@@ -3,7 +3,8 @@ import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { v4 as uuid } from "uuid";
 import { and, eq } from "drizzle-orm";
-
+import { countsCommentForPremium, isDuplicateSpamComment } from "../lib/premium/commentFilter";
+import { evaluateBloggerV1 } from "../lib/premium/evaluateBloggerV1";
 const router = Router();
 const MAX_LEN = 1000;
 
@@ -116,6 +117,23 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
     if (parent.parentId) rootParent = parent.parentId;
   }
 
+  let countsForPremium = 0;
+  if (targetType === "publication" && countsCommentForPremium(body)) {
+    const recent = db
+      .select()
+      .from(schema.comments)
+      .where(
+        and(
+          eq(schema.comments.targetType, "publication"),
+          eq(schema.comments.targetId, targetId),
+          eq(schema.comments.userId, req.userId!)
+        )
+      )
+      .all()
+      .map((c) => c.text);
+    if (!isDuplicateSpamComment(body, recent)) countsForPremium = 1;
+  }
+
   const id = uuid();
   db.insert(schema.comments)
     .values({
@@ -125,10 +143,22 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
       userId: req.userId!,
       text: body,
       parentId: rootParent,
+      countsForPremium,
     })
     .run();
 
   bumpCount(targetType, targetId, 1);
+
+  if (targetType === "publication" && countsForPremium) {
+    const pub = db.select().from(schema.publications).where(eq(schema.publications.id, targetId)).get();
+    if (pub?.userId) {
+      try {
+        evaluateBloggerV1(pub.userId);
+      } catch {
+        /* non-fatal */
+      }
+    }
+  }
 
   const row = db.select().from(schema.comments).where(eq(schema.comments.id, id)).get();
   res.status(201).json({ comment: enrich(row!) });

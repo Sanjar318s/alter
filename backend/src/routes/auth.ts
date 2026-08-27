@@ -40,6 +40,7 @@ function issueToken(user: {
   roleFlags: string | null;
   phone?: string | null;
   platformRole?: string | null;
+  socialCrosspostOptIn?: number | null;
 }) {
   const jti = uuid();
   const token = jwt.sign({ userId: user.id, jti }, JWT_SECRET, { expiresIn: "7d" });
@@ -52,6 +53,7 @@ function issueToken(user: {
       roleFlags: user.roleFlags || "cosplayer",
       phone: user.phone || null,
       platformRole: user.platformRole || null,
+      socialCrosspostOptIn: user.socialCrosspostOptIn !== 0,
     },
   };
 }
@@ -281,6 +283,7 @@ router.get("/me", authMiddleware, (req: AuthRequest, res) => {
       roleFlags: user.roleFlags,
       phone: user.phone,
       platformRole: user.platformRole || null,
+      socialCrosspostOptIn: user.socialCrosspostOptIn !== 0,
     },
     profile,
   });

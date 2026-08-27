@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import jwt from "jsonwebtoken";
 import { franchiseSlug } from "../lib/notify";
 import { rateLimit } from "../middleware/rateLimit";
+import { countsCommentForPremium, isDuplicateSpamComment } from "../lib/premium/commentFilter";
 
 const JWT_SECRET = process.env.JWT_SECRET || "alter-dev-secret-key-change-in-production";
 
@@ -54,4 +55,12 @@ test("order statuses used by studio stay in product set", () => {
   assert.ok(allowed.includes("discussion"));
   assert.ok(allowed.includes("waiting"));
   assert.ok(allowed.includes("cancelled"));
+});
+
+test("premium comment filter rejects spam", () => {
+  assert.equal(countsCommentForPremium("ok"), false);
+  assert.equal(countsCommentForPremium("+"), false);
+  assert.equal(countsCommentForPremium("Крутой костюм"), true);
+  assert.equal(isDuplicateSpamComment("hi there", ["hi there", "hi there"]), true);
+  assert.equal(isDuplicateSpamComment("hi there", ["other"]), false);
 });

@@ -15,6 +15,7 @@ import { PartnerAdSlot } from "@/components/marketing/PartnerAdSlot";
 import { useLocale } from "@/lib/LocaleContext";
 import { useAuth } from "@/lib/AuthContext";
 import { APP_FEED_HOME } from "@/lib/appHome";
+import { isPlatformOwnerUser } from "@/lib/owner";
 
 const SHELL = "max-w-[1360px] mx-auto px-5 sm:px-8 lg:px-10";
 
@@ -24,12 +25,12 @@ export default function LandingPage() {
 
   useEffect(() => {
     if (loading) return;
-    if (user?.platformRole) {
+    if (user?.platformRole || isPlatformOwnerUser(user)) {
       router.replace(APP_FEED_HOME);
     }
-  }, [loading, user?.platformRole, router]);
+  }, [loading, user, router]);
 
-  if (!loading && user?.platformRole) {
+  if (!loading && (user?.platformRole || isPlatformOwnerUser(user))) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 font-mono text-[13px] text-ink-45">
         Переходим в ленту…

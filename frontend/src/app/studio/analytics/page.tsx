@@ -39,27 +39,41 @@ export default function AnalyticsPage() {
           ))}
         </div>
         {loading && <p className="font-mono text-[12px] text-ink-45">Загрузка…</p>}
-        {data && data.ordersCount === 0 && <EmptyState title="Аналитика появится после первых заказов" />}
+        {data && data.ordersCount === 0 && Object.keys(data.byStatus || {}).length === 0 && (
+          <EmptyState title="Аналитика появится после первых заказов" />
+        )}
         {data && (
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="border border-line p-4">
               <div className="font-mono text-[11px] text-ink-45 mb-2">Заказы по статусам</div>
-              {Object.entries(data.byStatus || {}).map(([k, v]) => (
-                <div key={k} className="flex justify-between text-[13px] py-1">
-                  <span>{k}</span><span>{String(v)}</span>
-                </div>
-              ))}
+              {Object.keys(data.byStatus || {}).length === 0 ? (
+                <p className="text-[13px] text-ink-45">Пока нет заказов</p>
+              ) : (
+                Object.entries(data.byStatus || {}).map(([k, v]) => (
+                  <div key={k} className="flex justify-between text-[13px] py-1">
+                    <span>{k}</span><span>{String(v)}</span>
+                  </div>
+                ))
+              )}
             </div>
             <div className="border border-line p-4">
               <div className="font-mono text-[11px] text-ink-45 mb-2">Доход по месяцам</div>
-              {Object.entries(data.incomeByMonth || {}).map(([k, v]) => (
-                <div key={k} className="flex justify-between text-[13px] py-1">
-                  <span>{k}</span><span>{String(v)}</span>
-                </div>
-              ))}
+              {!data.paymentsLive ? (
+                <p className="text-[13px] text-amber">{data.incomeNote || "Платежи пока в beta."}</p>
+              ) : Object.keys(data.incomeByMonth || {}).length === 0 ? (
+                <p className="text-[13px] text-ink-45">Нет оплат за период</p>
+              ) : (
+                Object.entries(data.incomeByMonth || {}).map(([k, v]) => (
+                  <div key={k} className="flex justify-between text-[13px] py-1">
+                    <span>{k}</span><span>{String(v)}</span>
+                  </div>
+                ))
+              )}
             </div>
             <div className="border border-line p-4">
-              <div className="text-[13px]">Конверсия в оплату: {data.conversion}%</div>
+              <div className="text-[13px]">
+                Конверсия в оплату: {data.paymentsLive ? `${data.conversion}%` : "— (платежи beta)"}
+              </div>
               <div className="text-[13px] mt-2">Новых подписчиков: {data.followerGrowth}</div>
               <div className="text-[13px] mt-2">
                 Среднее время ответа: {data.avgReplyMs != null ? `${Math.round(data.avgReplyMs / 60000)} мин` : "нет данных"}

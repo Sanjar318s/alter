@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { account } from "@/lib/api";
 import {
   BarChart3,
   CalendarDays,
@@ -26,8 +27,9 @@ import { useUnreadCounts } from "@/lib/useUnreadCounts";
 import { PAYMENTS_LIVE } from "@/lib/flags";
 import { useLocale } from "@/lib/LocaleContext";
 import type { MsgKey } from "@/lib/locale/messages";
+import { isPlatformOwnerUser } from "@/lib/owner";
 
-const STUDIO: { href: string; label: MsgKey; icon: typeof LayoutDashboard; unread?: boolean; beta?: boolean }[] = [
+const STUDIO_SELLER: { href: string; label: MsgKey; icon: typeof LayoutDashboard; unread?: boolean; beta?: boolean }[] = [
   { href: "/studio", label: "studio", icon: LayoutDashboard },
   { href: "/studio/calendar", label: "calendar", icon: CalendarDays },
   { href: "/messages", label: "messages", icon: MessageSquare, unread: true },
@@ -35,6 +37,12 @@ const STUDIO: { href: string; label: MsgKey; icon: typeof LayoutDashboard; unrea
   { href: "/studio/finance", label: "finance", icon: Wallet, beta: true },
   { href: "/explore", label: "portfolio", icon: Images },
   { href: "/studio/analytics", label: "analytics", icon: BarChart3 },
+];
+
+const STUDIO_BUYER: { href: string; label: MsgKey; icon: typeof LayoutDashboard; unread?: boolean; beta?: boolean }[] = [
+  { href: "/studio", label: "studio", icon: LayoutDashboard },
+  { href: "/studio/calendar", label: "calendar", icon: CalendarDays },
+  { href: "/messages", label: "messages", icon: MessageSquare, unread: true },
 ];
 
 const PERSONAL: { href: string; label: MsgKey; icon: typeof User }[] = [
@@ -55,14 +63,47 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const unread = useUnreadCounts(Boolean(user));
   const { t } = useLocale();
+  const isOwnerUser = isPlatformOwnerUser(user);
   const isAdmin =
-    (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
-    (user?.username || "").toLowerCase() === "nyx.cosplay";
+    (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") || isOwnerUser;
+  const isBuyerRole =
+    !isOwnerUser && (user?.platformRole === "client" || user?.platformRole === "blogger");
+  const studioLinks = isBuyerRole ? STUDIO_BUYER : STUDIO_SELLER;
+  const showPremiumProgress = user?.platformRole === "blogger" || isOwnerUser;
+  const [premiumLabel, setPremiumLabel] = useState("Прогресс к Premium");
+
+  useEffect(() => {
+    if (!showPremiumProgress || !user) {
+      setPremiumLabel("Прогресс к Premium");
+      return;
+    }
+    let alive = true;
+    account
+      .premium()
+      .then((r) => {
+        if (!alive) return;
+        const g = r.progress?.activeGrant;
+        if (g?.endsAt) {
+          setPremiumLabel(`Premium до ${new Date(g.endsAt).toLocaleDateString("ru")}`);
+        } else if (r.progress) {
+          const yt = `${r.progress.youtubeReelsAt1M}/${r.progress.youtubeReelsNeeded} YT`;
+          setPremiumLabel(`Прогресс к Premium · ${yt}`);
+        }
+      })
+      .catch(() => {
+        if (alive) setPremiumLabel("Прогресс к Premium");
+      });
+    return () => {
+      alive = false;
+    };
+  }, [showPremiumProgress, user?.id]);
 
   const NavBody = (
     <>
-      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-45 px-4 mb-2">{t("studioShort")}</div>
-      {STUDIO.map((l) => {
+      <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-45 px-4 mb-2">
+        {isBuyerRole ? "Мои заказы" : t("studioShort")}
+      </div>
+      {studioLinks.map((l) => {
         const locked = Boolean((l as { beta?: boolean }).beta) && !PAYMENTS_LIVE;
         const cls = cn(
           "flex items-center gap-2 px-4 py-2 text-[13px] no-underline border-l-2",
@@ -121,11 +162,9 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
           onClick={() => setOpen(false)}
           className={cn(
             "flex items-center gap-2 px-4 py-2 text-[13px] no-underline border-l-2",
-            pathname === "/me" && l.href.startsWith("/me") && (l.href === "/me" || (typeof window !== "undefined" && window.location.search.includes(l.href.split("?")[1] || "___")))
+            pathname === "/me" && l.href === "/me"
               ? "border-magenta text-paper"
-              : pathname === "/me" && l.href === "/me"
-                ? "border-magenta text-paper"
-                : "border-transparent text-ink-70 hover:text-paper"
+              : "border-transparent text-ink-70 hover:text-paper"
           )}
         >
           <l.icon size={16} />
@@ -133,11 +172,15 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
         </Link>
       ))}
       <div className="mt-auto p-4 border-t border-line">
-        <div className="font-mono text-[10px] text-amber mb-1">{t("premium")} · {t("beta")}</div>
-        <div className="text-[12px] text-ink-45 mb-3">{t("betaTesting")}</div>
-        <Button variant="outline" size="sm" className="w-full mb-2" disabled>
-          {t("managePlan")}
-        </Button>
+        {showPremiumProgress ? (
+          <>
+            <div className="font-mono text-[10px] text-amber mb-1">{t("premium")}</div>
+            <div className="text-[12px] text-ink-45 mb-3">{premiumLabel}</div>
+            <Button href="/me" variant="outline" size="sm" className="w-full mb-2">
+              Смотреть прогресс
+            </Button>
+          </>
+        ) : null}
         <button
           type="button"
           className="flex items-center gap-2 text-[13px] text-ink-45 bg-transparent border-0"

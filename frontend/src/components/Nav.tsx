@@ -6,11 +6,19 @@ import { useEffect, useState } from "react";
 import {
   Bell,
   ChevronDown,
+  Clapperboard,
+  Compass,
+  LayoutDashboard,
+  LogOut,
   Menu,
+  MessageSquare,
   Search,
   Settings,
+  Shield,
+  User,
   X,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { useAuth } from "@/lib/AuthContext";
 import { Button } from "@/components/ui/Button";
 import { CountBadge } from "@/components/ui/CountBadge";
@@ -23,9 +31,10 @@ import { subscribeRealtime } from "@/lib/realtimeHub";
 import { useSWRConfig } from "swr";
 import { LocaleSettings } from "@/components/LocaleSettings";
 import { useLocale } from "@/lib/LocaleContext";
-import { panelToggleLabel, useNavPanel, type NavPanel } from "@/lib/NavPanelContext";
+import { panelToggleLabel, useNavPanel } from "@/lib/NavPanelContext";
 import type { PlatformRole } from "@/lib/AuthContext";
 import { homePathForUser } from "@/lib/appHome";
+import { isPlatformOwnerUser } from "@/lib/owner";
 
 type LinkDef = {
   href: string | ((username: string) => string);
@@ -159,6 +168,60 @@ function notifOrderId(n: Notif) {
   }
 }
 
+function mobileLinkIcon(href: string): LucideIcon {
+  if (href.startsWith("/messages")) return MessageSquare;
+  if (href.startsWith("/reels")) return Clapperboard;
+  if (href.startsWith("/explore")) return Compass;
+  if (href.startsWith("/studio")) return LayoutDashboard;
+  if (href.startsWith("/profile")) return User;
+  return Compass;
+}
+
+function MobileNavRow({
+  href,
+  icon: Icon,
+  title,
+  hint,
+  active,
+  badge = 0,
+  onNavigate,
+}: {
+  href: string;
+  icon: LucideIcon;
+  title: string;
+  hint?: string;
+  active?: boolean;
+  badge?: number;
+  onNavigate: () => void;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onNavigate}
+      className={cn(
+        "group flex items-start gap-3 px-2 py-3 no-underline border-b border-line/40 last:border-b-0",
+        active ? "text-paper" : "text-ink-70 hover:text-paper"
+      )}
+    >
+      <span
+        className={cn(
+          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border",
+          active ? "border-magenta/70 text-magenta bg-magenta/10" : "border-line text-ink-45 group-hover:border-ink-45"
+        )}
+      >
+        <Icon size={17} strokeWidth={1.75} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          <span className="text-[15px] font-medium leading-tight">{title}</span>
+          {badge > 0 ? <CountBadge count={badge} /> : null}
+        </span>
+        {hint ? <span className="block text-[12px] text-ink-45 mt-1 leading-snug">{hint}</span> : null}
+      </span>
+    </Link>
+  );
+}
+
 export function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -173,8 +236,10 @@ export function Nav() {
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { t } = useLocale();
-  const { panel, toggle } = useNavPanel();
-  const role = user?.platformRole ?? null;
+  const { panel, setPanel, toggle } = useNavPanel();
+  const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+  const isOwnerUser = isPlatformOwnerUser(user);
+  const role = (isOwnerUser ? user?.platformRole ?? "seller" : user?.platformRole) ?? null;
   const LINKS = (role
     ? LINK_DEFS.filter((link) => {
         if (!link.roles.includes(role)) return false;
@@ -222,7 +287,7 @@ export function Nav() {
   const isAdmin =
     (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
     (user?.username || "").toLowerCase() === "nyx.cosplay";
-  const showPanelToggle = Boolean(role);
+  const showPanelToggle = Boolean(role) || isOwnerUser;
   const brandHref = homePathForUser(user);
 
   const isActive = (href: string) => {
@@ -536,86 +601,129 @@ export function Nav() {
             aria-label="Закрыть меню"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute inset-x-0 top-[57px] bottom-0 bg-ink border-t border-line overflow-y-auto px-5 py-6 flex flex-col gap-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-mono text-[11px] uppercase tracking-wide text-ink-45">Меню</span>
-              <button
-                type="button"
-                className="text-paper w-10 h-10 flex items-center justify-center bg-transparent border border-line"
-                onClick={() => setMobileOpen(false)}
-                aria-label="Закрыть"
-              >
-                <X size={18} />
-              </button>
-            </div>
-            <Link
-              href={brandHref}
-              className={cn(
-                "no-underline px-1 py-3 border-b border-line/60",
-                pathname === brandHref || (brandHref === "/" && pathname === "/") ? "text-paper" : "text-ink-45"
-              )}
-              onClick={() => setMobileOpen(false)}
-            >
-              <div className="text-[15px] font-medium">{role ? "Лента" : t("home")}</div>
-              <div className="text-[12px] text-ink-45 mt-0.5">{role ? "Рилсы и сообщения" : t("homeHint")}</div>
-            </Link>
-            {LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={cn(
-                  "no-underline px-1 py-3 border-b border-line/60",
-                  isActive(link.href) ? "text-paper" : "text-ink-45"
-                )}
-                onClick={() => setMobileOpen(false)}
-              >
-                <div className="flex items-center gap-2">
-                  <div className="text-[15px] font-medium">{link.text}</div>
-                  {link.href === "/messages" && msgUnread > 0 ? <CountBadge count={msgUnread} /> : null}
+          <div className="absolute inset-x-0 top-[57px] bottom-0 bg-ink border-t border-line overflow-y-auto px-4 py-5 flex flex-col gap-6">
+            {showPanelToggle && (
+              <div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2 px-1">
+                  Режим
                 </div>
-                <div className="text-[12px] text-ink-45 mt-0.5">{link.hintText}</div>
-              </Link>
-            ))}
+                <div className="grid grid-cols-2 border border-line" role="tablist" aria-label="Режим меню">
+                  {(
+                    [
+                      { id: "feed" as const, label: "Лента", hint: "Рилсы и чаты" },
+                      { id: "work" as const, label: "Биржа", hint: "Работы и заказы" },
+                    ] as const
+                  ).map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={panel === tab.id}
+                      onClick={() => setPanel(tab.id)}
+                      className={cn(
+                        "px-3 py-2.5 text-left border-0 transition-colors",
+                        panel === tab.id
+                          ? "bg-stage text-paper"
+                          : "bg-transparent text-ink-45 hover:text-paper"
+                      )}
+                    >
+                      <div className="text-[13px] font-medium leading-none">{tab.label}</div>
+                      <div className="text-[11px] mt-1 opacity-70">{tab.hint}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
-            <div className="mt-4 pt-4 border-t border-line flex flex-col gap-3">
-              {showPanelToggle && (
-                <button
-                  type="button"
-                  onClick={toggle}
-                  className="w-full py-2 text-[12px] border border-line text-ink-70 hover:border-magenta"
-                >
-                  Меню: {panelToggleLabel(role, panel)} · нажмите чтобы переключить
-                </button>
-              )}
-              <div className="bg-stage border border-line">
-                <LocaleSettings />
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2 px-1">
+                {showPanelToggle ? (panel === "feed" ? "Лента" : "Биржа") : "Меню"}
+              </div>
+              <nav className="flex flex-col">
+                <MobileNavRow
+                  href={brandHref}
+                  icon={Clapperboard}
+                  title={role ? (panel === "work" ? "Главная биржи" : "Лента") : t("home")}
+                  hint={role ? (panel === "work" ? "Обзор работ и заказов" : "Рилсы и сообщения") : t("homeHint")}
+                  active={pathname === brandHref || (brandHref === "/" && pathname === "/")}
+                  onNavigate={() => setMobileOpen(false)}
+                />
+                {LINKS.map((link) => {
+                  const Icon = mobileLinkIcon(link.href);
+                  return (
+                    <MobileNavRow
+                      key={`${panel}-${link.href}`}
+                      href={link.href}
+                      icon={Icon}
+                      title={link.text}
+                      hint={link.hintText}
+                      active={isActive(link.href)}
+                      badge={link.href === "/messages" ? msgUnread : 0}
+                      onNavigate={() => setMobileOpen(false)}
+                    />
+                  );
+                })}
+              </nav>
+            </div>
+
+            <div>
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2 px-1">
+                Аккаунт
               </div>
               {user ? (
-                <>
-                  <Link href="/me" className="text-[15px] text-paper no-underline py-2" onClick={() => setMobileOpen(false)}>
-                    {t("myProfile")} · {user.username}
-                  </Link>
-                    {(user.platformRole === "seller" || user.platformRole === "blogger" || user.platformRole === "client") && (
-                      <Link href={`/profile/${user.username}`} className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
-                        {user.platformRole === "client" ? "Мой профиль" : t("publicProfile")}
-                      </Link>
-                    )}
-                    {(user.platformRole === "seller" || user.platformRole === "blogger" || user.platformRole === "client") && (
-                      <Link href="/studio" className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
-                        {user.platformRole === "seller" ? "Статус заказов" : "Мои заказы"}
-                      </Link>
-                    )}
-                  {isAdmin && (
-                    <Link href="/admin" className="text-[14px] text-ink-70 no-underline py-1" onClick={() => setMobileOpen(false)}>
-                      {t("admin")}
-                    </Link>
+                <div className="flex flex-col">
+                  <MobileNavRow
+                    href="/me"
+                    icon={User}
+                    title={t("myProfile")}
+                    hint={`@${user.username}`}
+                    active={pathname === "/me"}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                  {(role === "seller" || role === "blogger" || role === "client") && (
+                    <MobileNavRow
+                      href={`/profile/${user.username}`}
+                      icon={Compass}
+                      title={role === "client" ? "Публичная страница" : t("publicProfile")}
+                      hint="Как вас видят другие"
+                      active={pathname === `/profile/${user.username}`}
+                      onNavigate={() => setMobileOpen(false)}
+                    />
                   )}
-                  <button type="button" onClick={() => { logout(); setMobileOpen(false); }} className="text-[14px] text-ink-45 text-left py-2 bg-transparent border-0">
-                    {t("logout")}
+                  {(role === "seller" || role === "blogger" || role === "client") && (
+                    <MobileNavRow
+                      href="/studio"
+                      icon={LayoutDashboard}
+                      title={role === "seller" ? "Студия заказов" : "Мои заказы"}
+                      hint={role === "seller" ? "Доска и статусы" : "Заявки, которые вы оставили"}
+                      active={pathname.startsWith("/studio")}
+                      onNavigate={() => setMobileOpen(false)}
+                    />
+                  )}
+                  {isAdmin && (
+                    <MobileNavRow
+                      href="/admin"
+                      icon={Shield}
+                      title={t("admin")}
+                      hint="Модерация и owner-панель"
+                      active={pathname.startsWith("/admin")}
+                      onNavigate={() => setMobileOpen(false)}
+                    />
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      logout();
+                      setMobileOpen(false);
+                    }}
+                    className="flex items-center gap-3 px-2 py-3 text-left bg-transparent border-0 border-t border-line/50 text-ink-45 hover:text-paper"
+                  >
+                    <LogOut size={18} className="shrink-0 opacity-70" />
+                    <span className="text-[14px]">{t("logout")}</span>
                   </button>
-                </>
+                </div>
               ) : (
-                <>
+                <div className="flex flex-col gap-2 px-1">
                   <Button href="/register" size="sm" className="w-full min-[420px]:hidden">
                     {t("createProfile")}
                   </Button>
@@ -627,7 +735,30 @@ export function Nav() {
                       {t("createProfile")}
                     </Button>
                   </div>
-                </>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-auto pt-2 border-t border-line">
+              <button
+                type="button"
+                onClick={() => setMobileSettingsOpen((v) => !v)}
+                className="w-full flex items-center justify-between gap-3 px-2 py-3 bg-transparent border-0 text-paper"
+                aria-expanded={mobileSettingsOpen}
+              >
+                <span className="inline-flex items-center gap-2 text-[14px] font-medium">
+                  <Settings size={16} className="text-ink-45" />
+                  Язык и валюта
+                </span>
+                <ChevronDown
+                  size={16}
+                  className={cn("text-ink-45 transition-transform", mobileSettingsOpen && "rotate-180")}
+                />
+              </button>
+              {mobileSettingsOpen && (
+                <div className="px-2 pb-4">
+                  <LocaleSettings compact />
+                </div>
               )}
             </div>
           </div>

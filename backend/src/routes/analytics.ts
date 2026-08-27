@@ -60,12 +60,18 @@ router.get("/studio", authMiddleware, (req: AuthRequest, res) => {
     }
   }
 
+  const paymentsLive = process.env.PAYMENTS_LIVE === "true" || process.env.PAYMENTS_LIVE === "1";
+
   res.json({
     period,
-    ordersCount: inPeriod.length,
+    ordersCount: orders.length,
     byStatus,
-    incomeByMonth,
-    conversion,
+    incomeByMonth: paymentsLive ? incomeByMonth : {},
+    conversion: paymentsLive ? conversion : null,
+    paymentsLive,
+    incomeNote: paymentsLive
+      ? null
+      : "Доход и конверсия в оплату скрыты: выплаты на площадке ещё не включены (PAYMENTS_LIVE).",
     topCategories: Object.entries(byCat)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 6)

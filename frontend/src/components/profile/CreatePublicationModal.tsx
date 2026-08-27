@@ -15,20 +15,24 @@ type CreatePayload = {
   tags: string[];
   mentions: MentionChip[];
   kind: "post";
+  socialCrosspostOptIn: boolean;
 };
 
 export function CreatePublicationModal({
   onClose,
   onSubmit,
+  defaultSocialOptIn = true,
 }: {
   onClose: () => void;
   onSubmit: (payload: CreatePayload) => Promise<void>;
+  defaultSocialOptIn?: boolean;
 }) {
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [mentions, setMentions] = useState<MentionChip[]>([]);
   const [files, setFiles] = useState<{ id: string; preview: string; url?: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [socialOptIn, setSocialOptIn] = useState(defaultSocialOptIn);
   const fileRef = useRef<HTMLInputElement>(null);
   const edit = useEditImage();
 
@@ -66,6 +70,7 @@ export function CreatePublicationModal({
         tags: allTags,
         mentions: [...mentions, ...captionMentions],
         kind: "post",
+        socialCrosspostOptIn: socialOptIn,
       });
       onClose();
     } finally {
@@ -139,6 +144,19 @@ export function CreatePublicationModal({
         </label>
 
         <MentionTagInput tags={tags} mentions={mentions} onTagsChange={setTags} onMentionsChange={setMentions} />
+
+        <label className="flex items-start gap-2 text-[12px] text-ink-70 cursor-pointer">
+          <input
+            type="checkbox"
+            className="mt-0.5"
+            checked={socialOptIn}
+            onChange={(e) => setSocialOptIn(e.target.checked)}
+          />
+          <span>
+            Разрешить репост в YouTube / Instagram / Facebook / TikTok аккаунтов AlterCosPlay.
+            <span className="block text-ink-45 mt-0.5">Может появиться в TikTok и других соцсетях бренда.</span>
+          </span>
+        </label>
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>Отмена</Button>

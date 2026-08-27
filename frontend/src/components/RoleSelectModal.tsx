@@ -10,6 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { useRouter } from "next/navigation";
 import { APP_FEED_HOME } from "@/lib/appHome";
+import { isPlatformOwnerUser } from "@/lib/owner";
 
 const ROLES: {
   id: PlatformRole;
@@ -46,7 +47,7 @@ export function RoleSelectModal() {
   const [busy, setBusy] = useState(false);
   const [tipOpen, setTipOpen] = useState<PlatformRole | null>(null);
 
-  if (loading || !user || user.platformRole) return null;
+  if (loading || !user || user.platformRole || isPlatformOwnerUser(user)) return null;
 
   async function confirm() {
     if (!selected || !agreed || busy) return;

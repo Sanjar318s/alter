@@ -5,7 +5,8 @@ import { v4 as uuid } from "uuid";
 import { eq, and } from "drizzle-orm";
 import { franchiseSlug, notify, unlinkUpload } from "../lib/notify";
 import { pushStats } from "../lib/pushRealtime";
-import { enqueueSocialModeration } from "../lib/social/queue";
+import { isOwnerUsername } from "../lib/owner";
+import { enqueueSocialModeration, loadSocialAggregate } from "../lib/social/queue";
 
 const router = Router();
 
@@ -100,7 +101,10 @@ router.get("/:id", optionalAuth, (req: AuthRequest, res) => {
       )
     : false;
   res.json({
-    build,
+    build: {
+      ...build,
+      social: loadSocialAggregate("build", [build.id]).get(build.id) || null,
+    },
     photos,
     credits: enrichCredits(build.id),
     author: author
@@ -115,7 +119,7 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   const body = req.body || {};
   if (!body.title) return res.status(400).json({ error: "title required" });
   const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
-  if (me?.platformRole && me.platformRole !== "seller") {
+  if (me?.platformRole && me.platformRole !== "seller" && !isOwnerUsername(me.username)) {
     return res.status(403).json({ error: "Публиковать работы может только роль «Продавец»" });
   }
   const id = uuid();
@@ -140,10 +144,21 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   syncPhotos(id, body.photos);
   syncCredits(id, req.userId!, body.credits);
   const build = db.select().from(schema.builds).where(eq(schema.builds.id, id)).get();
-  if (build && !build.hidden && me?.socialCrosspostOptIn !== 0) {
+  const optIn =
+    body.socialCrosspostOptIn !== undefined
+      ? Boolean(body.socialCrosspostOptIn)
+      : me?.socialCrosspostOptIn !== 0;
+  if (build && !build.hidden && optIn) {
     enqueueSocialModeration("build", id, req.userId!);
   }
-  res.status(201).json({ build, photos: db.select().from(schema.buildPhotos).where(eq(schema.buildPhotos.buildId, id)).all(), credits: enrichCredits(id) });
+  res.status(201).json({
+    build: {
+      ...build,
+      social: loadSocialAggregate("build", [id]).get(id) || null,
+    },
+    photos: db.select().from(schema.buildPhotos).where(eq(schema.buildPhotos.buildId, id)).all(),
+    credits: enrichCredits(id),
+  });
 });
 
 router.put("/:id", authMiddleware, (req: AuthRequest, res) => {

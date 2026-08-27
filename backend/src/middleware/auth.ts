@@ -17,8 +17,11 @@ export interface AuthRequest extends Request {
 
 function readToken(req: Request) {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith("Bearer ")) return null;
-  return header.slice(7);
+  if (header && header.startsWith("Bearer ")) return header.slice(7);
+  const q = (req.query as { access_token?: string; token?: string } | undefined) || {};
+  if (typeof q.access_token === "string" && q.access_token) return q.access_token;
+  if (typeof q.token === "string" && q.token) return q.token;
+  return null;
 }
 
 function isRevoked(jti?: string) {

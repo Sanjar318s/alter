@@ -3,7 +3,10 @@ import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { v4 as uuid } from "uuid";
 import { eq, and, inArray } from "drizzle-orm";
-import { enqueueSocialModeration } from "../lib/social/queue";
+import { isOwnerUsername } from "../lib/owner";
+import { enqueueSocialModeration, loadSocialAggregate } from "../lib/social/queue";
+import { recordPublicationView } from "../lib/premium/recordView";
+import { evaluateBloggerV1 } from "../lib/premium/evaluateBloggerV1";
 
 const router = Router();
 
@@ -90,6 +93,8 @@ function enrichBatched(pubs: PubRow[], withAuthor: boolean) {
     }
   }
 
+  const socialById = loadSocialAggregate("publication", pubIds);
+
   return pubs.map((pub) => {
     let mediaUrls: string[] = [];
     let tags: string[] = [];
@@ -107,6 +112,7 @@ function enrichBatched(pubs: PubRow[], withAuthor: boolean) {
       ...pub,
       mediaUrls,
       tags,
+      social: socialById.get(pub.id) || null,
       mentions: (mentionsByPubId.get(pub.id) || []).map((m) => ({
         id: m.id,
         userId: m.userId,
@@ -180,18 +186,19 @@ router.get("/user/:username/stories", (req, res) => {
 
 // POST /api/publications — create
 router.post("/", authMiddleware, (req: AuthRequest, res) => {
-  const { caption, mediaUrls, tags, mentions, kind } = req.body as {
+  const { caption, mediaUrls, tags, mentions, kind, socialCrosspostOptIn } = req.body as {
     caption?: string;
     mediaUrls?: string[];
     tags?: string[];
     mentions?: { userId?: string; username?: string; displayName: string; type: "user" | "person" }[];
     kind?: "post" | "story";
+    socialCrosspostOptIn?: boolean;
   };
 
   if (!mediaUrls?.length) return res.status(400).json({ error: "mediaUrls required" });
 
   const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
-  if (me?.platformRole === "client") {
+  if (me?.platformRole === "client" && !isOwnerUsername(me.username)) {
     return res.status(403).json({ error: "Клиент не может публиковать рилсы" });
   }
 
@@ -230,10 +237,28 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   }
 
   const pub = db.select().from(schema.publications).where(eq(schema.publications.id, id)).get();
-  if (pubKind === "post" && me?.socialCrosspostOptIn !== 0) {
+  const optIn =
+    socialCrosspostOptIn !== undefined ? Boolean(socialCrosspostOptIn) : me?.socialCrosspostOptIn !== 0;
+  if (pubKind === "post" && optIn) {
     enqueueSocialModeration("publication", id, req.userId!);
   }
-  res.status(201).json({ publication: enrichPublication(pub!) });
+  const social = loadSocialAggregate("publication", [id]).get(id) || null;
+  res.status(201).json({ publication: { ...enrichPublication(pub!), social } });
+});
+
+// POST /api/publications/:id/view — antifraud platform view for Premium
+router.post("/:id/view", authMiddleware, (req: AuthRequest, res) => {
+  const pub = db.select().from(schema.publications).where(eq(schema.publications.id, req.params.id as string)).get();
+  if (!pub) return res.status(404).json({ error: "Not found" });
+  const result = recordPublicationView(pub.id, req.userId!);
+  if (result.counted && pub.userId) {
+    try {
+      evaluateBloggerV1(pub.userId);
+    } catch {
+      /* non-fatal */
+    }
+  }
+  res.json(result);
 });
 
 router.post("/:id/like", authMiddleware, (req: AuthRequest, res) => {

@@ -9,6 +9,7 @@ import { Frame } from "@/components/Frame";
 import { auth } from "@/lib/api";
 import { useLocale } from "@/lib/LocaleContext";
 import { APP_FEED_HOME } from "@/lib/appHome";
+import { isPlatformOwnerUser } from "@/lib/owner";
 
 export default function LoginPage() {
   return (
@@ -40,8 +41,8 @@ function LoginInner() {
 
   useEffect(() => {
     if (loading) return;
-    if (user?.platformRole) router.replace(APP_FEED_HOME);
-  }, [loading, user?.platformRole, router]);
+    if (user?.platformRole || isPlatformOwnerUser(user)) router.replace(APP_FEED_HOME);
+  }, [loading, user, router]);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();

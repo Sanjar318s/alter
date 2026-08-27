@@ -56,7 +56,6 @@ function MeInner() {
 
   const [nick, setNick] = useState(username);
   const [display, setDisplay] = useState("");
-  const [role, setRole] = useState("cosplayer");
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState("");
   const [bio, setBio] = useState("");
@@ -81,6 +80,7 @@ function MeInner() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [socials, setSocials] = useState<{ platform: string; url: string }[]>([]);
+  const [socialCrosspostOptIn, setSocialCrosspostOptIn] = useState(true);
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
     orders: true,
     messages: true,
@@ -94,6 +94,16 @@ function MeInner() {
   const [activity, setActivity] = useState<number[]>([]);
   const [balance, setBalance] = useState(0);
   const [loadError, setLoadError] = useState("");
+  const [premiumProgress, setPremiumProgress] = useState<{
+    youtubeReelsAt1M: number;
+    youtubeReelsNeeded: number;
+    platformViews: number;
+    platformViewsNeeded: number;
+    platformComments: number;
+    platformCommentsNeeded: number;
+    qualifies: boolean;
+    activeGrant: { id: string; startsAt: string; endsAt: string } | null;
+  } | null>(null);
 
   function mark() {
     setDirty(true);
@@ -121,8 +131,8 @@ function MeInner() {
         const p = me.profile || {};
         setNick(me.user.username);
         setEmail(me.user.email || "");
+        setSocialCrosspostOptIn(me.user.socialCrosspostOptIn !== false && me.user.socialCrosspostOptIn !== 0);
         setDisplay(p.displayName || "");
-        setRole(me.user.roleFlags || "cosplayer");
         setBio(p.bio || "");
         setCity(p.city || "");
         setPhone(p.phone || me.user.phone || "");
@@ -161,6 +171,14 @@ function MeInner() {
         if (pr.settings) setPrivacy({ ...privacy, ...pr.settings });
         setComplete(completeness as any);
         setBalance(fin.available || 0);
+        if (me.user.platformRole === "blogger") {
+          try {
+            const pr = await account.premium();
+            setPremiumProgress(pr.progress);
+          } catch {
+            setPremiumProgress(null);
+          }
+        }
         try {
           const s = await users.stats(me.user.username);
           setStats({
@@ -210,7 +228,6 @@ function MeInner() {
         maxActiveOrders: maxOrders,
         dateOfBirth: dob,
         showAge,
-        roleFlags: role,
         avatarUrl,
         coverUrl,
         commissionComplexity: complexity || null,
@@ -219,6 +236,7 @@ function MeInner() {
         experienceYears: expYears === "" ? null : Number(expYears),
         materialsJson: JSON.stringify(materials.split(",").map((s) => s.trim()).filter(Boolean)),
         linksJson: JSON.stringify(Object.fromEntries(socials.filter((s) => s.url).map((s) => [s.platform, s.url]))),
+        socialCrosspostOptIn,
       });
       await refresh();
       setDirty(false);
@@ -334,13 +352,19 @@ function MeInner() {
                   <Field label="Имя">
                     <input className="field" value={display} onChange={(e) => { setDisplay(e.target.value); mark(); }} />
                   </Field>
-                  <Field label="Роль">
-                    <select className="field-box" value={role} onChange={(e) => { setRole(e.target.value); mark(); }}>
-                      <option value="cosplayer">Косплеер</option>
-                      <option value="maker">Мейкер</option>
-                      <option value="photographer">Фотограф</option>
-                      <option value="cosplayer,maker">Косплеер + мейкер</option>
-                    </select>
+                  <Field label="Роль на платформе">
+                    <div className="field-box flex items-center text-[14px] text-paper">
+                      {user?.platformRole === "client"
+                        ? "Клиент"
+                        : user?.platformRole === "blogger"
+                          ? "Блогер"
+                          : user?.platformRole === "seller"
+                            ? "Продавец"
+                            : "Не выбрана"}
+                    </div>
+                    <p className="text-[12px] text-ink-45 mt-1">
+                      Смена роли — через заявку во вкладке «Безопасность».
+                    </p>
                   </Field>
                   <Field label="Email">
                     <input className="field" value={email} disabled />
@@ -419,6 +443,23 @@ function MeInner() {
 
             {settingsTab === "socials" && (
               <div className="flex flex-col gap-3 max-w-[520px]">
+                <label className="flex items-start gap-2 text-[13px] text-ink-70 cursor-pointer border border-line p-3">
+                  <input
+                    type="checkbox"
+                    className="mt-1"
+                    checked={socialCrosspostOptIn}
+                    onChange={(e) => {
+                      setSocialCrosspostOptIn(e.target.checked);
+                      mark();
+                    }}
+                  />
+                  <span>
+                    <span className="text-paper">Репост в соцсети бренда AlterCosPlay</span>
+                    <span className="block text-[12px] text-ink-45 mt-0.5">
+                      По умолчанию для новых рилсов и работ. Можно снять галочку при публикации.
+                    </span>
+                  </span>
+                </label>
                 {socials.map((s, i) => (
                   <div key={i} className="flex gap-2 items-center">
                     <BrandIcon name={s.platform} />
@@ -501,6 +542,28 @@ function MeInner() {
                 )}
               </ul>
             </Frame>
+            {user?.platformRole === "blogger" && premiumProgress && (
+              <Frame className="p-4 bg-stage">
+                <div className="font-mono text-[11px] text-amber mb-2">PREMIUM · blogger</div>
+                {premiumProgress.activeGrant ? (
+                  <p className="text-[13px] text-paper">
+                    Активен до {new Date(premiumProgress.activeGrant.endsAt).toLocaleDateString("ru")}
+                  </p>
+                ) : (
+                  <ul className="text-[12px] text-ink-70 space-y-1">
+                    <li>
+                      YouTube 1M+: {premiumProgress.youtubeReelsAt1M}/{premiumProgress.youtubeReelsNeeded} рилсов
+                    </li>
+                    <li>
+                      Просмотры на платформе: {premiumProgress.platformViews}/{premiumProgress.platformViewsNeeded}
+                    </li>
+                    <li>
+                      Комментарии: {premiumProgress.platformComments}/{premiumProgress.platformCommentsNeeded}
+                    </li>
+                  </ul>
+                )}
+              </Frame>
+            )}
             <Frame className="p-4 bg-stage">
               <div className="font-mono text-[11px] text-ink-45">Баланс</div>
               <div className="font-mono text-[18px] mt-1">{formatSum(balance)}</div>

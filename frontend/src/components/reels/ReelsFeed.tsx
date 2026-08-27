@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { PostLightbox } from "@/components/profile/PostLightbox";
+import { SocialStats } from "@/components/social/SocialStats";
 import { cn } from "@/lib/cn";
 
 type FeedItem = Publication & {
@@ -55,6 +56,20 @@ export function ReelsFeed({ className, compact = false }: ReelsFeedProps) {
     el.addEventListener("scroll", onScroll, { passive: true });
     return () => el.removeEventListener("scroll", onScroll);
   }, [items.length]);
+
+  const viewedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!user || !items[index]) return;
+    const id = items[index].id;
+    if (viewedRef.current.has(id)) return;
+    viewedRef.current.add(id);
+    const t = setTimeout(() => {
+      publicationsApi.view(id).catch(() => {
+        viewedRef.current.delete(id);
+      });
+    }, 800);
+    return () => clearTimeout(t);
+  }, [index, items, user]);
 
   async function toggleLike(item: FeedItem) {
     if (!user) {
@@ -159,6 +174,7 @@ export function ReelsFeed({ className, compact = false }: ReelsFeedProps) {
                   {item.caption && (
                     <p className="text-[13px] text-ink-70 mt-2 line-clamp-3">{item.caption}</p>
                   )}
+                  <SocialStats social={(item as any).social} />
                 </div>
                 <div className="absolute right-3 bottom-28 flex flex-col gap-3">
                   <button

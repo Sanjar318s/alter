@@ -13,7 +13,6 @@ export default function ContactsPage() {
         Жалоба на пользователя или контент — через кнопку «Пожаловаться» в профиле или в чате. Заявки смотрит
         администратор, а не робот.
       </p>
-      <p>Для демо-входа: ник <code className="text-paper">demo.nyx</code> или <code className="text-paper">luna.s</code>, пароль <code className="text-paper">alter123</code>.</p>
     </LegalPage>
   );
 }

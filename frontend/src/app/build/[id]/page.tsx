@@ -16,6 +16,7 @@ import { SmartImage } from "@/components/media/SmartImage";
 import { builds as buildsApi, commissions, messages as messagesApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/AuthContext";
+import { SocialStats } from "@/components/social/SocialStats";
 
 export default function BuildPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -95,6 +96,7 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
             </Link>
           )}
           {b.description && <p className="text-[14px] text-ink-70 mt-4 whitespace-pre-wrap">{b.description}</p>}
+          <SocialStats social={b.social} />
           <div className="flex gap-3 mt-6">
             <Button variant="outline" size="sm" onClick={like}>
               <Heart size={14} className="mr-1" /> {formatCount(b.likesCount || 0)}

@@ -78,6 +78,7 @@ export function CreateBuildModal({
   const [offerServices, setOfferServices] = useState(initial?.commissionStatus === "open");
   const [price, setPrice] = useState(String(initial?.price || ""));
   const [credits, setCredits] = useState<{ username: string; role: string }[]>([]);
+  const [socialOptIn, setSocialOptIn] = useState(true);
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
@@ -146,6 +147,7 @@ export function CreateBuildModal({
         commissionStatus: offerServices ? "open" : "closed",
         photos: photos.map((p) => ({ imageUrl: p.url })),
         credits,
+        ...(!initial?.id ? { socialCrosspostOptIn: socialOptIn } : {}),
       };
       if (initial?.id) await buildsApi.update(initial.id, payload);
       else await buildsApi.create(payload);
@@ -249,6 +251,20 @@ export function CreateBuildModal({
               <span className="block text-[12px] text-ink-45">Клиенты смогут заказать похожий костюм или услугу</span>
             </span>
           </label>
+          {!initial?.id && (
+            <label className="flex items-start gap-2 text-[13px] text-ink-70 cursor-pointer">
+              <input
+                type="checkbox"
+                className="mt-1"
+                checked={socialOptIn}
+                onChange={(e) => setSocialOptIn(e.target.checked)}
+              />
+              <span>
+                <span className="text-paper">Разрешить репост в YouTube / Instagram / Facebook / TikTok аккаунтов AlterCosPlay</span>
+                <span className="block text-[12px] text-ink-45">Работа может появиться в Instagram и Facebook бренда</span>
+              </span>
+            </label>
+          )}
           {offerServices && (
             <input
               className="field"

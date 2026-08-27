@@ -7,13 +7,14 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/lib/AuthContext";
-import { admin, messages, uploadFile } from "@/lib/api";
+import { admin, health, messages, uploadFile } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useLocale } from "@/lib/LocaleContext";
 import { AdminDashboard, type HelpTopic, type UserSectionKey } from "@/components/admin/AdminDashboard";
 import { BlockUserModal, BLOCK_REASONS } from "@/components/admin/BlockUserModal";
 import { UserDossierModal } from "@/components/admin/UserDossierModal";
 import { AdminRoleChangePanel } from "@/components/admin/AdminRoleChangePanel";
+import { AdminSocialPanel } from "@/components/admin/AdminSocialPanel";
 
 const ROLE_PRESETS: Record<string, Record<string, boolean>> = {
   support: {
@@ -61,6 +62,7 @@ const HELP_CONTENT: Record<HelpTopic, { title: string; lines: string[] }> = {
       "Панель показывает агрегированное здоровье модерации: нагрузку команды, просроченные P1/P2 и статус авто-эскалации.",
       "Красная зона — 3+ критичных просроченных или перегруз модератора (20+ активных кейсов). Жёлтая — есть просроченные или нагрузка от 12 кейсов.",
       "Кнопки позволяют быстро эскалировать просроченные жалобы, перейти к P1 или обновить метрики.",
+      "Workers: app (API), telegram (нужен TELEGRAM_SESSION — без него только этот процесс падает), social (очередь соцсетей; без OAuth джобы откладываются).",
     ],
   },
   autoEscalation: {
@@ -172,6 +174,11 @@ export default function AdminPage() {
   const [rbacOpen, setRbacOpen] = useState(false);
   const [channelsOpen, setChannelsOpen] = useState(false);
   const [showAllUsers, setShowAllUsers] = useState(false);
+  const [workerHealth, setWorkerHealth] = useState<{
+    workers?: Record<string, string>;
+    paymentsLive?: boolean;
+    socialOAuthConfigured?: Record<string, boolean>;
+  } | null>(null);
 
   const isAdmin =
     (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
@@ -217,6 +224,10 @@ export default function AdminPage() {
         admin
           .auditEvents({ type: auditType, severity: auditSeverity, actor: auditActor, q: auditQuery, limit: 120 })
           .then((x) => setAuditEvents(x.events || []))
+          .catch(() => {});
+        health
+          .get()
+          .then((h) => setWorkerHealth(h))
           .catch(() => {});
         setLastUpdated(new Date());
         setError("");
@@ -637,9 +648,34 @@ export default function AdminPage() {
         </Modal>
       )}
 
-      {perms.canViewUsers && (
+      {(perms?.isOwner || perms?.permissions?.canViewUsers || perms?.canViewUsers) && (
         <div className="px-4 pb-8 max-w-[1100px] mx-auto w-full">
           <AdminRoleChangePanel />
+          {Boolean(perms?.isOwner) && workerHealth?.workers && (
+            <div className="border border-line p-4 mb-4 bg-stage">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2">
+                Workers · health
+              </div>
+              <ul className="text-[12px] text-ink-70 space-y-1.5">
+                {Object.entries(workerHealth.workers).map(([k, v]) => (
+                  <li key={k}>
+                    <span className="text-paper font-mono text-[11px]">{k}</span> — {v}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-[11px] text-ink-45 mt-2">
+                Платежи: {workerHealth.paymentsLive ? "LIVE" : "выкл (PAYMENTS_LIVE)"}
+                {workerHealth.socialOAuthConfigured
+                  ? ` · OAuth env: YT ${workerHealth.socialOAuthConfigured.youtube ? "ok" : "—"}, Meta ${
+                      workerHealth.socialOAuthConfigured.meta ? "ok" : "—"
+                    }, TikTok ${workerHealth.socialOAuthConfigured.tiktok ? "ok" : "—"}, Gemini ${
+                      workerHealth.socialOAuthConfigured.gemini ? "ok" : "—"
+                    }`
+                  : null}
+              </p>
+            </div>
+          )}
+          {Boolean(perms?.isOwner) && <AdminSocialPanel />}
         </div>
       )}
     </StudioShell>

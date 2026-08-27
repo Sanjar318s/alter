@@ -12,6 +12,7 @@ interface User {
   roleFlags?: string;
   avatarUrl?: string;
   platformRole?: PlatformRole | null;
+  socialCrosspostOptIn?: boolean;
 }
 
 type RegisterStart = {
@@ -52,6 +53,7 @@ function mapUser(data: { user: any; profile?: any }): User {
     roleFlags: data.user.roleFlags,
     avatarUrl: data.profile?.avatarUrl,
     platformRole,
+    socialCrosspostOptIn: data.user.socialCrosspostOptIn !== false && data.user.socialCrosspostOptIn !== 0,
   };
 }
 

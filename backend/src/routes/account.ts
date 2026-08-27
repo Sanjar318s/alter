@@ -5,6 +5,7 @@ import { eq, ne, and } from "drizzle-orm";
 import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { flagsForUsername } from "../lib/owner";
+import { evaluateBloggerV1, getBloggerPremiumProgress } from "../lib/premium/evaluateBloggerV1";
 
 const router = Router();
 
@@ -79,6 +80,7 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
     materialsJson,
     uiLocale,
     uiCurrency,
+    socialCrosspostOptIn,
   } = req.body;
 
   const ALLOWED_PLATFORM_ROLES = new Set(["client", "blogger", "seller"]);
@@ -93,6 +95,13 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
       });
     }
     db.update(schema.users).set({ platformRole: next }).where(eq(schema.users.id, user.id)).run();
+  }
+
+  if (socialCrosspostOptIn !== undefined) {
+    db.update(schema.users)
+      .set({ socialCrosspostOptIn: socialCrosspostOptIn ? 1 : 0 })
+      .where(eq(schema.users.id, user.id))
+      .run();
   }
 
   const nextUsername = username && username !== user.username ? String(username).trim() : user.username;
@@ -151,6 +160,7 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
       username: updatedUser!.username,
       roleFlags: updatedUser!.roleFlags,
       platformRole: updatedUser!.platformRole || null,
+      socialCrosspostOptIn: updatedUser!.socialCrosspostOptIn !== 0,
     },
     profile,
   });
@@ -314,6 +324,16 @@ router.post("/role-change-requests", authMiddleware, (req: AuthRequest, res) => 
 
   const row = db.select().from(schema.moderationRequests).where(eq(schema.moderationRequests.id, id)).get();
   res.status(201).json({ request: row });
+});
+
+router.get("/premium", authMiddleware, (req: AuthRequest, res) => {
+  const user = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
+  if (!user) return res.status(401).json({ error: "Unauthorized" });
+  if (user.platformRole !== "blogger") {
+    return res.json({ progress: null, message: "Premium progress is for bloggers" });
+  }
+  evaluateBloggerV1(user.id);
+  res.json({ progress: getBloggerPremiumProgress(user.id) });
 });
 
 export default router;

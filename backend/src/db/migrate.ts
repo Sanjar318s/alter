@@ -515,7 +515,31 @@ export function migrate() {
       extra_json TEXT,
       updated_at INTEGER NOT NULL DEFAULT (unixepoch())
     );
+
+    CREATE TABLE IF NOT EXISTS publication_views (
+      id TEXT PRIMARY KEY,
+      publication_id TEXT NOT NULL REFERENCES publications(id) ON DELETE CASCADE,
+      viewer_user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      counted_at INTEGER NOT NULL DEFAULT (unixepoch()),
+      window_started_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_publication_views_pair ON publication_views(publication_id, viewer_user_id);
+
+    CREATE TABLE IF NOT EXISTS premium_grants (
+      id TEXT PRIMARY KEY,
+      user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      rule_set TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'active',
+      starts_at INTEGER NOT NULL,
+      ends_at INTEGER NOT NULL,
+      snapshot_json TEXT,
+      created_at INTEGER NOT NULL DEFAULT (unixepoch())
+    );
+    CREATE INDEX IF NOT EXISTS idx_premium_grants_user ON premium_grants(user_id, status);
   `);
 
   addColumn("users", "social_crosspost_opt_in", "INTEGER DEFAULT 1");
+  addColumn("publications", "counted_views", "INTEGER DEFAULT 0");
+  addColumn("comments", "counts_for_premium", "INTEGER DEFAULT 0");
+  addColumn("social_posts", "views_count", "INTEGER DEFAULT 0");
 }
