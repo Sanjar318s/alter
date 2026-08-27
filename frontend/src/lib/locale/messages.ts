@@ -1,7 +1,7 @@
 import type { UiLang } from "./regions";
 
 const ru = {
-  explore: "Исследовать",
+  explore: "Биржа",
   reels: "Рилсы",
   reelsHint: "Косплей-видео и фото в ленте",
   reelsShort: "Рилсы",
@@ -32,7 +32,7 @@ const ru = {
   noNotifications: "Нет уведомлений",
   markAllRead: "Отметить все прочитанными",
   rate: "Курс",
-  exploreHint: "Работы, мейкеры и открытые заказы",
+  exploreHint: "Каталог работ и заказов",
   studioHint: "Доска заявок, депозиты и дедлайны",
   messagesHint: "Личные диалоги и тематические каналы",
   studioShort: "Студия",
@@ -179,7 +179,7 @@ const ru = {
 };
 
 const en: typeof ru = {
-  explore: "Explore",
+  explore: "Marketplace",
   reels: "Reels",
   reelsHint: "Cosplay video and photo feed",
   reelsShort: "Reels",
@@ -210,7 +210,7 @@ const en: typeof ru = {
   noNotifications: "No notifications",
   markAllRead: "Mark all as read",
   rate: "Rate",
-  exploreHint: "Works, makers and open orders",
+  exploreHint: "Works catalog and orders",
   studioHint: "Requests board, deposits and deadlines",
   messagesHint: "Direct messages and topic channels",
   studioShort: "Studio",

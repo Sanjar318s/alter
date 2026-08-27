@@ -20,6 +20,33 @@ const Ctx = createContext<NavPanelCtx>({
   toggle: () => {},
 });
 
+/** Infer panel from route. null = keep current (e.g. /messages, /me, /admin). */
+export function panelForPath(pathname: string): NavPanel | null {
+  if (
+    pathname.startsWith("/reels") ||
+    pathname === "/" ||
+    pathname.startsWith("/about") ||
+    pathname.startsWith("/help")
+  ) {
+    return "feed";
+  }
+  if (
+    pathname.startsWith("/explore") ||
+    pathname.startsWith("/studio") ||
+    pathname.startsWith("/build") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/partners") ||
+    pathname.startsWith("/events")
+  ) {
+    return "work";
+  }
+  return null;
+}
+
+export function panelHomeHref(panel: NavPanel): string {
+  return panel === "feed" ? "/reels" : "/explore";
+}
+
 export function NavPanelProvider({ children }: { children: ReactNode }) {
   const [panel, setPanelState] = useState<NavPanel>("feed");
 
@@ -53,5 +80,5 @@ export function useNavPanel() {
 }
 
 export function panelToggleLabel(_role: PlatformRole | null | undefined, panel: NavPanel): string {
-  return panel === "feed" ? "Лента" : "Фриланс Биржа";
+  return panel === "feed" ? "Лента" : "Биржа";
 }

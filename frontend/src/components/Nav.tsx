@@ -31,7 +31,7 @@ import { subscribeRealtime } from "@/lib/realtimeHub";
 import { useSWRConfig } from "swr";
 import { LocaleSettings } from "@/components/LocaleSettings";
 import { useLocale } from "@/lib/LocaleContext";
-import { panelToggleLabel, useNavPanel, type NavPanel } from "@/lib/NavPanelContext";
+import { panelForPath, panelHomeHref, useNavPanel, type NavPanel } from "@/lib/NavPanelContext";
 import type { PlatformRole } from "@/lib/AuthContext";
 import { homePathForUser } from "@/lib/appHome";
 import { isPlatformOwnerUser } from "@/lib/owner";
@@ -74,9 +74,9 @@ const LINK_DEFS: LinkDef[] = [
     labelKey: "explore",
     hintKey: "exploreHint",
     shortKey: "explore",
-    text: "Работы",
-    hintText: "Лента работ продавцов",
-    short: "Работы",
+    text: "Биржа",
+    hintText: "Каталог работ и заказов",
+    short: "Биржа",
     roles: ["client", "blogger", "seller"],
     panel: "work",
   },
@@ -114,9 +114,9 @@ const GUEST_LINKS: LinkDef[] = [
     labelKey: "explore",
     hintKey: "exploreHint",
     shortKey: "explore",
-    text: "Работы",
-    hintText: "Лента работ продавцов",
-    short: "Работы",
+    text: "Биржа",
+    hintText: "Каталог работ и заказов",
+    short: "Биржа",
     roles: [],
     panel: "work",
   },
@@ -236,7 +236,7 @@ export function Nav() {
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const { t } = useLocale();
-  const { panel, setPanel, toggle } = useNavPanel();
+  const { panel, setPanel } = useNavPanel();
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
   const isOwnerUser = isPlatformOwnerUser(user);
   const role = (isOwnerUser ? user?.platformRole ?? "seller" : user?.platformRole) ?? null;
@@ -301,6 +301,11 @@ export function Nav() {
     setBellOpen(false);
     setSettingsOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const inferred = panelForPath(pathname);
+    if (inferred && inferred !== panel) setPanel(inferred);
+  }, [pathname, panel, setPanel]);
 
   useEffect(() => {
     document.body.style.overflow = mobileOpen ? "hidden" : "";
@@ -391,14 +396,39 @@ export function Nav() {
               )}
             </div>
             {showPanelToggle && (
-              <button
-                type="button"
-                onClick={toggle}
-                title="Переключить меню"
-                className="hidden md:inline-flex items-center h-9 px-2.5 text-[11px] font-mono uppercase tracking-wide border border-line text-ink-70 hover:border-magenta hover:text-magenta bg-transparent"
+              <div
+                className="hidden md:inline-flex border border-line h-9"
+                role="tablist"
+                aria-label="Режим меню"
               >
-                {panelToggleLabel(role, panel)}
-              </button>
+                {(
+                  [
+                    { id: "feed" as const, label: "Лента" },
+                    { id: "work" as const, label: "Биржа" },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={panel === tab.id}
+                    onClick={() => {
+                      setPanel(tab.id);
+                      if (panelForPath(pathname) !== tab.id) {
+                        router.push(panelHomeHref(tab.id));
+                      }
+                    }}
+                    className={cn(
+                      "px-2.5 text-[11px] font-mono uppercase tracking-wide border-0 h-full transition-colors",
+                      panel === tab.id
+                        ? "bg-stage text-paper"
+                        : "bg-transparent text-ink-45 hover:text-paper"
+                    )}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
             )}
             <span className="w-px h-5 bg-line mx-0.5 hidden xl:block" />
             <div className="relative">
@@ -619,7 +649,13 @@ export function Nav() {
                       type="button"
                       role="tab"
                       aria-selected={panel === tab.id}
-                      onClick={() => setPanel(tab.id)}
+                      onClick={() => {
+                        setPanel(tab.id);
+                        setMobileOpen(false);
+                        if (panelForPath(pathname) !== tab.id) {
+                          router.push(panelHomeHref(tab.id));
+                        }
+                      }}
                       className={cn(
                         "px-3 py-2.5 text-left border-0 transition-colors",
                         panel === tab.id

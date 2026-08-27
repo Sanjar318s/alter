@@ -388,44 +388,48 @@ function MeInner() {
                   <Field label="Языки">
                     <input className="field" value={langs} onChange={(e) => { setLangs(e.target.value); mark(); }} />
                   </Field>
-                  <Field label="Специализации / навыки">
-                    <input className="field" value={specs} onChange={(e) => { setSpecs(e.target.value); mark(); }} placeholder="крой, wig styling" />
-                  </Field>
-                  <Field label="Опыт (лет)">
-                    <input className="field" type="number" min={0} value={expYears} onChange={(e) => { setExpYears(e.target.value); mark(); }} />
-                  </Field>
-                  <Field label="Материалы">
-                    <input className="field" value={materials} onChange={(e) => { setMaterials(e.target.value); mark(); }} placeholder="EVA, термопластик" />
-                  </Field>
-                  <Field label="Доступность">
-                    <select className="field-box" value={availability} onChange={(e) => { setAvailability(e.target.value); mark(); }}>
-                      <option value="open">Открыт</option>
-                      <option value="limited">Ограничен</option>
-                      <option value="closed">Закрыт</option>
-                    </select>
-                  </Field>
-                  <Field label="Сложность заказов">
-                    <select className="field-box" value={complexity} onChange={(e) => { setComplexity(e.target.value); mark(); }}>
-                      <option value="">Не указано</option>
-                      <option value="Низкая">Низкая</option>
-                      <option value="Средняя">Средняя</option>
-                      <option value="Средняя–высокая">Средняя–высокая</option>
-                      <option value="Высокая">Высокая</option>
-                    </select>
-                  </Field>
-                  <Field label="Типы работ">
-                    <input className="field" value={commTypes} onChange={(e) => { setCommTypes(e.target.value); mark(); }} placeholder="Костюмы, корсеты" />
-                  </Field>
-                  <Field label="Типичный срок">
-                    <input className="field" value={commDuration} onChange={(e) => { setCommDuration(e.target.value); mark(); }} placeholder="3–6 недель" />
-                  </Field>
-                  <Field label="Макс. заказов">
-                    <div className="flex items-center gap-3">
-                      <Button variant="outline" size="sm" onClick={() => { setMaxOrders(Math.max(1, maxOrders - 1)); mark(); }}>−</Button>
-                      <span className="font-mono">{maxOrders}</span>
-                      <Button variant="outline" size="sm" onClick={() => { setMaxOrders(maxOrders + 1); mark(); }}>+</Button>
-                    </div>
-                  </Field>
+                  {!isClient && (
+                    <>
+                      <Field label="Специализации / навыки">
+                        <input className="field" value={specs} onChange={(e) => { setSpecs(e.target.value); mark(); }} placeholder="крой, wig styling" />
+                      </Field>
+                      <Field label="Опыт (лет)">
+                        <input className="field" type="number" min={0} value={expYears} onChange={(e) => { setExpYears(e.target.value); mark(); }} />
+                      </Field>
+                      <Field label="Материалы">
+                        <input className="field" value={materials} onChange={(e) => { setMaterials(e.target.value); mark(); }} placeholder="EVA, термопластик" />
+                      </Field>
+                      <Field label="Доступность">
+                        <select className="field-box" value={availability} onChange={(e) => { setAvailability(e.target.value); mark(); }}>
+                          <option value="open">Открыт</option>
+                          <option value="limited">Ограничен</option>
+                          <option value="closed">Закрыт</option>
+                        </select>
+                      </Field>
+                      <Field label="Сложность заказов">
+                        <select className="field-box" value={complexity} onChange={(e) => { setComplexity(e.target.value); mark(); }}>
+                          <option value="">Не указано</option>
+                          <option value="Низкая">Низкая</option>
+                          <option value="Средняя">Средняя</option>
+                          <option value="Средняя–высокая">Средняя–высокая</option>
+                          <option value="Высокая">Высокая</option>
+                        </select>
+                      </Field>
+                      <Field label="Типы работ">
+                        <input className="field" value={commTypes} onChange={(e) => { setCommTypes(e.target.value); mark(); }} placeholder="Костюмы, корсеты" />
+                      </Field>
+                      <Field label="Типичный срок">
+                        <input className="field" value={commDuration} onChange={(e) => { setCommDuration(e.target.value); mark(); }} placeholder="3–6 недель" />
+                      </Field>
+                      <Field label="Макс. заказов">
+                        <div className="flex items-center gap-3">
+                          <Button variant="outline" size="sm" onClick={() => { setMaxOrders(Math.max(1, maxOrders - 1)); mark(); }}>−</Button>
+                          <span className="font-mono">{maxOrders}</span>
+                          <Button variant="outline" size="sm" onClick={() => { setMaxOrders(maxOrders + 1); mark(); }}>+</Button>
+                        </div>
+                      </Field>
+                    </>
+                  )}
                   <div className="flex gap-2">
                     <Button disabled={!dirty} onClick={save}>Сохранить</Button>
                     <Button variant="outline" onClick={() => window.location.reload()}>Сброс</Button>
