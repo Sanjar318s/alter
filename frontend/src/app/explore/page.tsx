@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, Suspense, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -27,6 +27,20 @@ import type { AdPlacementResponse } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 
 const PAGE = 24;
+
+const FALLBACK_CATEGORIES: { id: string; name: string; count: number }[] = [
+  { id: "all", name: "Все категории", count: 0 },
+  { id: "genshin-impact", name: "Genshin Impact", count: 0 },
+  { id: "honkai-star-rail", name: "Honkai: Star Rail", count: 0 },
+  { id: "nier-automata", name: "Nier: Automata", count: 0 },
+  { id: "league-of-legends", name: "League of Legends", count: 0 },
+  { id: "vocaloid", name: "Vocaloid", count: 0 },
+  { id: "chainsaw-man", name: "Chainsaw Man", count: 0 },
+  { id: "demon-slayer", name: "Demon Slayer", count: 0 },
+  { id: "jujutsu-kaisen", name: "Jujutsu Kaisen", count: 0 },
+  { id: "overwatch", name: "Overwatch", count: 0 },
+  { id: "other", name: "Другие", count: 0 },
+];
 
 type ExploreCard = {
   id: string;
@@ -94,6 +108,10 @@ function ExploreClient() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [draftCategory, setDraftCategory] = useState("all");
+  const [draftCommissionOpen, setDraftCommissionOpen] = useState(false);
+  const [draftPriceMin, setDraftPriceMin] = useState("");
+  const [draftPriceMax, setDraftPriceMax] = useState("");
   const [liked, setLiked] = useState<Record<string, boolean>>({});
   const [feedSponsor, setFeedSponsor] = useState<AdPlacementResponse["placement"]>(null);
   const [sidebarEvent, setSidebarEvent] = useState<AdPlacementResponse["placement"]>(null);
@@ -184,74 +202,177 @@ function ExploreClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, role, category, commission, sort, priceMin, priceMax]);
 
-  const selectedStatuses = useMemo(
-    () => new Set(commission.split(",").filter(Boolean)),
-    [commission]
-  );
+  useEffect(() => {
+    if (!filtersOpen) return;
+    setDraftCategory(category || "all");
+    setDraftCommissionOpen(commission === "open");
+    setDraftPriceMin(priceMin);
+    setDraftPriceMax(priceMax);
+  }, [filtersOpen, category, commission, priceMin, priceMax]);
 
-  const statusChip = (id: string, label: string, count: number, color: string) => (
-    <label key={id} className="flex items-center gap-2 py-1.5 cursor-pointer text-[13px]">
-      <input
-        type="checkbox"
-        className="accent-magenta"
-        checked={selectedStatuses.has(id)}
-        onChange={() => {
-          const next = new Set(selectedStatuses);
-          if (next.has(id)) next.delete(id);
-          else next.add(id);
-          setParam({ commission: [...next].join(",") || undefined });
-        }}
-      />
-      <span className={color}>{label}</span>
-      <span className="ml-auto font-mono text-[11px] text-ink-45">{count}</span>
-    </label>
-  );
+  useEffect(() => {
+    if (!filtersOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [filtersOpen]);
 
-  const FiltersPanel = (
-    <>
-      <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-45 mb-3">Категории</div>
-      <div className="flex flex-col mb-8">
-        {cats.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => setParam({ category: c.id === "all" ? undefined : c.id })}
-            className={cn(
-              "text-left py-1.5 pl-2 text-[13px] border-l-2 bg-transparent",
-              (category || "all") === c.id
-                ? "border-magenta text-magenta"
-                : "border-transparent text-ink-70 hover:text-paper"
+  function applyMobileFilters() {
+    setParam({
+      category: draftCategory === "all" ? undefined : draftCategory,
+      commission: draftCommissionOpen ? "open" : undefined,
+      priceMin: draftPriceMin.trim() || undefined,
+      priceMax: draftPriceMax.trim() || undefined,
+      role: draftCommissionOpen ? undefined : role || undefined,
+    });
+    setFiltersOpen(false);
+  }
+
+  function resetMobileFilters() {
+    setDraftCategory("all");
+    setDraftCommissionOpen(false);
+    setDraftPriceMin("");
+    setDraftPriceMax("");
+  }
+
+  const displayCats = cats.length > 0 ? cats : FALLBACK_CATEGORIES;
+  const commissionOpenLive = commission === "open" || role === "open";
+
+  function renderFiltersPanel(opts: {
+    mode: "live" | "draft";
+    categoryValue: string;
+    onCategoryChange: (id: string) => void;
+    commissionOpen: boolean;
+    onCommissionOpenChange: (open: boolean) => void;
+    priceMinValue: string;
+    priceMaxValue: string;
+    onPriceMinChange: (value: string) => void;
+    onPriceMaxChange: (value: string) => void;
+  }) {
+    const {
+      mode,
+      categoryValue,
+      onCategoryChange,
+      commissionOpen,
+      onCommissionOpenChange,
+      priceMinValue,
+      priceMaxValue,
+      onPriceMinChange,
+      onPriceMaxChange,
+    } = opts;
+
+    return (
+      <>
+        <div className="explore-filter-section">
+          <div className="explore-filter-heading">Категории</div>
+          <div className="flex flex-col">
+            {displayCats.map((c) => {
+              const active = categoryValue === c.id;
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => onCategoryChange(c.id)}
+                  className={cn(
+                    "explore-filter-category",
+                    active && "explore-filter-category--active"
+                  )}
+                >
+                  <span>{c.name}</span>
+                  {c.count > 0 && (
+                    <span className="font-mono text-[11px] text-ink-45 tabular-nums">{c.count}</span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="explore-filter-section">
+          <div className="explore-filter-heading">Можно заказать</div>
+          <label className="explore-filter-checkbox-row">
+            <span className="flex items-center gap-2.5 min-w-0">
+              <input
+                type="checkbox"
+                className="explore-filter-checkbox"
+                checked={commissionOpen}
+                onChange={(e) => onCommissionOpenChange(e.target.checked)}
+              />
+              <span className={cn("text-[14px]", commissionOpen ? "text-magenta" : "text-paper")}>
+                {t("openCommissions")}
+              </span>
+            </span>
+            {statuses.open > 0 && (
+              <span className="font-mono text-[11px] text-ink-45 tabular-nums">{statuses.open}</span>
             )}
-          >
-            {c.name}
-            <span className="font-mono text-[11px] text-ink-45 ml-2">{c.count}</span>
-          </button>
-        ))}
-      </div>
-      <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-45 mb-3">Можно заказать</div>
-      {statusChip("open", t("openCommissions"), statuses.open, "text-magenta")}
-      <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-45 mt-6 mb-3">Цена (сум)</div>
-      <div className="flex gap-2">
-        <input
-          className="field-box py-2 text-[12px]"
-          placeholder={t("from")}
-          defaultValue={priceMin}
-          onBlur={(e) => setParam({ priceMin: e.target.value || undefined })}
-        />
-        <input
-          className="field-box py-2 text-[12px]"
-          placeholder={t("to")}
-          defaultValue={priceMax}
-          onBlur={(e) => setParam({ priceMax: e.target.value || undefined })}
-        />
-      </div>
-    </>
-  );
+          </label>
+        </div>
+
+        <div className="explore-filter-section">
+          <div className="explore-filter-heading">Цена (сум)</div>
+          <div className="flex gap-2">
+            {mode === "draft" ? (
+              <>
+                <input
+                  className="explore-filter-price-input"
+                  placeholder={t("from")}
+                  value={priceMinValue}
+                  inputMode="numeric"
+                  onChange={(e) => onPriceMinChange(e.target.value)}
+                />
+                <input
+                  className="explore-filter-price-input"
+                  placeholder={t("to")}
+                  value={priceMaxValue}
+                  inputMode="numeric"
+                  onChange={(e) => onPriceMaxChange(e.target.value)}
+                />
+              </>
+            ) : (
+              <>
+                <input
+                  key={`min-${priceMinValue}`}
+                  className="explore-filter-price-input"
+                  placeholder={t("from")}
+                  defaultValue={priceMinValue}
+                  inputMode="numeric"
+                  onBlur={(e) => onPriceMinChange(e.target.value)}
+                />
+                <input
+                  key={`max-${priceMaxValue}`}
+                  className="explore-filter-price-input"
+                  placeholder={t("to")}
+                  defaultValue={priceMaxValue}
+                  inputMode="numeric"
+                  onBlur={(e) => onPriceMaxChange(e.target.value)}
+                />
+              </>
+            )}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  const sidebarFilters = renderFiltersPanel({
+    mode: "live",
+    categoryValue: category || "all",
+    onCategoryChange: (id) => setParam({ category: id === "all" ? undefined : id }),
+    commissionOpen: commissionOpenLive,
+    onCommissionOpenChange: (open) =>
+      setParam({ commission: open ? "open" : undefined, role: open ? undefined : role || undefined }),
+    priceMinValue: priceMin,
+    priceMaxValue: priceMax,
+    onPriceMinChange: (value) => setParam({ priceMin: value || undefined }),
+    onPriceMaxChange: (value) => setParam({ priceMax: value || undefined }),
+  });
 
   const Sidebar = (
     <aside className="hidden lg:block w-[240px] shrink-0">
       <div className="explore-sidebar-panel sticky top-[88px]">
-        {FiltersPanel}
+        {sidebarFilters}
         {sidebarEvent && (
           <div className="mt-6 pt-6 border-t border-line">
             <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2">Партнёр</div>
@@ -268,20 +389,46 @@ function ExploreClient() {
           <div
             className="fixed inset-0 z-[120] bg-ink/80 flex items-end lg:hidden"
             onClick={() => setFiltersOpen(false)}
+            role="presentation"
           >
             <div
-              className="bg-stage border-t border-line w-full max-h-[85vh] overflow-y-auto rounded-t-[12px] p-5 pb-8"
+              className="explore-filters-sheet"
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-modal="true"
+              aria-label={t("filters")}
             >
-              <div className="flex justify-between items-center mb-4">
-                <div className="font-display font-extrabold">Фильтры</div>
-                <IconButton label="Закрыть" onClick={() => setFiltersOpen(false)}>
-                  <X size={18} />
-                </IconButton>
+              <div className="explore-filters-sheet-handle" aria-hidden />
+              <div className="explore-filters-sheet-header">
+                <div className="font-display font-extrabold text-[18px]">{t("filters")}</div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    className="explore-filters-reset"
+                    onClick={resetMobileFilters}
+                  >
+                    Сбросить
+                  </button>
+                  <IconButton label="Закрыть" onClick={() => setFiltersOpen(false)}>
+                    <X size={18} />
+                  </IconButton>
+                </div>
               </div>
-              {FiltersPanel}
-              <div className="mt-6">
-                <Button className="w-full" onClick={() => setFiltersOpen(false)}>
+              <div className="explore-filters-sheet-body">
+                {renderFiltersPanel({
+                  mode: "draft",
+                  categoryValue: draftCategory,
+                  onCategoryChange: setDraftCategory,
+                  commissionOpen: draftCommissionOpen,
+                  onCommissionOpenChange: setDraftCommissionOpen,
+                  priceMinValue: draftPriceMin,
+                  priceMaxValue: draftPriceMax,
+                  onPriceMinChange: setDraftPriceMin,
+                  onPriceMaxChange: setDraftPriceMax,
+                })}
+              </div>
+              <div className="explore-filters-sheet-footer">
+                <Button className="w-full rounded-[8px] font-semibold" onClick={applyMobileFilters}>
                   Применить
                 </Button>
               </div>
