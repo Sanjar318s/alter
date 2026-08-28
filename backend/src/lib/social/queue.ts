@@ -119,14 +119,12 @@ function enqueuePublishJob(platform: SocialPlatform, contentType: SocialContentT
     .run();
 }
 
-/** After moderation approved: route content to brand platforms and ensure social_posts rows. */
+import { enabledPublishPlatforms } from "./platforms";
+
+/** After moderation approved: route content to enabled brand platforms. */
 export function enqueuePublishes(contentType: SocialContentType, contentId: string) {
-  if (contentType === "publication") {
-    enqueuePublishJob("youtube", contentType, contentId);
-    enqueuePublishJob("tiktok", contentType, contentId);
-  } else if (contentType === "build") {
-    enqueuePublishJob("instagram", contentType, contentId);
-    enqueuePublishJob("facebook", contentType, contentId);
+  for (const platform of enabledPublishPlatforms(contentType)) {
+    enqueuePublishJob(platform, contentType, contentId);
   }
 }
 

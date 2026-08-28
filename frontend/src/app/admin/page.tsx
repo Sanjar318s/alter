@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { StudioShell } from "@/components/StudioShell";
 import { Button } from "@/components/ui/Button";
@@ -677,7 +677,11 @@ export default function AdminPage() {
               </p>
             </div>
           )}
-          {Boolean(perms?.isOwner) && <AdminSocialPanel />}
+          {Boolean(perms?.isOwner) && (
+            <Suspense fallback={null}>
+              <AdminSocialPanel />
+            </Suspense>
+          )}
         </div>
       )}
     </StudioShell>
