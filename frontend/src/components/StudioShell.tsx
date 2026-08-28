@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { account } from "@/lib/api";
 import {
   BarChart3,
@@ -45,16 +45,80 @@ const STUDIO_BUYER: { href: string; label: MsgKey; icon: typeof LayoutDashboard;
   { href: "/messages", label: "messages", icon: MessageSquare, unread: true },
 ];
 
-const PERSONAL: { href: string; label: MsgKey; icon: typeof User }[] = [
+const PERSONAL: { href: string; label: MsgKey; icon: typeof User; tab?: string }[] = [
   { href: "/me", label: "myProfile", icon: User },
-  { href: "/me?tab=notifications", label: "notifications", icon: Bell },
-  { href: "/me?tab=security", label: "security", icon: Shield },
-  { href: "/me?tab=socials", label: "integrations", icon: Images },
+  { href: "/me?tab=notifications", label: "notifications", icon: Bell, tab: "notifications" },
+  { href: "/me?tab=security", label: "security", icon: Shield, tab: "security" },
+  { href: "/me?tab=socials", label: "integrations", icon: Images, tab: "socials" },
 ];
+
+function isPersonalNavActive(href: string, pathname: string, tab: string | null) {
+  if (pathname !== "/me") return false;
+  if (href === "/me") {
+    return !tab || tab === "info" || tab === "portfolio";
+  }
+  const match = href.match(/tab=([^&]+)/);
+  return match?.[1] === tab;
+}
 
 const MANAGEMENT = [
   { href: "/admin", label: "Owner-first модерация", icon: Shield },
 ];
+
+function PersonalNavLinks({
+  pathname,
+  setOpen,
+  t,
+}: {
+  pathname: string;
+  setOpen: (open: boolean) => void;
+  t: (key: MsgKey) => string;
+}) {
+  const meTab = useSearchParams().get("tab");
+
+  return (
+    <>
+      {PERSONAL.map((l) => (
+        <Link
+          key={l.href}
+          href={l.href}
+          onClick={() => setOpen(false)}
+          className={cn(
+            "studio-nav-link",
+            isPersonalNavActive(l.href, pathname, meTab) && "studio-nav-link--active"
+          )}
+        >
+          <l.icon size={16} strokeWidth={1.75} />
+          {t(l.label)}
+        </Link>
+      ))}
+    </>
+  );
+}
+
+function PersonalNavLinksFallback({
+  setOpen,
+  t,
+}: {
+  setOpen: (open: boolean) => void;
+  t: (key: MsgKey) => string;
+}) {
+  return (
+    <>
+      {PERSONAL.map((l) => (
+        <Link
+          key={l.href}
+          href={l.href}
+          onClick={() => setOpen(false)}
+          className="studio-nav-link"
+        >
+          <l.icon size={16} strokeWidth={1.75} />
+          {t(l.label)}
+        </Link>
+      ))}
+    </>
+  );
+}
 
 export function StudioShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -106,13 +170,13 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
       {studioLinks.map((l) => {
         const locked = Boolean((l as { beta?: boolean }).beta) && !PAYMENTS_LIVE;
         const cls = cn(
-          "flex items-center gap-2 px-4 py-2 text-[13px] no-underline border-l-2",
-          pathname === l.href ? "border-magenta text-paper" : "border-transparent text-ink-70 hover:text-paper",
+          "studio-nav-link",
+          pathname === l.href && "studio-nav-link--active",
           locked && "opacity-60"
         );
         const inner = (
           <>
-            <l.icon size={16} />
+            <l.icon size={16} strokeWidth={1.75} />
             {t(l.label)}
             {locked && <span className="ml-auto font-mono text-[9px] uppercase text-amber">Beta</span>}
             {(l as { unread?: boolean }).unread && unread.messages > 0 ? (
@@ -142,44 +206,29 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
               href={l.href}
               onClick={() => setOpen(false)}
               className={cn(
-                "flex items-center gap-2 px-4 py-2 text-[13px] no-underline border-l-2",
-                pathname.startsWith("/admin")
-                  ? "border-magenta text-paper"
-                  : "border-transparent text-ink-70 hover:text-paper"
+                "studio-nav-link",
+                pathname.startsWith("/admin") && "studio-nav-link--active"
               )}
             >
-              <l.icon size={16} />
+              <l.icon size={16} strokeWidth={1.75} />
               {l.label}
             </Link>
           ))}
         </>
       )}
       <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink-45 px-4 mt-6 mb-2">{t("personal")}</div>
-      {PERSONAL.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          onClick={() => setOpen(false)}
-          className={cn(
-            "flex items-center gap-2 px-4 py-2 text-[13px] no-underline border-l-2",
-            pathname === "/me" && l.href === "/me"
-              ? "border-magenta text-paper"
-              : "border-transparent text-ink-70 hover:text-paper"
-          )}
-        >
-          <l.icon size={16} />
-          {t(l.label)}
-        </Link>
-      ))}
+      <Suspense fallback={<PersonalNavLinksFallback setOpen={setOpen} t={t} />}>
+        <PersonalNavLinks pathname={pathname} setOpen={setOpen} t={t} />
+      </Suspense>
       <div className="mt-auto p-4 border-t border-line">
         {showPremiumProgress ? (
-          <>
-            <div className="font-mono text-[10px] text-amber mb-1">{t("premium")}</div>
-            <div className="text-[12px] text-ink-45 mb-3">{premiumLabel}</div>
-            <Button href="/me" variant="outline" size="sm" className="w-full mb-2">
+          <div className="studio-premium-footer">
+            <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-amber mb-1">{t("premium")}</div>
+            <div className="text-[12px] text-ink-45 mb-3 leading-snug">{premiumLabel}</div>
+            <Button href="/me" variant="outline" size="sm" className="w-full">
               Смотреть прогресс
             </Button>
-          </>
+          </div>
         ) : null}
         <button
           type="button"

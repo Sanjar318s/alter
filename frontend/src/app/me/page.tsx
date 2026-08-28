@@ -2,16 +2,17 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Camera, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { StudioShell } from "@/components/StudioShell";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { Button } from "@/components/ui/Button";
-import { Frame } from "@/components/Frame";
 import { Modal } from "@/components/ui/Modal";
 import { BrandIcon } from "@/components/ui/BrandIcon";
-import { SmartImage } from "@/components/media/SmartImage";
 import { WithdrawModal } from "@/components/finance/WithdrawModal";
 import { RoleChangeRequestForm } from "@/components/RoleChangeRequestForm";
+import { MeProfileHeader } from "@/components/me/MeProfileHeader";
+import { MeProfileSummaryCard } from "@/components/me/MeProfileSummaryCard";
+import { MePersonalInfoForm } from "@/components/me/MePersonalInfoForm";
+import { MeAccountSidebar } from "@/components/me/MeAccountSidebar";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/Toast";
 import { account, auth, finance, uploadFile, users } from "@/lib/api";
@@ -277,176 +278,131 @@ function MeInner() {
     );
   }
 
-  const maxBar = Math.max(1, ...activity);
   const isClient = user?.platformRole === "client";
   const TABS = ALL_TABS.filter((t) => !(isClient && t.id === "portfolio"));
   const settingsTab = isClient && tab === "portfolio" ? "info" : tab;
+  const primarySocial = socials.find((s) => s.url) ?? null;
+
+  const proSettings = !isClient ? (
+    <details className="me-pro-settings">
+      <summary>Профессиональные настройки</summary>
+      <div className="me-pro-settings-body">
+        <Field label="Специализации / навыки">
+          <input className="field-box" value={specs} onChange={(e) => { setSpecs(e.target.value); mark(); }} placeholder="крой, wig styling" />
+        </Field>
+        <Field label="Опыт (лет)">
+          <input className="field-box" type="number" min={0} value={expYears} onChange={(e) => { setExpYears(e.target.value); mark(); }} />
+        </Field>
+        <Field label="Материалы">
+          <input className="field-box" value={materials} onChange={(e) => { setMaterials(e.target.value); mark(); }} placeholder="EVA, термопластик" />
+        </Field>
+        <Field label="Доступность">
+          <select className="field-box" value={availability} onChange={(e) => { setAvailability(e.target.value); mark(); }}>
+            <option value="open">Открыт</option>
+            <option value="limited">Ограничен</option>
+            <option value="closed">Закрыт</option>
+          </select>
+        </Field>
+        <Field label="Сложность заказов">
+          <select className="field-box" value={complexity} onChange={(e) => { setComplexity(e.target.value); mark(); }}>
+            <option value="">Не указано</option>
+            <option value="Низкая">Низкая</option>
+            <option value="Средняя">Средняя</option>
+            <option value="Средняя–высокая">Средняя–высокая</option>
+            <option value="Высокая">Высокая</option>
+          </select>
+        </Field>
+        <Field label="Типы работ">
+          <input className="field-box" value={commTypes} onChange={(e) => { setCommTypes(e.target.value); mark(); }} placeholder="Костюмы, корсеты" />
+        </Field>
+        <Field label="Типичный срок">
+          <input className="field-box" value={commDuration} onChange={(e) => { setCommDuration(e.target.value); mark(); }} placeholder="3–6 недель" />
+        </Field>
+        <Field label="Макс. заказов">
+          <div className="flex items-center gap-3">
+            <Button variant="outline" size="sm" onClick={() => { setMaxOrders(Math.max(1, maxOrders - 1)); mark(); }}>−</Button>
+            <span className="font-mono">{maxOrders}</span>
+            <Button variant="outline" size="sm" onClick={() => { setMaxOrders(maxOrders + 1); mark(); }}>+</Button>
+          </div>
+        </Field>
+      </div>
+    </details>
+  ) : null;
 
   return (
     <StudioShell>
-      <div className="p-4 sm:p-6 pb-20 min-w-0 max-w-full">
-        <div className="font-mono text-[11px] text-ink-45 mb-2">
-          {isClient ? "Кабинет > Мой профиль" : "Студия заказов > Профиль"}
-        </div>
-        <PageHeader eyebrow="Мой профиль" title="МОЙ ПРОФИЛЬ">
-          <Button href={`/profile/${username || nick}`} variant="outline" size="sm" className="mt-3">
-            Смотреть публичный профиль
-          </Button>
-        </PageHeader>
+      <div className="me-page-shell">
+        <MeProfileHeader
+          breadcrumb={isClient ? "Кабинет > Мой профиль" : "Студия заказов > Профиль"}
+          publicProfileHref={`/profile/${username || nick}`}
+          onCoverChange={(file) => onFile("cover", file)}
+        />
 
-        <div className="flex border-b border-line mb-6 overflow-x-auto pb-px -mx-1 px-1">
+        <div className="me-profile-tabs">
           {TABS.map((t) => (
             <button
               key={t.id}
               type="button"
               onClick={() => setTab(t.id)}
-              className={cn(
-                "shrink-0 px-3 py-2 text-[13px] border-b-2 bg-transparent whitespace-nowrap",
-                settingsTab === t.id ? "border-magenta text-paper" : "border-transparent text-ink-45"
-              )}
+              className={cn("me-profile-tab", settingsTab === t.id && "me-profile-tab--active")}
             >
               {t.label}
             </button>
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-8">
-          <div>
+        <div className="me-profile-layout">
+          <div className="min-w-0">
             {settingsTab === "info" && (
               <>
-                <div className="relative mb-8">
-                  <div className="h-[180px] overflow-hidden bg-stage">
-                    <SmartImage src={coverUrl} alt="Обложка" fallback="ALTER" />
-                  </div>
-                  <label className="absolute top-3 right-3">
-                    <span className="font-mono text-[11px] px-2 py-1 bg-ink border border-line cursor-pointer">Изменить обложку</span>
-                    <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && onFile("cover", e.target.files[0])} />
-                  </label>
-                  <div className="absolute -bottom-8 left-6">
-                    <Frame className="w-[96px] h-[96px] ring-2 ring-magenta overflow-hidden">
-                      <SmartImage src={avatarUrl} alt={nick} fallback={nick} />
-                      <label className="absolute inset-0 flex items-center justify-center bg-ink/40 cursor-pointer">
-                        <Camera size={18} />
-                        <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={(e) => e.target.files?.[0] && onFile("avatar", e.target.files[0])} />
-                      </label>
-                    </Frame>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-12 mb-8">
-                  {[
-                    [String(stats.builds), "Работ"],
-                    [String(stats.orders), "Заказов"],
-                    [stats.rating, "Рейтинг"],
-                    [String(stats.likes), "Лайков"],
-                  ].map(([n, l]) => (
-                    <Frame key={l} className="p-3 bg-stage text-center">
-                      <div className="font-mono text-[20px]">{n}</div>
-                      <div className="text-[11px] text-ink-45">{l}</div>
-                    </Frame>
-                  ))}
-                </div>
-                <div className="flex flex-col gap-4 max-w-[560px]">
-                  <Field label={`Ник ${nick.length}/20`}>
-                    <input className="field" maxLength={20} value={nick} onChange={(e) => { setNick(e.target.value); mark(); }} />
-                  </Field>
-                  <Field label="Имя">
-                    <input className="field" value={display} onChange={(e) => { setDisplay(e.target.value); mark(); }} />
-                  </Field>
-                  <Field label="Роль на платформе">
-                    <div className="field-box flex items-center text-[14px] text-paper">
-                      {user?.platformRole === "client"
-                        ? "Клиент"
-                        : user?.platformRole === "blogger"
-                          ? "Блогер"
-                          : user?.platformRole === "seller"
-                            ? "Продавец"
-                            : "Не выбрана"}
-                    </div>
-                    <p className="text-[12px] text-ink-45 mt-1">
-                      Смена роли — через заявку во вкладке «Безопасность».
-                    </p>
-                  </Field>
-                  <Field label="Email">
-                    <input className="field" value={email} disabled />
-                  </Field>
-                  <Field label="Телефон">
-                    <input className="field" value={phone} onChange={(e) => { setPhone(e.target.value); mark(); }} />
-                  </Field>
-                  <Field label={`Bio ${bio.length}/500`}>
-                    <textarea className="field-box" maxLength={500} rows={4} value={bio} onChange={(e) => { setBio(e.target.value); mark(); }} />
-                  </Field>
-                  <Field label="Город">
-                    <input className="field" value={city} onChange={(e) => { setCity(e.target.value); mark(); }} />
-                  </Field>
-                  <Field label="Дата рождения (не публичная)">
-                    <input type="date" className="field" value={dob} onChange={(e) => { setDob(e.target.value); mark(); }} />
-                    <label className="flex items-center gap-2 mt-2 text-[13px]">
-                      <input type="checkbox" checked={showAge} onChange={(e) => { setShowAge(e.target.checked); mark(); }} />
-                      Показывать возраст
-                    </label>
-                  </Field>
-                  <Field label="Языки">
-                    <input className="field" value={langs} onChange={(e) => { setLangs(e.target.value); mark(); }} />
-                  </Field>
-                  {!isClient && (
-                    <>
-                      <Field label="Специализации / навыки">
-                        <input className="field" value={specs} onChange={(e) => { setSpecs(e.target.value); mark(); }} placeholder="крой, wig styling" />
-                      </Field>
-                      <Field label="Опыт (лет)">
-                        <input className="field" type="number" min={0} value={expYears} onChange={(e) => { setExpYears(e.target.value); mark(); }} />
-                      </Field>
-                      <Field label="Материалы">
-                        <input className="field" value={materials} onChange={(e) => { setMaterials(e.target.value); mark(); }} placeholder="EVA, термопластик" />
-                      </Field>
-                      <Field label="Доступность">
-                        <select className="field-box" value={availability} onChange={(e) => { setAvailability(e.target.value); mark(); }}>
-                          <option value="open">Открыт</option>
-                          <option value="limited">Ограничен</option>
-                          <option value="closed">Закрыт</option>
-                        </select>
-                      </Field>
-                      <Field label="Сложность заказов">
-                        <select className="field-box" value={complexity} onChange={(e) => { setComplexity(e.target.value); mark(); }}>
-                          <option value="">Не указано</option>
-                          <option value="Низкая">Низкая</option>
-                          <option value="Средняя">Средняя</option>
-                          <option value="Средняя–высокая">Средняя–высокая</option>
-                          <option value="Высокая">Высокая</option>
-                        </select>
-                      </Field>
-                      <Field label="Типы работ">
-                        <input className="field" value={commTypes} onChange={(e) => { setCommTypes(e.target.value); mark(); }} placeholder="Костюмы, корсеты" />
-                      </Field>
-                      <Field label="Типичный срок">
-                        <input className="field" value={commDuration} onChange={(e) => { setCommDuration(e.target.value); mark(); }} placeholder="3–6 недель" />
-                      </Field>
-                      <Field label="Макс. заказов">
-                        <div className="flex items-center gap-3">
-                          <Button variant="outline" size="sm" onClick={() => { setMaxOrders(Math.max(1, maxOrders - 1)); mark(); }}>−</Button>
-                          <span className="font-mono">{maxOrders}</span>
-                          <Button variant="outline" size="sm" onClick={() => { setMaxOrders(maxOrders + 1); mark(); }}>+</Button>
-                        </div>
-                      </Field>
-                    </>
-                  )}
-                  <div className="flex gap-2">
-                    <Button disabled={!dirty} onClick={save}>Сохранить</Button>
-                    <Button variant="outline" onClick={() => window.location.reload()}>Сброс</Button>
-                  </div>
-                </div>
+                <MeProfileSummaryCard
+                  nick={nick}
+                  bio={bio}
+                  avatarUrl={avatarUrl}
+                  role={user?.platformRole}
+                  primarySocial={primarySocial}
+                  stats={stats}
+                  onAvatarChange={(file) => onFile("avatar", file)}
+                />
+                <MePersonalInfoForm
+                  nick={nick}
+                  display={display}
+                  city={city}
+                  langs={langs}
+                  email={email}
+                  phone={phone}
+                  bio={bio}
+                  dob={dob}
+                  showAge={showAge}
+                  role={user?.platformRole}
+                  socials={socials}
+                  dirty={dirty}
+                  isClient={isClient}
+                  proSettings={proSettings}
+                  onNickChange={(v) => { setNick(v); mark(); }}
+                  onDisplayChange={(v) => { setDisplay(v); mark(); }}
+                  onCityChange={(v) => { setCity(v); mark(); }}
+                  onLangsChange={(v) => { setLangs(v); mark(); }}
+                  onPhoneChange={(v) => { setPhone(v); mark(); }}
+                  onBioChange={(v) => { setBio(v); mark(); }}
+                  onDobChange={(v) => { setDob(v); mark(); }}
+                  onShowAgeChange={(v) => { setShowAge(v); mark(); }}
+                  onSocialsChange={(next) => { setSocials(next); mark(); }}
+                  onSave={save}
+                  onReset={() => window.location.reload()}
+                />
               </>
             )}
 
             {settingsTab === "portfolio" && !isClient && (
-              <div>
+              <div className="me-sidebar-card">
                 <p className="text-ink-70 mb-4">Те же работы, что на публичном профиле.</p>
                 <Button href={`/profile/${username || nick}`}>Открыть портфолио работ</Button>
               </div>
             )}
 
             {settingsTab === "socials" && (
-              <div className="flex flex-col gap-3 max-w-[520px]">
+              <div className="me-sidebar-card flex flex-col gap-3 max-w-[520px]">
                 <label className="flex items-start gap-2 text-[13px] text-ink-70 cursor-pointer border border-line p-3">
                   <input
                     type="checkbox"
@@ -483,7 +439,7 @@ function MeInner() {
 
             {settingsTab === "security" && (
               <form
-                className="flex flex-col gap-4 max-w-[420px]"
+                className="me-sidebar-card flex flex-col gap-4 max-w-[420px]"
                 onSubmit={async (e) => {
                   e.preventDefault();
                   const fd = new FormData(e.currentTarget);
@@ -510,7 +466,7 @@ function MeInner() {
             )}
 
             {settingsTab === "notifications" && (
-              <div className="flex flex-col gap-3 max-w-[420px]">
+              <div className="me-sidebar-card flex flex-col gap-3 max-w-[420px]">
                 {(Object.keys(NOTIF_LABELS) as string[]).map((k) => (
                   <label key={k} className="flex items-center justify-between text-[13px] border-b border-line py-2">
                     {NOTIF_LABELS[k]}
@@ -533,79 +489,31 @@ function MeInner() {
             )}
           </div>
 
-          <aside className="flex flex-col gap-4">
-            <Frame className="p-4 bg-stage">
-              <div className="font-mono text-[11px] text-ink-45 mb-2">Статус аккаунта · {complete.percent}%</div>
-              <div className="h-1.5 bg-ink mb-2"><div className="h-full bg-magenta" style={{ width: `${complete.percent}%` }} /></div>
-              <ul className="text-[12px] text-ink-70 space-y-1">
-                <li>{complete.checks?.avatar ? "Аватар есть" : "Добавьте аватар"}</li>
-                <li>{complete.checks?.bio ? "Bio заполнено" : "Напишите bio"}</li>
-                <li>{complete.checks?.city ? "Город указан" : "Укажите город"}</li>
-                {!isClient && (
-                  <li>{complete.checks?.portfolio ? "Есть работы" : "Добавьте работу"}</li>
-                )}
-              </ul>
-            </Frame>
-            {user?.platformRole === "blogger" && premiumProgress && (
-              <Frame className="p-4 bg-stage">
-                <div className="font-mono text-[11px] text-amber mb-2">PREMIUM · blogger</div>
-                {premiumProgress.activeGrant ? (
-                  <p className="text-[13px] text-paper">
-                    Активен до {new Date(premiumProgress.activeGrant.endsAt).toLocaleDateString("ru")}
-                  </p>
-                ) : (
-                  <ul className="text-[12px] text-ink-70 space-y-1">
-                    <li>
-                      YouTube 1M+: {premiumProgress.youtubeReelsAt1M}/{premiumProgress.youtubeReelsNeeded} рилсов
-                    </li>
-                    <li>
-                      Просмотры на платформе: {premiumProgress.platformViews}/{premiumProgress.platformViewsNeeded}
-                    </li>
-                    <li>
-                      Комментарии: {premiumProgress.platformComments}/{premiumProgress.platformCommentsNeeded}
-                    </li>
-                  </ul>
-                )}
-              </Frame>
-            )}
-            <Frame className="p-4 bg-stage">
-              <div className="font-mono text-[11px] text-ink-45">Баланс</div>
-              <div className="font-mono text-[18px] mt-1">{formatSum(balance)}</div>
-              <Button size="sm" className="mt-3 w-full" disabled={!PAYMENTS_LIVE} onClick={() => PAYMENTS_LIVE && setWithdrawOpen(true)}>Вывести</Button>
-              {!PAYMENTS_LIVE && <p className="font-mono text-[10px] text-amber mt-2">На бета-тестировании</p>}
-            </Frame>
-            <Frame className="p-4 bg-stage">
-              <div className="font-mono text-[11px] text-ink-45 mb-2">Активность 30 дней</div>
-              <div className="flex items-end gap-1 h-16">
-                {(activity.length ? activity : Array(10).fill(0)).map((h, i) => (
-                  <div key={i} className="flex-1 bg-magenta/70" style={{ height: `${(h / maxBar) * 100}%` }} />
-                ))}
-              </div>
-            </Frame>
-            <div className="flex flex-col gap-2">
-              <Button variant="outline" size="sm" href={`/profile/${username || nick}`}>Портфолио</Button>
-              <Button variant="outline" size="sm" onClick={() => setPrivacyOpen(true)}>Приватность</Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={async () => {
-                  try {
-                    const data = await account.export();
-                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-                    const a = document.createElement("a");
-                    a.href = URL.createObjectURL(blob);
-                    a.download = "alter-export.json";
-                    a.click();
-                  } catch (e) {
-                    toast(e instanceof Error ? e.message : "Экспорт не удался", true);
-                  }
-                }}
-              >
-                Скачать данные
-              </Button>
-              <Button variant="danger" size="sm" onClick={() => setDeleteOpen(true)}>Удалить аккаунт</Button>
-            </div>
-          </aside>
+          <MeAccountSidebar
+            complete={complete}
+            isClient={isClient}
+            showPremium={user?.platformRole === "blogger"}
+            premiumProgress={premiumProgress}
+            balance={balance}
+            formatSum={formatSum}
+            activity={activity}
+            profileHref={`/profile/${username || nick}`}
+            onWithdraw={() => setWithdrawOpen(true)}
+            onPrivacy={() => setPrivacyOpen(true)}
+            onExport={async () => {
+              try {
+                const data = await account.export();
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = "alter-export.json";
+                a.click();
+              } catch (e) {
+                toast(e instanceof Error ? e.message : "Экспорт не удался", true);
+              }
+            }}
+            onDelete={() => setDeleteOpen(true)}
+          />
         </div>
       </div>
 
