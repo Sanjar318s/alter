@@ -20,7 +20,7 @@ export function BrandLogo({
   const inner = (
     <>
       <Image
-        src="/logo.svg"
+        src="/logo.png"
         alt="AlterCosPlay"
         width={size}
         height={size}
