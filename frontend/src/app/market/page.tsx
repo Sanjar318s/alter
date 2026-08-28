@@ -58,7 +58,7 @@ export default function MarketPage() {
         <div className="market-hero-art" aria-hidden />
         <div className={SHELL}>
           <div className="relative z-[1] grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
-            <div className="max-w-[640px]">
+            <div className="max-w-[640px] market-hero-copy">
               <p className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.18em] text-magenta">
                 {t("marketEyebrow")}
               </p>
