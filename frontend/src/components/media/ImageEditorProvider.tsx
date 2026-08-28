@@ -1,15 +1,17 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { ImageEditorModal } from "./ImageEditorModal";
+import { ImageEditorModal, type ImageEditorSavePayload } from "./ImageEditorModal";
 
 export type ImageEditorPreset = "default" | "profile-cover" | "avatar";
+
+export type ImageEditResult = File | ImageEditorSavePayload;
 
 type EditFn = (
   file: File,
   aspect?: number | null,
   preset?: ImageEditorPreset
-) => Promise<File | null>;
+) => Promise<ImageEditResult | null>;
 
 const Ctx = createContext<EditFn>(async (file) => file);
 
@@ -18,7 +20,7 @@ export function ImageEditorProvider({ children }: { children: ReactNode }) {
     file: File;
     aspect?: number | null;
     preset?: ImageEditorPreset;
-    resolve: (file: File | null) => void;
+    resolve: (file: ImageEditResult | null) => void;
   } | null>(null);
 
   const edit = useCallback<EditFn>((file, aspect, preset = "default") => {
@@ -40,8 +42,8 @@ export function ImageEditorProvider({ children }: { children: ReactNode }) {
             job.resolve(null);
             setJob(null);
           }}
-          onSave={(file) => {
-            job.resolve(file);
+          onSave={(payload) => {
+            job.resolve(payload);
             setJob(null);
           }}
         />
@@ -54,20 +56,33 @@ export function useEditImage() {
   return useContext(Ctx);
 }
 
+function resolveEditFile(result: ImageEditResult): File {
+  return result instanceof File ? result : result.file;
+}
+
 export async function editImageList(
   edit: EditFn,
   files: File[],
   aspect?: number | null,
   preset?: ImageEditorPreset
-) {
+): Promise<{ files: File[]; coverCropJson?: string }> {
   const out: File[] = [];
+  let coverCropJson: string | undefined;
   for (const file of files) {
     if (file.type.startsWith("video/") || file.type === "image/gif" || !file.type.startsWith("image/")) {
       out.push(file);
       continue;
     }
     const next = await edit(file, aspect, preset);
-    if (next) out.push(next);
+    if (!next) continue;
+    if (next instanceof File) {
+      out.push(next);
+    } else {
+      out.push(next.file);
+      if (next.coverCropJson) coverCropJson = next.coverCropJson;
+    }
   }
-  return out;
+  return { files: out, coverCropJson };
 }
+
+export { resolveEditFile };

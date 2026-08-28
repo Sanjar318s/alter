@@ -5,10 +5,13 @@ import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SmartImage } from "@/components/media/SmartImage";
 
+import { coverCropStyle, type CoverCropMap } from "@/lib/coverCrop";
+
 type MeProfileHeaderProps = {
   breadcrumb: string;
   publicProfileHref: string;
   coverUrl: string | null;
+  coverCrop?: CoverCropMap;
   onCoverChange: (file: File) => void;
 };
 
@@ -16,6 +19,7 @@ export function MeProfileHeader({
   breadcrumb,
   publicProfileHref,
   coverUrl,
+  coverCrop = {},
   onCoverChange,
 }: MeProfileHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -40,7 +44,12 @@ export function MeProfileHeader({
         aria-label="Изменить обложку"
       >
         {coverUrl ? (
-          <SmartImage src={coverUrl} alt="Обложка профиля" className="w-full h-full object-cover" />
+          <SmartImage
+            src={coverUrl}
+            alt="Обложка профиля"
+            className="w-full h-full object-cover"
+            style={coverCropStyle(coverCrop)}
+          />
         ) : (
           <div className="me-profile-cover-placeholder">Обложка не задана</div>
         )}

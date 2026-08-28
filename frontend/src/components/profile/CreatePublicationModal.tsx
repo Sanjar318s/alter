@@ -39,7 +39,7 @@ export function CreatePublicationModal({
   async function handleFiles(list: FileList | File[]) {
     const raw = Array.from(list).slice(0, 10 - files.length);
     const items = await editImageList(edit, raw);
-    for (const file of items) {
+    for (const file of items.files) {
       const preview = URL.createObjectURL(file);
       let url = preview;
       try {

@@ -33,7 +33,7 @@ export function CommissionRequestForm({
 
   async function addPhotos(list: FileList | File[]) {
     const edited = await editImageList(edit, Array.from(list).slice(0, 8 - files.length));
-    setFiles((prev) => [...prev, ...edited].slice(0, 8));
+    setFiles((prev) => [...prev, ...edited.files].slice(0, 8));
   }
 
   const selectedWork = serviceWorks?.find((w) => w.id === workId);

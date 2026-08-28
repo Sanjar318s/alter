@@ -21,6 +21,7 @@ import { PAYMENTS_LIVE } from "@/lib/flags";
 import { useLocale } from "@/lib/LocaleContext";
 import type { PlatformRole } from "@/lib/AuthContext";
 import { editImageList, useEditImage } from "@/components/media/ImageEditorProvider";
+import { parseCoverCropJson } from "@/lib/coverCrop";
 
 const ALL_TABS: { id: string; label: string; roles?: PlatformRole[] }[] = [
   { id: "info", label: "Основная информация" },
@@ -80,6 +81,7 @@ function MeInner() {
   const [materials, setMaterials] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
+  const [coverCropJson, setCoverCropJson] = useState<string | null>(null);
   const [dirty, setDirty] = useState(false);
   const [leave, setLeave] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -148,6 +150,7 @@ function MeInner() {
     }
     setAvatarUrl(p.avatarUrl || null);
     setCoverUrl(p.coverUrl || null);
+    setCoverCropJson(p.coverCropJson || null);
     try {
       setLangs(p.languagesJson ? JSON.parse(p.languagesJson).join(",") : "ru");
     } catch {
@@ -285,6 +288,7 @@ function MeInner() {
         showAge,
         avatarUrl,
         coverUrl,
+        coverCropJson: coverCropJson || undefined,
         commissionComplexity: complexity || null,
         commissionTypes: commTypes || null,
         commissionDuration: commDuration || null,
@@ -307,7 +311,7 @@ function MeInner() {
 
   async function onFile(kind: "avatar" | "cover", file: File) {
     try {
-      const edited = await editImageList(
+      const { files: edited, coverCropJson: nextCoverCropJson } = await editImageList(
         edit,
         [file],
         kind === "avatar" ? 1 : 16 / 5,
@@ -321,7 +325,11 @@ function MeInner() {
         await account.patch({ avatarUrl: up.url });
       } else {
         setCoverUrl(up.url);
-        await account.patch({ coverUrl: up.url });
+        if (nextCoverCropJson) setCoverCropJson(nextCoverCropJson);
+        await account.patch({
+          coverUrl: up.url,
+          ...(nextCoverCropJson ? { coverCropJson: nextCoverCropJson } : {}),
+        });
       }
       await refresh();
       const me = await auth.me();
@@ -414,6 +422,7 @@ function MeInner() {
           breadcrumb={breadcrumb}
           publicProfileHref={profileHref}
           coverUrl={coverUrl}
+          coverCrop={parseCoverCropJson(coverCropJson)}
           onCoverChange={(file) => onFile("cover", file)}
         />
 

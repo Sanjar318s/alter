@@ -47,7 +47,7 @@ export function ReportModal({
 
   async function addFiles(files: FileList | File[]) {
     const next = await editImageList(edit, Array.from(files).slice(0, 5 - attachments.length));
-    const mapped = next.map((file) => ({
+    const mapped = next.files.map((file) => ({
       id: `${file.name}-${file.lastModified}`,
       file,
       preview: URL.createObjectURL(file),

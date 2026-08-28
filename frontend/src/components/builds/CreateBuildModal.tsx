@@ -111,7 +111,7 @@ export function CreateBuildModal({
 
   async function addFiles(list: FileList | File[]) {
     const edited = await editImageList(edit, Array.from(list).slice(0, 10 - photos.length), 4 / 5);
-    for (const file of edited) {
+    for (const file of edited.files) {
       const blob = await compressImage(file);
       const preview = URL.createObjectURL(file);
       try {

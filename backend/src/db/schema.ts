@@ -51,6 +51,7 @@ export const profiles = sqliteTable("profiles", {
   isVerified: integer("is_verified", { mode: "boolean" }).default(false),
   isPrivate: integer("is_private", { mode: "boolean" }).default(false),
   coverUrl: text("cover_url"),
+  coverCropJson: text("cover_crop_json"),
   phone: text("phone"),
   languagesJson: text("languages_json"),
   specializationsJson: text("specializations_json"),

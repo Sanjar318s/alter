@@ -7,11 +7,13 @@ export function SmartImage({
   src,
   alt,
   className,
+  style,
   fallback,
 }: {
   src?: string | null;
   alt: string;
   className?: string;
+  style?: React.CSSProperties;
   fallback?: string;
 }) {
   const url = mediaSrc(src);
@@ -22,6 +24,7 @@ export function SmartImage({
         src={url}
         alt={alt}
         className={cn("object-cover w-full h-full", className)}
+        style={style}
         loading="lazy"
         decoding="async"
       />

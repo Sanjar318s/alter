@@ -575,7 +575,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
     const rest = list.filter((f) => !(asImage || f.type.startsWith("image")));
     const edited = await editImageList(edit, images);
     const next: PendingAttach[] = [];
-    for (const file of [...edited, ...rest]) {
+    for (const file of [...edited.files, ...rest]) {
       const kind: PendingAttach["kind"] = file.type.startsWith("image")
         ? "image"
         : file.type.startsWith("video")

@@ -269,6 +269,7 @@ export function migrate() {
     ["is_verified", "INTEGER DEFAULT 0"],
     ["is_private", "INTEGER DEFAULT 0"],
     ["cover_url", "TEXT"],
+    ["cover_crop_json", "TEXT"],
     ["phone", "TEXT"],
     ["languages_json", "TEXT"],
     ["specializations_json", "TEXT"],

@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Minus, Plus, RotateCw, User } from "lucide-react";
+import { Minus, Monitor, Plus, RotateCw, Smartphone, Tablet, User } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { compressImage } from "@/lib/compressImage";
 import { cn } from "@/lib/cn";
+import type { CoverCropMap } from "@/lib/coverCrop";
 import type { ImageEditorPreset } from "./ImageEditorProvider";
 
 const FILTERS: { id: string; label: string; css: string }[] = [
@@ -23,7 +24,7 @@ const PRESET_META: Record<
   default: { title: "Редактор фото" },
   "profile-cover": {
     title: "Обложка профиля",
-    hint: "Перетащите фото и подберите масштаб. Квадрат снизу слева — зона аватара.",
+    hint: "Выберите устройство и подберите кадр. Квадрат снизу слева — зона аватара. Сохраняется кадр для ПК, планшета и телефона.",
     frameLabel: "16:5",
   },
   avatar: {
@@ -33,9 +34,57 @@ const PRESET_META: Record<
   },
 };
 
+type CoverDeviceId = keyof CoverCropMap;
+
+type CropState = { scale: number; ox: number; oy: number };
+
+const COVER_DEVICES: {
+  id: CoverDeviceId;
+  label: string;
+  aspect: number;
+  viewW: number;
+  frameLabel: string;
+  Icon: typeof Monitor;
+}[] = [
+  { id: "desktop", label: "ПК", aspect: 16 / 5, viewW: 400, frameLabel: "16:5", Icon: Monitor },
+  { id: "tablet", label: "Планшет", aspect: 16 / 6, viewW: 360, frameLabel: "16:6", Icon: Tablet },
+  { id: "mobile", label: "Телефон", aspect: 2 / 1, viewW: 300, frameLabel: "2:1", Icon: Smartphone },
+];
+
+const DEFAULT_CROPS: Record<CoverDeviceId, CropState> = {
+  desktop: { scale: 1, ox: 0, oy: 0 },
+  tablet: { scale: 1, ox: 0, oy: 0 },
+  mobile: { scale: 1, ox: 0, oy: 0 },
+};
+
 function clampZoom(value: number) {
   return Math.min(3, Math.max(0.5, value));
 }
+
+function cropToObjectPosition(
+  viewW: number,
+  viewH: number,
+  crop: CropState,
+  natW: number,
+  natH: number
+): string {
+  const cover = Math.max(viewW / natW, viewH / natH);
+  const drawScale = cover * crop.scale;
+  const imgW = natW * drawScale;
+  const imgH = natH * drawScale;
+  const imgLeft = viewW / 2 - imgW / 2 + crop.ox;
+  const imgTop = viewH / 2 - imgH / 2 + crop.oy;
+  const px = (viewW / 2 - imgLeft) / imgW;
+  const py = (viewH / 2 - imgTop) / imgH;
+  const x = Math.min(100, Math.max(0, Math.round(px * 100)));
+  const y = Math.min(100, Math.max(0, Math.round(py * 100)));
+  return `${x}% ${y}%`;
+}
+
+export type ImageEditorSavePayload = {
+  file: File;
+  coverCropJson?: string;
+};
 
 export function ImageEditorModal({
   file,
@@ -48,27 +97,34 @@ export function ImageEditorModal({
   aspect?: number | null;
   preset?: ImageEditorPreset;
   onCancel: () => void;
-  onSave: (file: File) => void;
+  onSave: (payload: ImageEditorSavePayload) => void;
 }) {
-  const imgRef = useRef<HTMLImageElement | null>(null);
   const stageRef = useRef<HTMLDivElement | null>(null);
   const [url, setUrl] = useState("");
   const [ready, setReady] = useState(false);
-  const [scale, setScale] = useState(1);
+  const [device, setDevice] = useState<CoverDeviceId>("desktop");
+  const [crops, setCrops] = useState<Record<CoverDeviceId, CropState>>(DEFAULT_CROPS);
   const [rot, setRot] = useState(0);
-  const [ox, setOx] = useState(0);
-  const [oy, setOy] = useState(0);
   const [bright, setBright] = useState(100);
   const [contrast, setContrast] = useState(100);
   const [sat, setSat] = useState(100);
   const [filter, setFilter] = useState("none");
   const [busy, setBusy] = useState(false);
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
+  const imgRef = useRef<HTMLImageElement | null>(null);
 
   const meta = PRESET_META[preset];
-  const ratio = aspect && aspect > 0 ? aspect : null;
-  const viewW = preset === "profile-cover" ? 400 : 320;
+  const isProfileCover = preset === "profile-cover";
+  const activeDevice = isProfileCover
+    ? COVER_DEVICES.find((d) => d.id === device) || COVER_DEVICES[0]
+    : null;
+  const ratio = isProfileCover && activeDevice ? activeDevice.aspect : aspect && aspect > 0 ? aspect : null;
+  const viewW = isProfileCover && activeDevice ? activeDevice.viewW : 320;
   const viewH = ratio ? Math.round(viewW / ratio) : 320;
+  const frameLabel = isProfileCover && activeDevice ? activeDevice.frameLabel : meta.frameLabel;
+  const crop = crops[device];
+  const { scale, ox, oy } = crop;
+
   const avatarSize = Math.round(viewW * 0.2);
   const avatarLeft = Math.round(viewW * 0.04);
   const avatarBottom = Math.round(-avatarSize * 0.42);
@@ -79,9 +135,9 @@ export function ImageEditorModal({
     const u = URL.createObjectURL(file);
     setUrl(u);
     setReady(false);
-    setScale(1);
-    setOx(0);
-    setOy(0);
+    setCrops(DEFAULT_CROPS);
+    setDevice("desktop");
+    setRot(0);
     const img = new Image();
     img.onload = () => {
       imgRef.current = img;
@@ -94,11 +150,54 @@ export function ImageEditorModal({
   }, [file]);
 
   const filterCss = `brightness(${bright}%) contrast(${contrast}%) saturate(${sat}%) ${FILTERS.find((f) => f.id === filter)?.css || ""}`;
-  const cover = natW > 0 && natH > 0 ? Math.max(viewW / natW, viewH / natH) : 1;
-  const previewScale = cover * scale;
+  const coverBase = natW > 0 && natH > 0 ? Math.max(viewW / natW, viewH / natH) : 1;
+  const previewScale = coverBase * scale;
+
+  function updateCrop(patch: Partial<CropState>) {
+    setCrops((prev) => ({
+      ...prev,
+      [device]: { ...prev[device], ...patch },
+    }));
+  }
 
   function bumpZoom(delta: number) {
-    setScale((s) => clampZoom(Number((s + delta).toFixed(2))));
+    updateCrop({ scale: clampZoom(Number((scale + delta).toFixed(2))) });
+  }
+
+  function renderCropToCanvas(
+    targetViewW: number,
+    targetAspect: number,
+    cropState: CropState,
+    outW: number
+  ) {
+    const img = imgRef.current;
+    if (!img) throw new Error("no image");
+    const targetViewH = Math.round(targetViewW / targetAspect);
+    const canvas = document.createElement("canvas");
+    const outH = Math.round(outW / targetAspect);
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas");
+    ctx.filter = filterCss;
+    ctx.fillStyle = "#111";
+    ctx.fillRect(0, 0, outW, outH);
+    ctx.save();
+    ctx.translate(outW / 2, outH / 2);
+    ctx.rotate((rot * Math.PI) / 180);
+    const base = Math.max(targetViewW / img.naturalWidth, targetViewH / img.naturalHeight);
+    const drawScale = base * cropState.scale;
+    const dw = img.naturalWidth * drawScale * (outW / targetViewW);
+    const dh = img.naturalHeight * drawScale * (outH / targetViewH);
+    ctx.drawImage(
+      img,
+      -dw / 2 + cropState.ox * (outW / targetViewW),
+      -dh / 2 + cropState.oy * (outH / targetViewH),
+      dw,
+      dh
+    );
+    ctx.restore();
+    return canvas;
   }
 
   async function save() {
@@ -106,24 +205,17 @@ export function ImageEditorModal({
     if (!img || busy) return;
     setBusy(true);
     try {
-      const canvas = document.createElement("canvas");
-      const outW = ratio ? 1200 : Math.min(1600, img.naturalWidth);
-      const outH = ratio ? Math.round(outW / ratio) : Math.round((outW / img.naturalWidth) * img.naturalHeight);
-      canvas.width = outW;
-      canvas.height = outH;
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("canvas");
-      ctx.filter = filterCss;
-      ctx.fillStyle = "#111";
-      ctx.fillRect(0, 0, outW, outH);
-      ctx.save();
-      ctx.translate(outW / 2, outH / 2);
-      ctx.rotate((rot * Math.PI) / 180);
-      const drawScale = cover * scale;
-      const dw = img.naturalWidth * drawScale * (outW / viewW);
-      const dh = img.naturalHeight * drawScale * (outH / viewH);
-      ctx.drawImage(img, -dw / 2 + ox * (outW / viewW), -dh / 2 + oy * (outH / viewH), dw, dh);
-      ctx.restore();
+      const desktop = COVER_DEVICES[0];
+      const exportAspect = isProfileCover ? desktop.aspect : ratio;
+      const exportViewW = isProfileCover ? desktop.viewW : viewW;
+      const exportCrop = isProfileCover ? crops.desktop : crop;
+      const outW = exportAspect ? 1200 : Math.min(1600, img.naturalWidth);
+      const canvas = renderCropToCanvas(
+        exportViewW,
+        exportAspect || viewW / viewH,
+        exportCrop,
+        outW
+      );
       const blob: Blob = await new Promise((resolve) =>
         canvas.toBlob((b) => resolve(b || file), "image/jpeg", 0.92)
       );
@@ -135,7 +227,18 @@ export function ImageEditorModal({
         compressed instanceof File
           ? compressed
           : new File([compressed], jpeg.name, { type: compressed.type || "image/jpeg" });
-      onSave(out);
+
+      let coverCropJson: string | undefined;
+      if (isProfileCover) {
+        const map: CoverCropMap = {};
+        for (const d of COVER_DEVICES) {
+          const vh = Math.round(d.viewW / d.aspect);
+          map[d.id] = cropToObjectPosition(d.viewW, vh, crops[d.id], natW, natH);
+        }
+        coverCropJson = JSON.stringify(map);
+      }
+
+      onSave({ file: out, coverCropJson });
     } catch {
       onCancel();
     } finally {
@@ -152,9 +255,28 @@ export function ImageEditorModal({
           <p className="text-[12px] text-ink-70 leading-relaxed">{meta.hint}</p>
         ) : null}
 
+        {isProfileCover ? (
+          <div className="flex flex-wrap gap-2">
+            {COVER_DEVICES.map(({ id, label, Icon }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setDevice(id)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] border bg-transparent transition-colors",
+                  device === id ? "border-magenta text-magenta" : "border-line text-ink-45 hover:text-paper"
+                )}
+              >
+                <Icon size={14} />
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         <div className="flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-45">
           <span>Область кадрирования</span>
-          {meta.frameLabel ? <span>{meta.frameLabel}</span> : null}
+          {frameLabel ? <span>{frameLabel}</span> : null}
         </div>
 
         <div
@@ -167,8 +289,10 @@ export function ImageEditorModal({
           }}
           onPointerMove={(e) => {
             if (!drag.current) return;
-            setOx(drag.current.ox + (e.clientX - drag.current.x));
-            setOy(drag.current.oy + (e.clientY - drag.current.y));
+            updateCrop({
+              ox: drag.current.ox + (e.clientX - drag.current.x),
+              oy: drag.current.oy + (e.clientY - drag.current.y),
+            });
           }}
           onPointerUp={() => {
             drag.current = null;
@@ -193,7 +317,7 @@ export function ImageEditorModal({
             <div className="absolute inset-0 pointer-events-none border-2 border-magenta/70" />
           </div>
 
-          {preset === "profile-cover" && (
+          {isProfileCover && (
             <div
               className="absolute z-10 pointer-events-none rounded-[8px] border-2 border-dashed border-paper/90 bg-ink/50 backdrop-blur-[1px] flex flex-col items-center justify-center gap-0.5"
               style={{
@@ -213,25 +337,13 @@ export function ImageEditorModal({
         </div>
 
         <div className="flex items-center justify-center gap-3">
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label="Уменьшить"
-            onClick={() => bumpZoom(-0.1)}
-          >
+          <Button type="button" variant="outline" size="sm" aria-label="Уменьшить" onClick={() => bumpZoom(-0.1)}>
             <Minus size={14} />
           </Button>
           <span className="font-mono text-[12px] text-paper min-w-[3.5rem] text-center">
             {Math.round(scale * 100)}%
           </span>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            aria-label="Увеличить"
-            onClick={() => bumpZoom(0.1)}
-          >
+          <Button type="button" variant="outline" size="sm" aria-label="Увеличить" onClick={() => bumpZoom(0.1)}>
             <Plus size={14} />
           </Button>
         </div>
@@ -245,7 +357,7 @@ export function ImageEditorModal({
             max={3}
             step={0.02}
             value={scale}
-            onChange={(e) => setScale(clampZoom(Number(e.target.value)))}
+            onChange={(e) => updateCrop({ scale: clampZoom(Number(e.target.value)) })}
           />
         </label>
 

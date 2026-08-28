@@ -37,6 +37,7 @@ import { CommissionRequestForm } from "@/components/orders/CommissionRequestForm
 import { SmartImage } from "@/components/media/SmartImage";
 import { StaffBadge } from "@/components/staff/StaffBadge";
 import { PartnerBadge } from "@/components/profile/PartnerBadge";
+import { coverCropStyle, parseCoverCropJson } from "@/lib/coverCrop";
 import { cn } from "@/lib/cn";
 import { formatCount } from "@/lib/format";
 import { useLocale } from "@/lib/LocaleContext";
@@ -224,6 +225,7 @@ function ProfileHub({ username }: { username: string }) {
   );
   const bio = p?.bio || "";
   const coverUrl = p?.coverUrl || null;
+  const coverCrop = parseCoverCropJson(p?.coverCropJson);
   const city = [p?.city, p?.country].filter(Boolean).join(", ");
   let links: Record<string, string> = {};
   try {
@@ -280,7 +282,7 @@ function ProfileHub({ username }: { username: string }) {
       <header className="profile-header border-b border-line overflow-x-clip">
         <div className="profile-cover-band" aria-hidden>
           {coverUrl ? (
-            <SmartImage src={coverUrl} alt="" className="profile-cover-image" />
+            <SmartImage src={coverUrl} alt="" className="profile-cover-image" style={coverCropStyle(coverCrop)} />
           ) : (
             <div className="profile-cover-fallback" />
           )}

@@ -264,6 +264,7 @@ router.put("/:username/profile", authMiddleware, (req: AuthRequest, res) => {
       ...(body.bio !== undefined && { bio: body.bio }),
       ...(body.avatarUrl !== undefined && { avatarUrl: body.avatarUrl }),
       ...(body.coverUrl !== undefined && { coverUrl: body.coverUrl }),
+      ...(body.coverCropJson !== undefined && { coverCropJson: body.coverCropJson }),
       ...(body.linksJson !== undefined && { linksJson: body.linksJson }),
       ...(body.privacySettings !== undefined && { privacySettings: body.privacySettings }),
       ...(body.city !== undefined && { city: body.city }),
