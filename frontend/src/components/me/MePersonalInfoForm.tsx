@@ -8,6 +8,13 @@ import type { PlatformRole } from "@/lib/AuthContext";
 
 const SOCIAL_PLATFORMS = ["telegram", "youtube", "instagram", "tiktok", "vk"] as const;
 
+function socialPlatforms(socials: { platform: string; url: string }[]) {
+  const extras = socials
+    .map((s) => s.platform)
+    .filter((p) => !(SOCIAL_PLATFORMS as readonly string[]).includes(p));
+  return [...new Set([...SOCIAL_PLATFORMS, ...extras])];
+}
+
 type MePersonalInfoFormProps = {
   nick: string;
   display: string;
@@ -32,7 +39,7 @@ type MePersonalInfoFormProps = {
   onDobChange: (v: string) => void;
   onShowAgeChange: (v: boolean) => void;
   onSocialsChange: (socials: { platform: string; url: string }[]) => void;
-  onSave: () => void;
+  onSave: (socialsOverride?: { platform: string; url: string }[]) => void;
   onReset: () => void;
 };
 
@@ -92,6 +99,24 @@ export function MePersonalInfoForm({
     setEditingSocial(null);
     setSocialDraft("");
   }
+
+  function handleSave() {
+    let nextSocials = socials;
+    if (editingSocial) {
+      nextSocials = socials.filter((s) => s.platform !== editingSocial);
+      if (socialDraft.trim()) {
+        nextSocials = [...nextSocials, { platform: editingSocial, url: socialDraft.trim() }];
+      }
+      onSocialsChange(nextSocials);
+      setEditingSocial(null);
+      setSocialDraft("");
+    }
+    onSave(nextSocials);
+  }
+
+  const socialPending =
+    editingSocial !== null && socialDraft.trim() !== getSocialUrl(editingSocial).trim();
+  const canSave = dirty || socialPending;
 
   return (
     <section>
@@ -157,7 +182,7 @@ export function MePersonalInfoForm({
         <div className="me-form-field me-form-grid-full">
           <label>Соцсети</label>
           <div className="me-social-row">
-            {SOCIAL_PLATFORMS.map((platform) => {
+            {socialPlatforms(socials).map((platform) => {
               const hasUrl = Boolean(getSocialUrl(platform));
               return (
                 <button
@@ -192,7 +217,7 @@ export function MePersonalInfoForm({
       {proSettings}
 
       <div className="flex flex-wrap gap-2 mt-6">
-        <Button disabled={!dirty} onClick={onSave}>
+        <Button disabled={!canSave} onClick={handleSave}>
           Сохранить изменения
         </Button>
         <Button variant="outline" onClick={onReset}>

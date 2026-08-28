@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { StudioShell } from "@/components/StudioShell";
@@ -110,6 +110,93 @@ function MeInner() {
     setDirty(true);
   }
 
+  const applyProfileFromMe = useCallback((me: Awaited<ReturnType<typeof auth.me>>) => {
+    const p = me.profile || {};
+    setNick(me.user.username);
+    setEmail(me.user.email || "");
+    setSocialCrosspostOptIn(me.user.socialCrosspostOptIn !== false && me.user.socialCrosspostOptIn !== 0);
+    setDisplay(p.displayName || "");
+    setBio(p.bio || "");
+    setCity(p.city || "");
+    setPhone(p.phone || me.user.phone || "");
+    setDob(p.dateOfBirth || "");
+    setShowAge(Boolean(p.showAge));
+    setAvailability(p.availability || "open");
+    setMaxOrders(p.maxActiveOrders || 4);
+    setComplexity(p.commissionComplexity || "");
+    setCommTypes(p.commissionTypes || "");
+    setCommDuration(p.commissionDuration || "");
+    setExpYears(p.experienceYears != null ? String(p.experienceYears) : "");
+    try {
+      setMaterials(p.materialsJson ? JSON.parse(p.materialsJson).join(",") : "");
+    } catch {
+      setMaterials("");
+    }
+    setAvatarUrl(p.avatarUrl || null);
+    setCoverUrl(p.coverUrl || null);
+    try {
+      setLangs(p.languagesJson ? JSON.parse(p.languagesJson).join(",") : "ru");
+    } catch {
+      setLangs("ru");
+    }
+    try {
+      setSpecs(p.specializationsJson ? JSON.parse(p.specializationsJson).join(",") : "");
+    } catch {
+      setSpecs("");
+    }
+    try {
+      const links = p.linksJson ? JSON.parse(p.linksJson) : {};
+      setSocials(Object.entries(links).map(([platform, url]) => ({ platform, url: String(url) })));
+    } catch {
+      setSocials([]);
+    }
+  }, []);
+
+  const refreshSidebar = useCallback(async (uname: string, platformRole?: string | null) => {
+    const [completeness, fin] = await Promise.all([
+      account.completeness().catch(() => ({ percent: 0, checks: {} })),
+      finance.transactions().catch(() => ({ available: 0 })),
+    ]);
+    setComplete(completeness as { percent: number; checks: Record<string, boolean> });
+    setBalance(fin.available || 0);
+
+    const [statsRes, activityRes] = await Promise.all([
+      users.stats(uname).catch(() => null),
+      users.activity(uname).catch(() => null),
+    ]);
+    if (statsRes) {
+      setStats({
+        builds: statsRes.stats?.builds || 0,
+        orders: statsRes.stats?.orders || 0,
+        rating: statsRes.stats?.rating != null ? String(statsRes.stats.rating) : "—",
+        likes: statsRes.stats?.likes || 0,
+      });
+    }
+    if (activityRes) {
+      setActivity(activityRes.activity || []);
+    }
+    if (platformRole === "blogger") {
+      try {
+        const pr = await account.premium();
+        setPremiumProgress(pr.progress);
+      } catch {
+        setPremiumProgress(null);
+      }
+    }
+  }, []);
+
+  async function resetForm() {
+    try {
+      const me = await auth.me();
+      applyProfileFromMe(me);
+      await refreshSidebar(me.user.username, me.user.platformRole);
+      setDirty(false);
+      toast("Изменения отменены");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Не удалось сбросить", true);
+    }
+  }
+
   useEffect(() => {
     const on = (e: BeforeUnloadEvent) => {
       if (dirty) e.preventDefault();
@@ -127,76 +214,12 @@ function MeInner() {
       account.privacy().catch(() => ({ settings: null })),
       finance.transactions().catch(() => ({ available: 0 })),
     ])
-      .then(async ([me, completeness, ns, pr, fin]) => {
+      .then(async ([me, _completeness, ns, pr]) => {
         if (!alive) return;
-        const p = me.profile || {};
-        setNick(me.user.username);
-        setEmail(me.user.email || "");
-        setSocialCrosspostOptIn(me.user.socialCrosspostOptIn !== false && me.user.socialCrosspostOptIn !== 0);
-        setDisplay(p.displayName || "");
-        setBio(p.bio || "");
-        setCity(p.city || "");
-        setPhone(p.phone || me.user.phone || "");
-        setDob(p.dateOfBirth || "");
-        setShowAge(Boolean(p.showAge));
-        setAvailability(p.availability || "open");
-        setMaxOrders(p.maxActiveOrders || 4);
-        setComplexity(p.commissionComplexity || "");
-        setCommTypes(p.commissionTypes || "");
-        setCommDuration(p.commissionDuration || "");
-        setExpYears(p.experienceYears != null ? String(p.experienceYears) : "");
-        try {
-          setMaterials(p.materialsJson ? JSON.parse(p.materialsJson).join(",") : "");
-        } catch {
-          setMaterials("");
-        }
-        setAvatarUrl(p.avatarUrl || null);
-        setCoverUrl(p.coverUrl || null);
-        try {
-          setLangs(p.languagesJson ? JSON.parse(p.languagesJson).join(",") : "ru");
-        } catch {
-          setLangs("ru");
-        }
-        try {
-          setSpecs(p.specializationsJson ? JSON.parse(p.specializationsJson).join(",") : "");
-        } catch {
-          setSpecs("");
-        }
-        try {
-          const links = p.linksJson ? JSON.parse(p.linksJson) : {};
-          setSocials(Object.entries(links).map(([platform, url]) => ({ platform, url: String(url) })));
-        } catch {
-          setSocials([]);
-        }
-        if (ns.settings) setNotifs({ ...notifs, ...ns.settings });
-        if (pr.settings) setPrivacy({ ...privacy, ...pr.settings });
-        setComplete(completeness as any);
-        setBalance(fin.available || 0);
-        if (me.user.platformRole === "blogger") {
-          try {
-            const pr = await account.premium();
-            setPremiumProgress(pr.progress);
-          } catch {
-            setPremiumProgress(null);
-          }
-        }
-        try {
-          const s = await users.stats(me.user.username);
-          setStats({
-            builds: s.stats?.builds || 0,
-            orders: s.stats?.orders || 0,
-            rating: s.stats?.rating != null ? String(s.stats.rating) : "—",
-            likes: s.stats?.likes || 0,
-          });
-        } catch {
-          /* skip */
-        }
-        try {
-          const a = await users.activity(me.user.username);
-          setActivity(a.activity || []);
-        } catch {
-          /* skip */
-        }
+        applyProfileFromMe(me);
+        if (ns.settings) setNotifs((prev) => ({ ...prev, ...ns.settings }));
+        if (pr.settings) setPrivacy((prev) => ({ ...prev, ...pr.settings }));
+        await refreshSidebar(me.user.username, me.user.platformRole);
       })
       .catch((e) => {
         if (alive) setLoadError(e instanceof Error ? e.message : "Не загрузить");
@@ -205,7 +228,7 @@ function MeInner() {
       alive = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [applyProfileFromMe, refreshSidebar]);
 
   function setTab(id: string) {
     if (dirty) {
@@ -215,7 +238,8 @@ function MeInner() {
     router.replace(`/me?tab=${id}`);
   }
 
-  async function save() {
+  async function save(socialsOverride?: { platform: string; url: string }[]) {
+    const links = socialsOverride ?? socials;
     try {
       await account.patch({
         username: nick,
@@ -236,10 +260,14 @@ function MeInner() {
         commissionDuration: commDuration || null,
         experienceYears: expYears === "" ? null : Number(expYears),
         materialsJson: JSON.stringify(materials.split(",").map((s) => s.trim()).filter(Boolean)),
-        linksJson: JSON.stringify(Object.fromEntries(socials.filter((s) => s.url).map((s) => [s.platform, s.url]))),
+        linksJson: JSON.stringify(Object.fromEntries(links.filter((s) => s.url).map((s) => [s.platform, s.url]))),
         socialCrosspostOptIn,
       });
+      if (socialsOverride) setSocials(socialsOverride);
       await refresh();
+      const me = await auth.me();
+      applyProfileFromMe(me);
+      await refreshSidebar(me.user.username, me.user.platformRole);
       setDirty(false);
       toast("Профиль сохранён");
     } catch (e) {
@@ -261,6 +289,8 @@ function MeInner() {
         await account.patch({ coverUrl: up.url });
       }
       await refresh();
+      const me = await auth.me();
+      await refreshSidebar(me.user.username, me.user.platformRole);
       toast(kind === "avatar" ? "Аватар обновлён" : "Обложка обновлена");
     } catch (e) {
       toast(e instanceof Error ? e.message : "Не удалось загрузить", true);
@@ -336,6 +366,7 @@ function MeInner() {
         <MeProfileHeader
           breadcrumb={isClient ? "Кабинет > Мой профиль" : "Студия заказов > Профиль"}
           publicProfileHref={`/profile/${username || nick}`}
+          coverUrl={coverUrl}
           onCoverChange={(file) => onFile("cover", file)}
         />
 
@@ -390,7 +421,7 @@ function MeInner() {
                   onShowAgeChange={(v) => { setShowAge(v); mark(); }}
                   onSocialsChange={(next) => { setSocials(next); mark(); }}
                   onSave={save}
-                  onReset={() => window.location.reload()}
+                  onReset={resetForm}
                 />
               </>
             )}
@@ -434,7 +465,7 @@ function MeInner() {
                 <Button variant="outline" size="sm" onClick={() => { setSocials([...socials, { platform: "telegram", url: "" }]); mark(); }}>
                   Добавить
                 </Button>
-                <Button disabled={!dirty} onClick={save}>Сохранить</Button>
+                <Button disabled={!dirty} onClick={() => save()}>Сохранить</Button>
               </div>
             )}
 
