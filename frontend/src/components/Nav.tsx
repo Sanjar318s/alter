@@ -40,6 +40,7 @@ import { BrandLogo } from "@/components/ui/BrandLogo";
 type LinkDef = {
   href: string | ((username: string) => string);
   id?: string;
+  icon?: LucideIcon;
   labelKey?: "explore" | "reels" | "studio" | "messages";
   hintKey?: "exploreHint" | "reelsHint" | "studioHint" | "messagesHint";
   shortKey?: "explore" | "reelsShort" | "studioShort" | "chatShort";
@@ -53,6 +54,7 @@ type LinkDef = {
 const LINK_DEFS: LinkDef[] = [
   {
     href: "/messages",
+    icon: MessageSquare,
     labelKey: "messages",
     hintKey: "messagesHint",
     shortKey: "chatShort",
@@ -64,6 +66,7 @@ const LINK_DEFS: LinkDef[] = [
   },
   {
     href: "/reels",
+    icon: Clapperboard,
     labelKey: "reels",
     hintKey: "reelsHint",
     shortKey: "reelsShort",
@@ -72,6 +75,7 @@ const LINK_DEFS: LinkDef[] = [
   },
   {
     href: "/market",
+    icon: Compass,
     labelKey: "explore",
     hintKey: "exploreHint",
     shortKey: "explore",
@@ -83,6 +87,7 @@ const LINK_DEFS: LinkDef[] = [
   },
   {
     href: "/messages",
+    icon: MessageSquare,
     labelKey: "messages",
     hintKey: "messagesHint",
     shortKey: "chatShort",
@@ -92,6 +97,7 @@ const LINK_DEFS: LinkDef[] = [
   {
     href: "/studio",
     id: "orders-hub",
+    icon: LayoutDashboard,
     labelKey: "studio",
     hintKey: "studioHint",
     shortKey: "studioShort",
@@ -101,6 +107,7 @@ const LINK_DEFS: LinkDef[] = [
   {
     href: (u) => `/profile/${u}`,
     id: "own-profile",
+    icon: User,
     text: "Публичный профиль",
     hintText: "Ваш публичный профиль",
     short: "Профиль",
@@ -112,6 +119,7 @@ const LINK_DEFS: LinkDef[] = [
 const GUEST_LINKS: LinkDef[] = [
   {
     href: "/market",
+    icon: Compass,
     labelKey: "explore",
     hintKey: "exploreHint",
     shortKey: "explore",
@@ -123,6 +131,7 @@ const GUEST_LINKS: LinkDef[] = [
   },
   {
     href: "/reels",
+    icon: Clapperboard,
     labelKey: "reels",
     hintKey: "reelsHint",
     shortKey: "reelsShort",
@@ -169,13 +178,19 @@ function notifOrderId(n: Notif) {
   }
 }
 
-function mobileLinkIcon(href: string): LucideIcon {
+function navLinkIcon(href: string, id?: string): LucideIcon {
+  if (id === "orders-hub") return LayoutDashboard;
+  if (id === "own-profile") return User;
   if (href.startsWith("/messages")) return MessageSquare;
   if (href.startsWith("/reels")) return Clapperboard;
-  if (href.startsWith("/explore")) return Compass;
+  if (href.startsWith("/market") || href.startsWith("/explore")) return Compass;
   if (href.startsWith("/studio")) return LayoutDashboard;
   if (href.startsWith("/profile")) return User;
   return Compass;
+}
+
+function mobileLinkIcon(href: string): LucideIcon {
+  return navLinkIcon(href);
 }
 
 function MobileNavRow({
@@ -283,6 +298,8 @@ export function Nav() {
         text,
         hintText,
         short,
+        icon: link.icon || navLinkIcon(href, link.id),
+        id: link.id,
       };
     });
   const isAdmin =
@@ -293,6 +310,7 @@ export function Nav() {
 
   const isActive = (href: string) => {
     if (href === "/messages" && pathname.startsWith("/channels/")) return true;
+    if (href === "/market" && (pathname.startsWith("/market") || pathname.startsWith("/explore"))) return true;
     return pathname === href || pathname.startsWith(`${href}/`);
   };
 
@@ -344,31 +362,36 @@ export function Nav() {
 
   return (
     <>
-      <nav className={cn("sticky top-0 w-full bg-ink/95 backdrop-blur-sm border-b border-line px-4 sm:px-6 lg:px-8 py-3 overflow-x-clip", mobileOpen ? "z-[80]" : "z-50")}>
-        <div className="max-w-[1360px] mx-auto w-full min-w-0 flex items-center gap-2">
+      <nav className={cn("sticky top-0 w-full bg-ink/92 backdrop-blur-md border-b border-line px-4 sm:px-6 lg:px-8 py-2.5 overflow-x-clip", mobileOpen ? "z-[80]" : "z-50")}>
+        <div className="max-w-[1360px] mx-auto w-full min-w-0 flex items-center gap-3">
           <BrandLogo href={brandHref} />
 
-          <div className="hidden md:flex flex-1 justify-center items-center gap-0.5 min-w-0 overflow-hidden px-1">
-            {LINKS.map((link) => (
+          <div className="hidden md:flex flex-1 justify-center items-center gap-1 min-w-0 overflow-hidden px-1">
+            {LINKS.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.href);
+              return (
               <Link
-                key={link.href}
+                key={`${link.href}-${link.text}`}
                 href={link.href}
                 title={link.hintText}
                 className={cn(
-                  "relative inline-flex items-center gap-1.5 px-2 lg:px-3 py-2 text-[13px] lg:text-sm no-underline border-b-2 -mb-px transition-colors whitespace-nowrap shrink-0",
-                  isActive(link.href)
-                    ? "text-paper border-magenta"
-                    : "text-ink-45 border-transparent hover:text-paper"
+                  "relative inline-flex items-center gap-2 px-2.5 lg:px-3.5 py-2 text-[13px] no-underline rounded-[8px] border transition-colors whitespace-nowrap shrink-0",
+                  active
+                    ? "text-paper bg-stage-elevated/70 border-line shadow-[0_0_24px_rgba(212,86,122,0.12)]"
+                    : "text-ink-70 border-transparent hover:text-paper hover:bg-stage/50"
                 )}
               >
+                <Icon size={17} strokeWidth={1.75} className={cn("shrink-0", active ? "text-magenta" : "text-ink-45")} />
                 <span className="hidden xl:inline">{link.text}</span>
                 <span className="xl:hidden">{link.short}</span>
                 {link.href === "/messages" && msgUnread > 0 ? <CountBadge count={msgUnread} /> : null}
               </Link>
-            ))}
+            );
+            })}
           </div>
 
-          <div className="hidden md:flex items-center gap-0.5 shrink-0 ml-auto">
+          <div className="hidden md:flex items-center gap-1 shrink-0 ml-auto">
             <IconButton
               label={t("search")}
               className="w-9 h-9"
@@ -395,7 +418,7 @@ export function Nav() {
             </div>
             {showPanelToggle && (
               <div
-                className="hidden md:inline-flex border border-line h-9"
+                className="hidden md:inline-flex border border-line rounded-[8px] h-9 overflow-hidden p-0.5 bg-ink/40"
                 role="tablist"
                 aria-label="Режим меню"
               >
@@ -417,9 +440,9 @@ export function Nav() {
                       }
                     }}
                     className={cn(
-                      "px-2.5 text-[11px] font-mono uppercase tracking-wide border-0 h-full transition-colors",
+                      "px-3 text-[10px] font-mono uppercase tracking-[0.12em] border-0 h-full rounded-[6px] transition-colors",
                       panel === tab.id
-                        ? "bg-stage text-paper"
+                        ? "bg-magenta/20 text-paper shadow-[inset_0_0_0_1px_rgba(212,86,122,0.35)]"
                         : "bg-transparent text-ink-45 hover:text-paper"
                     )}
                   >

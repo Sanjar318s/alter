@@ -12,7 +12,6 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
 import { IconButton } from "@/components/ui/IconButton";
@@ -250,14 +249,16 @@ function ExploreClient() {
   );
 
   const Sidebar = (
-    <aside className="hidden lg:block w-[220px] shrink-0 space-y-6">
-      {FiltersPanel}
-      {sidebarEvent && (
-        <div>
-          <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2">Партнёр</div>
-          <PartnerCard placement={sidebarEvent} compact />
-        </div>
-      )}
+    <aside className="hidden lg:block w-[240px] shrink-0">
+      <div className="explore-sidebar-panel sticky top-[88px]">
+        {FiltersPanel}
+        {sidebarEvent && (
+          <div className="mt-6 pt-6 border-t border-line">
+            <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2">Партнёр</div>
+            <PartnerCard placement={sidebarEvent} compact />
+          </div>
+        )}
+      </div>
     </aside>
   );
 
@@ -291,51 +292,60 @@ function ExploreClient() {
       : null;
 
   return (
-    <div className="pt-11 px-4 sm:px-6 lg:px-8 pb-20 min-w-0 max-w-full overflow-x-clip">
-      <div className="max-w-[1440px] mx-auto min-w-0">
-        <Link
-          href="/market"
-          className="inline-flex items-center gap-2 text-[13px] text-ink-45 no-underline mb-4 hover:text-paper"
-        >
-          <ArrowLeft size={16} /> {t("explore")}
-        </Link>
-        <PageHeader
-          eyebrow={t("explore")}
-          title={t("exploreTitle")}
-          description={
-            <>
-              {t("exploreLead")}{" "}
-              <Hint term={t("buildTerm")} text={t("buildHint")} />
-            </>
-          }
-        />
-
-        <div className="flex items-center gap-2 mb-5">
-          <div className="relative flex-1">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-ink-45" />
-            <input
-              ref={searchRef}
-              type="search"
-              value={draftQ}
-              onChange={(e) => setDraftQ(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") setParam({ q: draftQ || undefined });
-                if (e.key === "Escape") {
-                  setDraftQ("");
-                  setParam({ q: undefined });
-                }
-              }}
-              placeholder={t("exploreSearch")}
-              className="field-box bg-stage h-12 pl-10"
-            />
+    <div className="min-h-full">
+      <section className="explore-hero hero-wash border-b border-line relative">
+        <div className="pt-11 px-4 sm:px-6 lg:px-8 relative z-[1]">
+          <div className="max-w-[1440px] mx-auto py-8 md:py-10">
+            <Link
+              href="/market"
+              className="inline-flex items-center gap-2 text-[13px] text-ink-45 no-underline hover:text-paper"
+            >
+              <ArrowLeft size={16} /> {t("explore")}
+            </Link>
+            <div className="mt-5 max-w-[720px]">
+              <span className="font-mono text-[11px] uppercase tracking-[0.18em] text-magenta">
+                {t("explore")}
+              </span>
+              <h1 className="font-display font-extrabold text-[clamp(24px,3.5vw,38px)] leading-tight mt-2">
+                {t("exploreTitle")}
+              </h1>
+              <p className="text-[14px] md:text-[15px] text-ink-70 mt-3 leading-relaxed">
+                {t("exploreLead")}{" "}
+                <Hint term={t("buildTerm")} text={t("buildHint")} />
+              </p>
+            </div>
+            <div className="relative mt-6 max-w-[760px]">
+              <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-45 pointer-events-none" />
+              <input
+                ref={searchRef}
+                type="search"
+                value={draftQ}
+                onChange={(e) => setDraftQ(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") setParam({ q: draftQ || undefined });
+                  if (e.key === "Escape") {
+                    setDraftQ("");
+                    setParam({ q: undefined });
+                  }
+                }}
+                placeholder={t("exploreSearch")}
+                className="explore-search-input"
+              />
+            </div>
           </div>
-          <Button variant="outline" size="sm" onClick={() => setFiltersOpen(true)} className="lg:hidden">
+        </div>
+      </section>
+
+      <div className="px-4 sm:px-6 lg:px-8 pb-20 min-w-0 max-w-full overflow-x-clip">
+      <div className="max-w-[1440px] mx-auto min-w-0 pt-6">
+        <div className="flex items-center gap-2 mb-5 lg:hidden">
+          <Button variant="outline" size="sm" onClick={() => setFiltersOpen(true)} className="w-full">
             <SlidersHorizontal size={16} className="mr-2" />
             {t("filters")}
           </Button>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 mb-8">
+        <div className="flex flex-wrap items-center gap-2 mb-8 p-3 border border-line rounded-[10px] bg-stage/30">
           {CHIPS.map((c) => (
             <button
               key={c.id}
@@ -346,12 +356,12 @@ function ExploreClient() {
                 else setParam({ role: c.id });
               }}
               className={cn(
-                "font-mono text-[11px] px-3.5 py-1.5 border tracking-[0.05em] uppercase cursor-pointer rounded-[4px]",
+                "font-mono text-[11px] px-3.5 py-2 border tracking-[0.06em] uppercase cursor-pointer rounded-[6px] transition-colors",
                 (!c.id && !role && !commission) ||
                   (c.id === "open" && commission === "open") ||
                   role === c.id
-                  ? "border-magenta text-magenta"
-                  : "border-line text-ink-45 hover:text-paper"
+                  ? "border-magenta/60 text-magenta bg-magenta/10"
+                  : "border-line text-ink-45 hover:text-paper hover:border-ink-70"
               )}
             >
               {c.label}
@@ -436,7 +446,7 @@ function ExploreClient() {
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-5">
                 {items.map((item, index) => {
                   const isLiked = liked[item.id] ?? item.isLiked;
                   const showSponsor = feedSponsor && index > 0 && index % 10 === 0;
@@ -477,6 +487,7 @@ function ExploreClient() {
             )}
           </div>
         </div>
+      </div>
       </div>
 
       {filtersSheet}

@@ -54,8 +54,18 @@ export function MarketBuildCard({
   return (
     <article className={cn("group flex flex-col", className)}>
       <Link href={buildHref} className="block no-underline text-paper">
-        <Frame hover className="aspect-[4/5] overflow-hidden group-hover:scale-[1.02] transition-transform">
+        <Frame hover className="aspect-[4/5] overflow-hidden group-hover:scale-[1.02] transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
           <SmartImage src={item.coverImageUrl} alt={imageAlt} fallback={item.title} />
+          <div className="absolute top-2 right-2 z-[3] flex items-center gap-2">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-ink/75 border border-line/80 text-[10px] font-mono text-ink-70">
+              <Heart size={10} className={liked ? "fill-magenta stroke-magenta text-magenta" : ""} />
+              {formatCount(displayLikes)}
+            </span>
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-ink/75 border border-line/80 text-[10px] font-mono text-ink-70">
+              <MessageCircle size={10} />
+              {formatCount(item.commentsCount)}
+            </span>
+          </div>
           <div className="absolute inset-0 flex flex-col justify-end p-2.5 z-[1] bg-gradient-to-t from-ink/90 via-ink/20 to-transparent">
             <div className="font-display font-extrabold text-[14px] leading-tight">{item.character || item.title}</div>
             {item.franchise && (
@@ -85,7 +95,7 @@ export function MarketBuildCard({
         </Link>
       )}
 
-      <div className="flex items-center gap-2 mt-2 flex-wrap">
+      <div className="flex items-center gap-2 mt-2.5 flex-wrap">
         {onToggleLike ? (
           <button
             type="button"
@@ -96,17 +106,8 @@ export function MarketBuildCard({
             <Heart size={14} className={liked ? "fill-magenta stroke-magenta" : ""} />
             <span className="font-mono text-[11px]">{formatCount(displayLikes)}</span>
           </button>
-        ) : (
-          <span className="flex items-center gap-1 text-ink-70">
-            <Heart size={14} />
-            <span className="font-mono text-[11px]">{formatCount(displayLikes)}</span>
-          </span>
-        )}
-        <Link href={buildHref} className="flex items-center gap-1 text-ink-70 no-underline hover:text-paper">
-          <MessageCircle size={14} />
-          <span className="font-mono text-[11px]">{formatCount(item.commentsCount)}</span>
-        </Link>
-        <Button href={buildHref} variant="outline" size="sm" className="ml-auto text-[11px] px-2.5 py-1 h-7">
+        ) : null}
+        <Button href={buildHref} variant="outline" size="sm" className="ml-auto text-[11px] px-3 py-1 h-8 border-magenta/40 hover:border-magenta">
           {moreLabel}
         </Button>
       </div>
