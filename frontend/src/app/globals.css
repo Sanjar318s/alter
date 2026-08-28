@@ -404,7 +404,7 @@
     .market-hero {
       display: block;
       min-height: auto;
-      padding: 1.25rem 0 min(40vh, 340px);
+      padding: 1.5rem 0 2rem;
     }
 
     .market-hero-shell {
@@ -412,28 +412,31 @@
     }
 
     .market-hero-art {
-      top: auto;
-      bottom: 0;
-      height: min(40vh, 340px);
-      min-height: 200px;
+      inset: 0;
+      height: auto;
+      min-height: 100%;
     }
 
     .market-hero-art-img {
       object-fit: cover;
-      object-position: center 28%;
-      opacity: 0.92;
+      object-position: center 32%;
+      opacity: 0.88;
     }
 
     .market-hero::after {
       background:
         linear-gradient(
-          180deg,
+          90deg,
           var(--color-ink) 0%,
-          var(--color-ink) 38%,
-          color-mix(in srgb, var(--color-ink) 92%, transparent) 52%,
-          color-mix(in srgb, var(--color-ink) 55%, transparent) 68%,
-          color-mix(in srgb, var(--color-ink) 20%, transparent) 84%,
+          color-mix(in srgb, var(--color-ink) 96%, transparent) 36%,
+          color-mix(in srgb, var(--color-ink) 72%, transparent) 56%,
+          color-mix(in srgb, var(--color-ink) 28%, transparent) 76%,
           transparent 100%
+        ),
+        linear-gradient(
+          180deg,
+          color-mix(in srgb, var(--color-ink) 65%, transparent) 0%,
+          transparent 30%
         );
     }
 
@@ -441,7 +444,6 @@
       position: relative;
       z-index: 3;
       max-width: 100%;
-      padding-bottom: 0.75rem;
     }
   }
 
