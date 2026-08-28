@@ -9,6 +9,7 @@ import { BrandLogo } from "@/components/ui/BrandLogo";
 import { useLocale } from "@/lib/LocaleContext";
 import { useAuth } from "@/lib/AuthContext";
 import { explore } from "@/lib/api";
+import { cn } from "@/lib/cn";
 
 const SHELL = "max-w-[1360px] mx-auto px-5 sm:px-8 lg:px-10";
 
@@ -65,8 +66,8 @@ export default function MarketPage() {
             decoding="async"
           />
         </div>
-        <div className={SHELL}>
-          <div className="relative z-[3] grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
+        <div className={cn(SHELL, "relative z-[3] h-full flex items-center")}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center w-full">
             <div className="max-w-[640px] market-hero-copy">
               <p className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.18em] text-magenta">
                 {t("marketEyebrow")}
