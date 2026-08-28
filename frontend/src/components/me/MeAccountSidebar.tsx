@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/Button";
 import { ActivityLineChart } from "@/components/me/ActivityLineChart";
 import { PAYMENTS_LIVE } from "@/lib/flags";
+import type { PlatformRole } from "@/lib/AuthContext";
 
 type PremiumProgress = {
   youtubeReelsAt1M: number;
@@ -17,13 +18,14 @@ type PremiumProgress = {
 
 type MeAccountSidebarProps = {
   complete: { percent: number; checks: Record<string, boolean> };
-  isClient: boolean;
+  role: PlatformRole | null | undefined;
+  hasReels: boolean;
   showPremium: boolean;
   premiumProgress: PremiumProgress;
   balance: number;
   formatSum: (n: number) => string;
   activity: number[];
-  profileHref: string;
+  profileAction: { label: string; href: string };
   onWithdraw: () => void;
   onPrivacy: () => void;
   onExport: () => void;
@@ -32,18 +34,22 @@ type MeAccountSidebarProps = {
 
 export function MeAccountSidebar({
   complete,
-  isClient,
+  role,
+  hasReels,
   showPremium,
   premiumProgress,
   balance,
   formatSum,
   activity,
-  profileHref,
+  profileAction,
   onWithdraw,
   onPrivacy,
   onExport,
   onDelete,
 }: MeAccountSidebarProps) {
+  const isSeller = role === "seller";
+  const isBlogger = role === "blogger";
+
   return (
     <aside className="flex flex-col gap-4">
       <div className="me-sidebar-card">
@@ -57,8 +63,11 @@ export function MeAccountSidebar({
           <li>{complete.checks?.avatar ? "✓ Аватар добавлен" : "Добавьте аватар"}</li>
           <li>{complete.checks?.bio ? "✓ Bio заполнено" : "Напишите bio"}</li>
           <li>{complete.checks?.city ? "✓ Город указан" : "Укажите город"}</li>
-          {!isClient && (
-            <li>{complete.checks?.portfolio ? "✓ Есть работы" : "Добавьте работу"}</li>
+          {isSeller && (
+            <li>{complete.checks?.portfolio ? "✓ Есть работы" : "Добавьте работу на биржу"}</li>
+          )}
+          {isBlogger && (
+            <li>{hasReels ? "✓ Есть рилсы" : "Опубликуйте рилс"}</li>
           )}
         </ul>
       </div>
@@ -114,8 +123,8 @@ export function MeAccountSidebar({
       </div>
 
       <div className="flex flex-col gap-2">
-        <Button variant="outline" size="sm" href={profileHref}>
-          Портфолио
+        <Button variant="outline" size="sm" href={profileAction.href}>
+          {profileAction.label}
         </Button>
         <Button variant="outline" size="sm" onClick={onPrivacy}>
           Приватность

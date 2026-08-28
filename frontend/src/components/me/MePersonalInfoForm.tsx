@@ -229,6 +229,11 @@ export function MePersonalInfoForm({
           Смена роли — через заявку во вкладке «Безопасность».
         </p>
       )}
+      {role === "blogger" && (
+        <p className="text-[12px] text-ink-45 mt-3">
+          Блогеры публикуют рилсы. Готовые работы на бирже — только у продавцов.
+        </p>
+      )}
     </section>
   );
 }

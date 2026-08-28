@@ -15,19 +15,25 @@ import { MePersonalInfoForm } from "@/components/me/MePersonalInfoForm";
 import { MeAccountSidebar } from "@/components/me/MeAccountSidebar";
 import { useAuth } from "@/lib/AuthContext";
 import { useToast } from "@/components/ui/Toast";
-import { account, auth, finance, uploadFile, users } from "@/lib/api";
+import { account, auth, finance, publications, uploadFile, users } from "@/lib/api";
 import { cn } from "@/lib/cn";
 import { PAYMENTS_LIVE } from "@/lib/flags";
 import { useLocale } from "@/lib/LocaleContext";
+import type { PlatformRole } from "@/lib/AuthContext";
 import { editImageList, useEditImage } from "@/components/media/ImageEditorProvider";
 
-const ALL_TABS = [
+const ALL_TABS: { id: string; label: string; roles?: PlatformRole[] }[] = [
   { id: "info", label: "Основная информация" },
-  { id: "portfolio", label: "Портфолио" },
+  { id: "portfolio", label: "Портфолио", roles: ["seller"] },
+  { id: "reels", label: "Рилсы", roles: ["blogger"] },
   { id: "socials", label: "Соцсети" },
   { id: "security", label: "Безопасность" },
   { id: "notifications", label: "Уведомления" },
 ];
+
+function tabsForRole(role: PlatformRole | null | undefined) {
+  return ALL_TABS.filter((t) => !t.roles || (role != null && t.roles.includes(role)));
+}
 
 const NOTIF_LABELS: Record<string, string> = {
   orders: "Заказы",
@@ -90,7 +96,15 @@ function MeInner() {
     email: false,
   });
   const [privacy, setPrivacy] = useState({ profile: "public", orders: "private", stats: "public" });
-  const [stats, setStats] = useState({ builds: 0, orders: 0, rating: "—", likes: 0 });
+  const [stats, setStats] = useState({
+    builds: 0,
+    orders: 0,
+    followers: 0,
+    following: 0,
+    likes: 0,
+    reels: 0,
+  });
+  const [hasReels, setHasReels] = useState(false);
   const [complete, setComplete] = useState({ percent: 0, checks: {} as Record<string, boolean> });
   const [activity, setActivity] = useState<number[]>([]);
   const [balance, setBalance] = useState(0);
@@ -168,9 +182,25 @@ function MeInner() {
       setStats({
         builds: statsRes.stats?.builds || 0,
         orders: statsRes.stats?.orders || 0,
-        rating: statsRes.stats?.rating != null ? String(statsRes.stats.rating) : "—",
+        followers: statsRes.stats?.followers || 0,
+        following: statsRes.stats?.following || 0,
         likes: statsRes.stats?.likes || 0,
+        reels: 0,
       });
+    }
+    if (platformRole === "blogger") {
+      try {
+        const pubs = await publications.list(uname);
+        const reelCount = (pubs.publications || []).filter(
+          (p: { kind?: string }) => p.kind === "post" || !p.kind
+        ).length;
+        setHasReels(reelCount > 0);
+        setStats((prev) => ({ ...prev, reels: reelCount }));
+      } catch {
+        setHasReels(false);
+      }
+    } else {
+      setHasReels(false);
     }
     if (activityRes) {
       setActivity(activityRes.activity || []);
@@ -308,10 +338,22 @@ function MeInner() {
     );
   }
 
-  const isClient = user?.platformRole === "client";
-  const isSeller = user?.platformRole === "seller";
-  const TABS = ALL_TABS.filter((t) => !(isClient && t.id === "portfolio"));
-  const settingsTab = isClient && tab === "portfolio" ? "info" : tab;
+  const role = user?.platformRole;
+  const isClient = role === "client";
+  const isBlogger = role === "blogger";
+  const isSeller = role === "seller";
+  const TABS = tabsForRole(role);
+  const allowedTabIds = new Set(TABS.map((t) => t.id));
+  const rawTab = tab === "subs" ? "info" : tab;
+  const settingsTab = allowedTabIds.has(rawTab) ? rawTab : "info";
+  const profileSlug = username || nick;
+  const profileHref = `/profile/${profileSlug}`;
+  const profileAction = isSeller
+    ? { label: "Портфолио работ", href: profileHref }
+    : isBlogger
+      ? { label: "Мои рилсы", href: `${profileHref}?tab=reels` }
+      : { label: "Публичный профиль", href: profileHref };
+  const breadcrumb = isSeller ? "Студия заказов > Профиль" : "Кабинет > Мой профиль";
   const primarySocial = socials.find((s) => s.url) ?? null;
 
   const proSettings = isSeller ? (
@@ -364,8 +406,8 @@ function MeInner() {
     <StudioShell>
       <div className="me-page-shell">
         <MeProfileHeader
-          breadcrumb={isClient ? "Кабинет > Мой профиль" : "Студия заказов > Профиль"}
-          publicProfileHref={`/profile/${username || nick}`}
+          breadcrumb={breadcrumb}
+          publicProfileHref={profileHref}
           coverUrl={coverUrl}
           onCoverChange={(file) => onFile("cover", file)}
         />
@@ -391,7 +433,7 @@ function MeInner() {
                   nick={nick}
                   bio={bio}
                   avatarUrl={avatarUrl}
-                  role={user?.platformRole}
+                  role={role}
                   primarySocial={primarySocial}
                   stats={stats}
                   onAvatarChange={(file) => onFile("avatar", file)}
@@ -406,7 +448,7 @@ function MeInner() {
                   bio={bio}
                   dob={dob}
                   showAge={showAge}
-                  role={user?.platformRole}
+                  role={role}
                   socials={socials}
                   dirty={dirty}
                   isClient={isClient}
@@ -426,15 +468,32 @@ function MeInner() {
               </>
             )}
 
-            {settingsTab === "portfolio" && !isClient && (
+            {settingsTab === "portfolio" && isSeller && (
               <div className="me-sidebar-card">
-                <p className="text-ink-70 mb-4">Те же работы, что на публичном профиле.</p>
-                <Button href={`/profile/${username || nick}`}>Открыть портфолио работ</Button>
+                <p className="text-ink-70 mb-4">
+                  Готовые костюмы и работы на бирже — то же, что на публичном профиле во вкладке «Работы».
+                </p>
+                <Button href={profileHref}>Открыть портфолио работ</Button>
+              </div>
+            )}
+
+            {settingsTab === "reels" && isBlogger && (
+              <div className="me-sidebar-card">
+                <p className="text-ink-70 mb-4">
+                  Блогеры публикуют рилсы о косплее. Готовые работы на бирже доступны только продавцам.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Button href={`${profileHref}?tab=reels`}>Открыть мои рилсы</Button>
+                  <Button href="/reels" variant="outline">
+                    Лента рилсов
+                  </Button>
+                </div>
               </div>
             )}
 
             {settingsTab === "socials" && (
               <div className="me-sidebar-card flex flex-col gap-3 max-w-[520px]">
+                {!isClient && (
                 <label className="flex items-start gap-2 text-[13px] text-ink-70 cursor-pointer border border-line p-3">
                   <input
                     type="checkbox"
@@ -448,10 +507,13 @@ function MeInner() {
                   <span>
                     <span className="text-paper">Репост в соцсети бренда AlterCosPlay</span>
                     <span className="block text-[12px] text-ink-45 mt-0.5">
-                      По умолчанию для новых рилсов и работ. Можно снять галочку при публикации.
+                      {isSeller
+                        ? "По умолчанию для новых рилсов и работ. Можно снять галочку при публикации."
+                        : "По умолчанию для новых рилсов. Можно снять галочку при публикации."}
                     </span>
                   </span>
                 </label>
+                )}
                 {socials.map((s, i) => (
                   <div key={i} className="flex gap-2 items-center">
                     <BrandIcon name={s.platform} />
@@ -523,13 +585,14 @@ function MeInner() {
 
           <MeAccountSidebar
             complete={complete}
-            isClient={isClient}
-            showPremium={user?.platformRole === "blogger"}
+            role={role}
+            hasReels={hasReels}
+            showPremium={isBlogger}
             premiumProgress={premiumProgress}
             balance={balance}
             formatSum={formatSum}
             activity={activity}
-            profileHref={`/profile/${username || nick}`}
+            profileAction={profileAction}
             onWithdraw={() => setWithdrawOpen(true)}
             onPrivacy={() => setPrivacyOpen(true)}
             onExport={async () => {

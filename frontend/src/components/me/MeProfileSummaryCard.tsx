@@ -1,8 +1,17 @@
 "use client";
 
-import { Camera, Heart, Star } from "lucide-react";
+import { Camera, Heart, Users } from "lucide-react";
 import { SmartImage } from "@/components/media/SmartImage";
 import type { PlatformRole } from "@/lib/AuthContext";
+
+export type MeProfileStats = {
+  builds: number;
+  orders: number;
+  followers: number;
+  following: number;
+  likes: number;
+  reels: number;
+};
 
 type MeProfileSummaryCardProps = {
   nick: string;
@@ -10,7 +19,7 @@ type MeProfileSummaryCardProps = {
   avatarUrl: string | null;
   role: PlatformRole | null | undefined;
   primarySocial?: { platform: string; url: string } | null;
-  stats: { builds: number; orders: number; rating: string; likes: number };
+  stats: MeProfileStats;
   onAvatarChange: (file: File) => void;
 };
 
@@ -20,9 +29,21 @@ const ROLE_LABELS: Record<string, string> = {
   seller: "Продавец",
 };
 
-function formatLikes(n: number) {
+function formatCount(n: number) {
   if (n >= 1000) return `${(n / 1000).toFixed(1).replace(/\.0$/, "")}K`;
   return String(n);
+}
+
+function StatBox({ value, label, icon }: { value: string | number; label: string; icon?: React.ReactNode }) {
+  return (
+    <div className="me-profile-stat">
+      <div className="font-mono text-[18px] text-paper flex items-center justify-center gap-1">
+        {icon}
+        {value}
+      </div>
+      <div className="text-[11px] text-ink-45">{label}</div>
+    </div>
+  );
 }
 
 export function MeProfileSummaryCard({
@@ -76,28 +97,53 @@ export function MeProfileSummaryCard({
             </a>
           ) : null}
           <div className="me-profile-stats">
-            <div className="me-profile-stat">
-              <div className="font-mono text-[18px] text-paper">{stats.builds}</div>
-              <div className="text-[11px] text-ink-45">Работ</div>
-            </div>
-            <div className="me-profile-stat">
-              <div className="font-mono text-[18px] text-paper">{stats.orders}</div>
-              <div className="text-[11px] text-ink-45">Заказов</div>
-            </div>
-            <div className="me-profile-stat">
-              <div className="font-mono text-[18px] text-paper flex items-center justify-center gap-1">
-                <Star size={14} className="text-amber shrink-0" strokeWidth={1.75} />
-                {stats.rating}
-              </div>
-              <div className="text-[11px] text-ink-45">Рейтинг</div>
-            </div>
-            <div className="me-profile-stat">
-              <div className="font-mono text-[18px] text-paper flex items-center justify-center gap-1">
-                <Heart size={14} className="text-magenta shrink-0" strokeWidth={1.75} />
-                {formatLikes(stats.likes)}
-              </div>
-              <div className="text-[11px] text-ink-45">Лайков</div>
-            </div>
+            {role === "seller" && (
+              <>
+                <StatBox value={stats.builds} label="Работ" />
+                <StatBox value={stats.orders} label="Заказов" />
+                <StatBox
+                  value={formatCount(stats.likes)}
+                  label="Лайков"
+                  icon={<Heart size={14} className="text-magenta shrink-0" strokeWidth={1.75} />}
+                />
+                <StatBox
+                  value={formatCount(stats.followers)}
+                  label="Подписчиков"
+                  icon={<Users size={14} className="text-ink-45 shrink-0" strokeWidth={1.75} />}
+                />
+              </>
+            )}
+            {role === "blogger" && (
+              <>
+                <StatBox value={stats.reels} label="Рилсов" />
+                <StatBox
+                  value={formatCount(stats.followers)}
+                  label="Подписчиков"
+                  icon={<Users size={14} className="text-ink-45 shrink-0" strokeWidth={1.75} />}
+                />
+                <StatBox
+                  value={formatCount(stats.likes)}
+                  label="Лайков"
+                  icon={<Heart size={14} className="text-magenta shrink-0" strokeWidth={1.75} />}
+                />
+                <StatBox value={stats.following} label="Подписок" />
+              </>
+            )}
+            {(role === "client" || !role) && (
+              <>
+                <StatBox
+                  value={formatCount(stats.followers)}
+                  label="Подписчиков"
+                  icon={<Users size={14} className="text-ink-45 shrink-0" strokeWidth={1.75} />}
+                />
+                <StatBox value={stats.following} label="Подписок" />
+                <StatBox
+                  value={formatCount(stats.likes)}
+                  label="Лайков"
+                  icon={<Heart size={14} className="text-magenta shrink-0" strokeWidth={1.75} />}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>

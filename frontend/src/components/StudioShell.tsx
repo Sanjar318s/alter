@@ -55,7 +55,7 @@ const PERSONAL: { href: string; label: MsgKey; icon: typeof User; tab?: string }
 function isPersonalNavActive(href: string, pathname: string, tab: string | null) {
   if (pathname !== "/me") return false;
   if (href === "/me") {
-    return !tab || tab === "info" || tab === "portfolio";
+    return !tab || tab === "info" || tab === "portfolio" || tab === "reels";
   }
   const match = href.match(/tab=([^&]+)/);
   return match?.[1] === tab;
