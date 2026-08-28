@@ -116,6 +116,9 @@ const LINK_DEFS: LinkDef[] = [
   },
 ];
 
+/** На мобилке профиль и заказы — только в блоке «Аккаунт», не в «Биржа». */
+const MOBILE_ACCOUNT_ONLY_LINK_IDS = new Set(["own-profile", "orders-hub"]);
+
 const GUEST_LINKS: LinkDef[] = [
   {
     href: "/market",
@@ -686,7 +689,7 @@ export function Nav() {
                 {showPanelToggle ? (panel === "feed" ? "Лента" : "Биржа") : "Меню"}
               </div>
               <nav className="mobile-nav-list">
-                {LINKS.map((link) => (
+                {LINKS.filter((link) => !link.id || !MOBILE_ACCOUNT_ONLY_LINK_IDS.has(link.id)).map((link) => (
                   <MobileNavRow
                     key={`${panel}-${link.href}-${link.text}`}
                     href={link.href}
