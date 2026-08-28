@@ -20,7 +20,6 @@ export function ChannelInfoPanel({
   pinnedCount,
   mediaCount,
   filesCount,
-  onlineEstimate,
   createdAt,
   onToggleNotifications,
   onOpenSheet,
@@ -35,7 +34,6 @@ export function ChannelInfoPanel({
   pinnedCount: number;
   mediaCount: number;
   filesCount: number;
-  onlineEstimate: number;
   createdAt?: string;
   onToggleNotifications: () => void;
   onOpenSheet: (sheet: "members" | "pinned" | "media" | "files" | "activity") => void;
@@ -95,16 +93,14 @@ export function ChannelInfoPanel({
       </div>
 
       <div className="mt-5 px-1">
-        <div className="text-[11px] font-mono uppercase tracking-wide text-ink-45 mb-2">Последняя активность</div>
+        <div className="text-[11px] font-mono uppercase tracking-wide text-ink-45 mb-2">Канал</div>
         <button type="button" onClick={() => onOpenSheet("activity")} className="w-full text-left bg-transparent border-0 p-0">
-          <p className="text-[13px] text-paper flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-success shrink-0" />
-            Сейчас — ~{onlineEstimate} участников онлайн
-          </p>
-          {createdAt && (
-            <p className="text-[12px] text-ink-45 mt-2">
+          {createdAt ? (
+            <p className="text-[12px] text-ink-45">
               Создан: {new Date(createdAt).toLocaleDateString("ru", { day: "numeric", month: "long", year: "numeric" })}
             </p>
+          ) : (
+            <p className="text-[12px] text-ink-45">Статистика активности</p>
           )}
         </button>
       </div>

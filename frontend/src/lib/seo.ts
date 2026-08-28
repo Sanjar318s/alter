@@ -98,8 +98,9 @@ export function organizationJsonLd() {
     "@type": "Organization",
     name: SITE_NAME,
     url: SITE_URL,
+    logo: `${SITE_URL}/logo.svg`,
     description:
-      "Биржа услуг, портфолио и соцсеть для косплееров, мейкеров и фотографов.",
+      "Биржа готовых работ, рилсы и соцсеть для косплееров, продавцов и блогеров.",
   };
 }
 

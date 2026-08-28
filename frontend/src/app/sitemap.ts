@@ -3,6 +3,7 @@ import { SITE_URL, fetchPublicJson } from "@/lib/seo";
 
 const STATIC_ROUTES: MetadataRoute.Sitemap = [
   { url: SITE_URL, changeFrequency: "daily", priority: 1 },
+  { url: `${SITE_URL}/market`, changeFrequency: "daily", priority: 0.95 },
   { url: `${SITE_URL}/explore`, changeFrequency: "hourly", priority: 0.9 },
   { url: `${SITE_URL}/about`, changeFrequency: "monthly", priority: 0.6 },
   { url: `${SITE_URL}/help`, changeFrequency: "monthly", priority: 0.5 },

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/cn";
 import { useLocale } from "@/lib/LocaleContext";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import type { MsgKey } from "@/lib/locale/messages";
 
 const ONBOARD_KEY = "alter_onboard_v1";
@@ -13,7 +14,7 @@ const COLUMNS: { title: MsgKey; links: { label: MsgKey; href: string }[] }[] = [
   {
     title: "platform",
     links: [
-      { label: "explore", href: "/explore" },
+      { label: "explore", href: "/market" },
       { label: "studio", href: "/studio" },
       { label: "messages", href: "/messages" },
     ],
@@ -74,10 +75,7 @@ export function Footer() {
     >
       <div className="max-w-[1360px] mx-auto grid grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr] gap-8">
         <div className="col-span-2 lg:col-span-1">
-          <div className="flex items-center gap-2 text-paper mb-3">
-            <span className="w-2.5 h-2.5 rounded-[1px] bg-gradient-to-br from-magenta to-amber" />
-            <span className="font-display font-extrabold text-lg">AlterCosPlay</span>
-          </div>
+          <BrandLogo href="/" className="mb-3" />
           <p className="text-[11px] text-ink-45 font-mono leading-relaxed max-w-[260px]">
             {t("footerTagline")}
           </p>

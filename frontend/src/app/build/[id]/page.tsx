@@ -46,7 +46,7 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
       <div className="pt-16 px-6 max-w-[640px] mx-auto text-center">
         <h1 className="font-display font-extrabold text-[28px]">Работа не найдена</h1>
         <p className="text-ink-70 mt-2">{error}</p>
-        <Button href="/explore" className="mt-6">Вернуться в Explore</Button>
+        <Button href="/explore" className="mt-6">Вернуться в каталог</Button>
       </div>
     );
   }
@@ -69,8 +69,8 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
 
   return (
     <div className="pt-10 px-4 sm:px-6 lg:px-8 pb-20 max-w-[1240px] mx-auto min-w-0">
-      <Link href="/explore" className="inline-flex items-center gap-2 text-[13px] text-ink-45 no-underline mb-6 hover:text-paper">
-        <ArrowLeft size={16} /> Исследовать
+      <Link href="/market" className="inline-flex items-center gap-2 text-[13px] text-ink-45 no-underline mb-6 hover:text-paper">
+        <ArrowLeft size={16} /> Биржа
       </Link>
       <div className="grid grid-cols-1 md:grid-cols-[1.2fr_0.8fr] gap-10">
         <BuildGallery
@@ -79,7 +79,9 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
           makerUsername={data.author?.username}
         />
         <div>
-          {b.commissionStatus && <Badge status={b.commissionStatus} />}
+          {b.commissionStatus === "open" && (
+            <Badge status="open">Можно заказать</Badge>
+          )}
           <h1 className="font-display font-extrabold text-[clamp(24px,5vw,36px)] mt-3">{b.character || b.title}</h1>
           <div className="font-mono text-[12px] text-ink-45 uppercase mt-1">
             {b.franchise} {b.year ? `· ${b.year}` : ""}
@@ -130,7 +132,7 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
             </div>
           )}
           {!isOwner && b.commissionStatus === "open" && data.author && (
-            <Button className="mt-6 w-full" onClick={() => setRequestOpen(true)}>Хочу такой же</Button>
+            <Button className="mt-6 w-full" onClick={() => setRequestOpen(true)}>Заказать</Button>
           )}
           {!isOwner && (
             <Button variant="ghost" size="sm" className="mt-2" onClick={async () => {

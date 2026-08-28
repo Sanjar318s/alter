@@ -31,6 +31,7 @@ export function panelForPath(pathname: string): NavPanel | null {
     return "feed";
   }
   if (
+    pathname.startsWith("/market") ||
     pathname.startsWith("/explore") ||
     pathname.startsWith("/studio") ||
     pathname.startsWith("/build") ||
@@ -44,7 +45,7 @@ export function panelForPath(pathname: string): NavPanel | null {
 }
 
 export function panelHomeHref(panel: NavPanel): string {
-  return panel === "feed" ? "/reels" : "/explore";
+  return panel === "feed" ? "/reels" : "/market";
 }
 
 export function NavPanelProvider({ children }: { children: ReactNode }) {

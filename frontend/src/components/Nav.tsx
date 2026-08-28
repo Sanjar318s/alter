@@ -35,6 +35,7 @@ import { panelForPath, panelHomeHref, useNavPanel, type NavPanel } from "@/lib/N
 import type { PlatformRole } from "@/lib/AuthContext";
 import { homePathForUser } from "@/lib/appHome";
 import { isPlatformOwnerUser } from "@/lib/owner";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 
 type LinkDef = {
   href: string | ((username: string) => string);
@@ -70,12 +71,12 @@ const LINK_DEFS: LinkDef[] = [
     panel: "feed",
   },
   {
-    href: "/explore",
+    href: "/market",
     labelKey: "explore",
     hintKey: "exploreHint",
     shortKey: "explore",
     text: "Биржа",
-    hintText: "Каталог работ и заказов",
+    hintText: "Готовые работы и заказ услуги",
     short: "Биржа",
     roles: ["client", "blogger", "seller"],
     panel: "work",
@@ -110,12 +111,12 @@ const LINK_DEFS: LinkDef[] = [
 
 const GUEST_LINKS: LinkDef[] = [
   {
-    href: "/explore",
+    href: "/market",
     labelKey: "explore",
     hintKey: "exploreHint",
     shortKey: "explore",
     text: "Биржа",
-    hintText: "Каталог работ и заказов",
+    hintText: "Готовые работы и заказ услуги",
     short: "Биржа",
     roles: [],
     panel: "work",
@@ -345,10 +346,7 @@ export function Nav() {
     <>
       <nav className={cn("sticky top-0 w-full bg-ink/95 backdrop-blur-sm border-b border-line px-4 sm:px-6 lg:px-8 py-3 overflow-x-clip", mobileOpen ? "z-[80]" : "z-50")}>
         <div className="max-w-[1360px] mx-auto w-full min-w-0 flex items-center gap-2">
-          <Link href={brandHref} className="flex items-center gap-2 text-paper no-underline shrink-0">
-            <span className="w-2.5 h-2.5 rounded-[1px] bg-gradient-to-br from-magenta to-amber" />
-            <span className="font-display font-extrabold text-lg tracking-tight">AlterCosPlay</span>
-          </Link>
+          <BrandLogo href={brandHref} />
 
           <div className="hidden md:flex flex-1 justify-center items-center gap-0.5 min-w-0 overflow-hidden px-1">
             {LINKS.map((link) => (

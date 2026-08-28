@@ -68,7 +68,7 @@ function Hero() {
             {t("heroLead")}
           </p>
           <div className="flex flex-wrap gap-3 mt-8">
-            <Button href="/explore">{t("watchHow")}</Button>
+            <Button href="/market">{t("watchHow")}</Button>
             <Button href="/reels" variant="outline">
               {t("reels")}
             </Button>

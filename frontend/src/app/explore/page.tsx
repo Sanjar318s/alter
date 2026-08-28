@@ -5,12 +5,9 @@ import { createPortal } from "react-dom";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
-  ArrowUpRight,
-  BadgeCheck,
-  Heart,
+  ArrowLeft,
   LayoutGrid,
   List,
-  MessageCircle,
   Search,
   SlidersHorizontal,
   X,
@@ -18,9 +15,9 @@ import {
 import { PageHeader } from "@/components/ui/PageHeader";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
-import { Frame } from "@/components/Frame";
 import { IconButton } from "@/components/ui/IconButton";
 import { Hint } from "@/components/ui/Hint";
+import { MarketBuildCard } from "@/components/builds/MarketBuildCard";
 import { cn } from "@/lib/cn";
 import { formatCount } from "@/lib/format";
 import { useLocale } from "@/lib/LocaleContext";
@@ -232,10 +229,8 @@ function ExploreClient() {
           </button>
         ))}
       </div>
-      <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-45 mb-3">Статус заказов</div>
-      {statusChip("open", "Открыто", statuses.open, "text-magenta")}
-      {statusChip("waitlist", "Лист", statuses.waitlist, "text-amber")}
-      {statusChip("closed", "Закрыто", statuses.closed, "text-ink-45")}
+      <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-45 mb-3">Можно заказать</div>
+      {statusChip("open", t("openCommissions"), statuses.open, "text-magenta")}
       <div className="font-mono text-[11px] uppercase tracking-[0.1em] text-ink-45 mt-6 mb-3">Цена (сум)</div>
       <div className="flex gap-2">
         <input
@@ -298,6 +293,12 @@ function ExploreClient() {
   return (
     <div className="pt-11 px-4 sm:px-6 lg:px-8 pb-20 min-w-0 max-w-full overflow-x-clip">
       <div className="max-w-[1440px] mx-auto min-w-0">
+        <Link
+          href="/market"
+          className="inline-flex items-center gap-2 text-[13px] text-ink-45 no-underline mb-4 hover:text-paper"
+        >
+          <ArrowLeft size={16} /> {t("explore")}
+        </Link>
         <PageHeader
           eyebrow={t("explore")}
           title={t("exploreTitle")}
@@ -418,8 +419,8 @@ function ExploreClient() {
                       <div className="font-mono text-[11px] text-ink-45 truncate">{item.franchise}</div>
                       <div className="text-[12px] text-ink-70 truncate mt-0.5">{item.author}</div>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 mt-1 font-mono text-[11px]">
-                        <span className="text-magenta">{item.status}</span>
                         <span>{formatCount(item.likesCount)} ♥</span>
+                        <span>{item.commentsCount} 💬</span>
                         <span>{item.price ? formatSum(item.price) : "—"}</span>
                       </div>
                     </div>
@@ -427,8 +428,8 @@ function ExploreClient() {
                       <div className="font-display font-bold w-32 lg:w-40 truncate shrink-0">{item.character}</div>
                       <div className="font-mono text-[11px] text-ink-45 flex-1 min-w-0 truncate">{item.franchise}</div>
                       <div className="text-[13px] w-24 truncate shrink-0 hidden lg:block">{item.author}</div>
-                      <div className="font-mono text-[11px] text-magenta w-20 shrink-0">{item.status}</div>
                       <div className="font-mono text-[11px] w-16 shrink-0">{formatCount(item.likesCount)}</div>
+                      <div className="font-mono text-[11px] w-12 shrink-0">{item.commentsCount}</div>
                       <div className="font-mono text-[11px] w-24 shrink-0">{item.price ? formatSum(item.price) : "—"}</div>
                     </div>
                   </Link>
@@ -447,65 +448,18 @@ function ExploreClient() {
                         </div>
                       )}
                       <div key={item.id} className="group relative">
-                      <Link href={`/build/${item.id}`} className="block no-underline text-paper">
-                        <Frame
-                          amber={item.status === "waitlist"}
-                          muted={item.status === "closed"}
-                          hover
-                          className="aspect-[4/5] overflow-hidden group-hover:scale-[1.02] transition-transform"
-                        >
-                          <SmartImage
-                            src={item.coverImageUrl}
-                            alt={
-                              item.author
-                                ? `${item.character || item.title} — косплей от ${item.author}`
-                                : item.character || item.title
-                            }
-                            fallback={item.title}
-                          />
-                          <span className="absolute top-2 right-2 z-[3] font-mono text-[9px] uppercase px-1.5 py-0.5 bg-ink/80">
-                            {item.status === "open" ? "Открыто" : item.status === "waitlist" ? "Лист" : "Закрыто"}
-                          </span>
-                          <div className="absolute inset-0 flex flex-col justify-end p-2.5 z-[1]">
-                            <div className="font-display font-extrabold text-[14px] leading-tight">{item.character}</div>
-                            <div className="font-mono text-[10px] text-ink-70 uppercase">{item.franchise}</div>
-                            <div className="flex items-center gap-1.5 mt-1.5">
-                              <span className="w-6 h-6 bg-stage border border-line shrink-0 overflow-hidden">
-                                <SmartImage
-                                  src={item.authorAvatar}
-                                  alt={item.author ? `Аватар ${item.author}` : "Аватар автора"}
-                                  fallback={item.author || "?"}
-                                />
-                              </span>
-                              <span className="text-[12px] truncate">{item.author}</span>
-                              {item.isVerified && <BadgeCheck size={12} className="text-magenta shrink-0" />}
-                            </div>
-                          </div>
-                          <ArrowUpRight
-                            size={16}
-                            className="absolute top-2 left-2 z-[3] opacity-0 group-hover:opacity-100 text-paper"
-                          />
-                        </Frame>
-                      </Link>
-                      <div className="flex items-center gap-3 mt-2 px-0.5">
-                        <button
-                          type="button"
-                          aria-label="Лайк"
-                          onClick={() => toggleLike(item.id, isLiked)}
-                          className="flex items-center gap-1 bg-transparent border-0 text-ink-70 hover:text-magenta"
-                        >
-                          <Heart
-                            size={14}
-                            className={isLiked ? "fill-magenta stroke-magenta" : ""}
-                          />
-                          <span className="font-mono text-[11px]">{formatCount(item.likesCount + (isLiked && !item.isLiked ? 1 : 0))}</span>
-                        </button>
-                        <Link href={`/build/${item.id}`} className="flex items-center gap-1 text-ink-70 no-underline">
-                          <MessageCircle size={14} />
-                          <span className="font-mono text-[11px]">{item.commentsCount}</span>
-                        </Link>
+                        <MarketBuildCard
+                          item={item}
+                          isLiked={liked[item.id] ?? item.isLiked}
+                          likeCount={
+                            item.likesCount +
+                            ((liked[item.id] ?? item.isLiked) && !item.isLiked ? 1 : 0)
+                          }
+                          onToggleLike={toggleLike}
+                          formatSum={formatSum}
+                          moreLabel={t("more")}
+                        />
                       </div>
-                    </div>
                     </Fragment>
                   );
                 })}

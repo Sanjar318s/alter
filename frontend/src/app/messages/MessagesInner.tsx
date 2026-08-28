@@ -788,7 +788,12 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
   async function handleChannelMenuAction(action: ChannelMenuAction) {
     const chId = catalogChannel?.id || activeChannel?.id;
     const displayTitle = channelTitle.startsWith("#") ? channelTitle : `# ${channelTitle}`;
-    const membersCount = activeChannel?.membersCount || catalogChannel?.members || channelMembers.length || 0;
+    const membersCount =
+      typeof activeChannel?.membersCount === "number"
+        ? activeChannel.membersCount
+        : typeof catalogChannel?.members === "number"
+          ? catalogChannel.members
+          : channelMembers.length;
 
     if (action === "notifications") {
       const next = !muted;
@@ -899,10 +904,14 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
     return () => window.removeEventListener("keydown", onKey);
   }, [mediaView]);
 
-  const channelMembersCount = activeChannel?.membersCount || catalogChannel?.members || channelMembers.length || 0;
+  const channelMembersCount =
+    typeof activeChannel?.membersCount === "number"
+      ? activeChannel.membersCount
+      : typeof catalogChannel?.members === "number"
+        ? catalogChannel.members
+        : channelMembers.length;
   const channelPinnedIds = getPinnedMessageIds(threadConvId);
   const channelPinnedMsgs = msgs.filter((m) => channelPinnedIds.includes(m.id));
-  const channelOnlineEstimate = Math.max(1, Math.min(channelMembersCount, Math.round(channelMembersCount * 0.04) || 1));
   const channelLastActive = activeChannel?.lastMessage?.createdAt
     ? new Date(activeChannel.lastMessage.createdAt).toLocaleString("ru", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
     : undefined;
@@ -947,7 +956,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
               tab === "dm" ? "border-magenta text-paper font-medium" : "border-transparent text-ink-45 hover:text-paper"
             )}
           >
-            Личные {dms.length || 1}
+            Личные {dms.length}
           </button>
           <button
             type="button"
@@ -1129,8 +1138,8 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
                   {typing
                     ? "печатает…"
                     : isChannel
-                    ? `Канал · ${activeChannel?.membersCount || catalogChannel?.members || 356} участников`
-                    : peer?.profile?.city || peer?.profile?.bio || "в сети"}
+                    ? `Канал · ${channelMembersCount} участников`
+                    : peer?.profile?.city || peer?.profile?.bio || "Личный чат"}
                 </div>
               </>
             )}
@@ -1531,7 +1540,6 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
             pinnedCount={channelPinnedIds.length}
             mediaCount={sharedMedia.length}
             filesCount={sharedFiles.length}
-            onlineEstimate={channelOnlineEstimate}
             createdAt={channelCreatedAt}
             onToggleNotifications={async () => {
               const next = !muted;

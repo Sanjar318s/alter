@@ -52,18 +52,22 @@ const notoKr = Noto_Sans_KR({
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: "AlterCosPlay — Биржа услуг, портфолио и соцсеть для косплееров",
+    default: "AlterCosPlay — биржа готовых работ, рилсы и заказы для косплея",
     template: `%s | ${SITE_NAME}`,
   },
   description:
-    "Биржа услуг и соцсеть для косплееров: портфолио костюмов, заказать костюм косплей у фриланс мастеров, коммишены и заказы — в одном профиле.",
+    "Биржа готовых работ косплея, рилсы о процессе и контенте, заказ услуги у продавцов — в одном профиле AlterCosPlay.",
   keywords: SEO_KEYWORDS,
   applicationName: SITE_NAME,
   alternates: { canonical: "/" },
+  icons: {
+    icon: [{ url: "/logo.svg", type: "image/svg+xml" }],
+    apple: [{ url: "/logo.svg", type: "image/svg+xml" }],
+  },
   openGraph: {
-    title: "AlterCosPlay — Биржа услуг, портфолио и соцсеть для косплееров",
+    title: "AlterCosPlay — биржа готовых работ, рилсы и заказы для косплея",
     description:
-      "Портфолио, заказать костюм косплей, фриланс мастера косплея и коммишены — всё на одной площадке.",
+      "Готовые работы косплея на бирже, рилсы о процессе и контенте, заказ услуги у продавцов — на AlterCosPlay.",
     url: SITE_URL,
     siteName: SITE_NAME,
     locale: "ru_RU",
