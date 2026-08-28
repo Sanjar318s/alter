@@ -223,6 +223,7 @@ function ProfileHub({ username }: { username: string }) {
     ] as Tab[]
   );
   const bio = p?.bio || "";
+  const coverUrl = p?.coverUrl || null;
   const city = [p?.city, p?.country].filter(Boolean).join(", ");
   let links: Record<string, string> = {};
   try {
@@ -276,10 +277,19 @@ function ProfileHub({ username }: { username: string }) {
 
   return (
     <>
-      <header className="pt-12 pb-8 px-4 sm:px-6 lg:px-8 border-b border-line overflow-x-clip">
+      <header className="profile-header border-b border-line overflow-x-clip">
+        <div className="profile-cover-band" aria-hidden>
+          {coverUrl ? (
+            <SmartImage src={coverUrl} alt="" className="profile-cover-image" />
+          ) : (
+            <div className="profile-cover-fallback" />
+          )}
+          <div className="profile-cover-scrim" />
+        </div>
+        <div className="profile-header-body px-4 sm:px-6 lg:px-8 pb-8">
         <div className="max-w-[1240px] mx-auto flex flex-wrap gap-6 items-start min-w-0">
-          <div className="relative">
-            <Frame className="w-[104px] h-[104px] overflow-hidden">
+          <div className="relative profile-header-avatar">
+            <Frame className="w-[104px] h-[104px] overflow-hidden border-[3px] border-ink shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
               <SmartImage
                 src={profile?.profile?.avatarUrl}
                 alt={`Аватар косплеера ${username}`}
@@ -400,6 +410,7 @@ function ProfileHub({ username }: { username: string }) {
               </div>
             )}
           </div>
+        </div>
         </div>
       </header>
 

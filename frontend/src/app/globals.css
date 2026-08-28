@@ -884,6 +884,72 @@
     margin-bottom: 0;
   }
 
+  /* Public profile — full-width cover */
+  .profile-header {
+    position: relative;
+    width: 100%;
+  }
+
+  .profile-cover-band {
+    position: relative;
+    width: 100%;
+    height: clamp(128px, 32vw, 240px);
+    overflow: hidden;
+    background: color-mix(in srgb, var(--color-stage) 80%, var(--color-ink));
+  }
+
+  .profile-cover-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .profile-cover-fallback {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 70% 100% at 0% 50%, rgba(196, 30, 58, 0.22), transparent 58%),
+      radial-gradient(ellipse 55% 80% at 100% 20%, rgba(124, 58, 237, 0.14), transparent 55%),
+      linear-gradient(180deg, var(--color-stage-elevated), var(--color-ink));
+  }
+
+  .profile-cover-scrim {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(
+        180deg,
+        color-mix(in srgb, var(--color-ink) 25%, transparent) 0%,
+        color-mix(in srgb, var(--color-ink) 72%, transparent) 62%,
+        var(--color-ink) 100%
+      ),
+      linear-gradient(
+        90deg,
+        color-mix(in srgb, var(--color-ink) 55%, transparent) 0%,
+        transparent 58%
+      );
+  }
+
+  .profile-header-body {
+    position: relative;
+    z-index: 1;
+    margin-top: -3.25rem;
+  }
+
+  @media (min-width: 640px) {
+    .profile-header-body {
+      margin-top: -3.75rem;
+    }
+  }
+
+  .profile-header-avatar {
+    z-index: 2;
+  }
+
   .me-profile-header-actions {
     display: flex;
     flex-wrap: wrap;
