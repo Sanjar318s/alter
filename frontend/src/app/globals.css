@@ -402,29 +402,33 @@
 
   @media (max-width: 768px) {
     .market-hero {
+      position: relative;
       display: block;
       min-height: auto;
       padding: 1.5rem 0 2rem;
+      overflow: hidden;
     }
 
     .market-hero-shell {
       display: block;
+      position: relative;
+      z-index: 3;
     }
 
     .market-hero-art {
+      position: absolute;
       inset: 0;
-    }
-
-    .market-hero-art-picture,
-    .market-hero-art-img {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-      object-position: 68% 42%;
+      background-color: var(--color-ink);
+      background-image: url("/market-hero-characters-mobile.png");
+      background-size: cover;
+      background-position: 72% center;
+      background-repeat: no-repeat;
     }
 
-    .market-hero-art-img {
-      opacity: 0.88;
+    .market-hero-art-picture {
+      display: none;
     }
 
     .market-hero::after {
