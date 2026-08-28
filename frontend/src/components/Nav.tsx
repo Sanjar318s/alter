@@ -116,9 +116,6 @@ const LINK_DEFS: LinkDef[] = [
   },
 ];
 
-/** На мобилке профиль и заказы — только в блоке «Аккаунт», не в «Биржа». */
-const MOBILE_ACCOUNT_ONLY_LINK_IDS = new Set(["own-profile", "orders-hub"]);
-
 const GUEST_LINKS: LinkDef[] = [
   {
     href: "/market",
@@ -261,28 +258,26 @@ export function Nav() {
       const href =
         typeof link.href === "function"
           ? user?.username
-            ? link.id === "own-profile" && role === "client"
-              ? "/me"
-              : link.href(user.username)
+            ? link.href(user.username)
             : "/me"
           : link.href;
       const isOwnProfile = link.id === "own-profile";
-      const clientProfile = isOwnProfile && role === "client";
-      let text = clientProfile
-        ? "Мой профиль"
-        : link.text || (link.labelKey ? t(link.labelKey) : "");
-      let hintText = clientProfile
-        ? "Аватар, информация о себе и настройки"
-        : link.hintText || (link.hintKey ? t(link.hintKey) : "");
-      let short = clientProfile ? "Профиль" : link.short || (link.shortKey ? t(link.shortKey) : "");
-      if (!clientProfile && link.panel === "work" && link.href === "/messages") {
+      let text = link.text || (link.labelKey ? t(link.labelKey) : "");
+      let hintText = link.hintText || (link.hintKey ? t(link.hintKey) : "");
+      let short = link.short || (link.shortKey ? t(link.shortKey) : "");
+      if (isOwnProfile) {
+        text = role === "client" ? "Публичная страница" : text || t("publicProfile");
+        hintText = role === "client" ? "Как вас видят другие" : hintText || "Ваш публичный профиль";
+        short = role === "client" ? "Публичная" : short || "Профиль";
+      }
+      if (!isOwnProfile && link.panel === "work" && link.href === "/messages") {
         text = role === "seller" ? "Чат-кл" : "ЛС с продавцами";
         short = role === "seller" ? "Чат-кл" : "ЛС";
         hintText = role === "seller"
           ? "Чаты с клиентами по заказам"
           : "Диалоги с продавцами по заказам";
       }
-      if (!clientProfile && link.id === "orders-hub") {
+      if (!isOwnProfile && link.id === "orders-hub") {
         text = role === "seller" ? "Статус заказов" : "Мои заказы";
         short = role === "seller" ? "Заказы" : "Мои заказы";
         hintText = role === "seller"
@@ -689,7 +684,7 @@ export function Nav() {
                 {showPanelToggle ? (panel === "feed" ? "Лента" : "Биржа") : "Меню"}
               </div>
               <nav className="mobile-nav-list">
-                {LINKS.filter((link) => !link.id || !MOBILE_ACCOUNT_ONLY_LINK_IDS.has(link.id)).map((link) => (
+                {LINKS.map((link) => (
                   <MobileNavRow
                     key={`${panel}-${link.href}-${link.text}`}
                     href={link.href}
@@ -716,26 +711,6 @@ export function Nav() {
                     active={pathname === "/me"}
                     onNavigate={() => setMobileOpen(false)}
                   />
-                  {(role === "seller" || role === "blogger" || role === "client") && (
-                    <MobileNavRow
-                      href={`/profile/${user.username}`}
-                      icon={Compass}
-                      title={role === "client" ? "Публичная страница" : t("publicProfile")}
-                      hint="Как вас видят другие"
-                      active={pathname === `/profile/${user.username}`}
-                      onNavigate={() => setMobileOpen(false)}
-                    />
-                  )}
-                  {(role === "seller" || role === "blogger" || role === "client") && (
-                    <MobileNavRow
-                      href="/studio"
-                      icon={LayoutDashboard}
-                      title={role === "seller" ? "Студия заказов" : "Мои заказы"}
-                      hint={role === "seller" ? "Доска и статусы" : "Заявки, которые вы оставили"}
-                      active={pathname.startsWith("/studio")}
-                      onNavigate={() => setMobileOpen(false)}
-                    />
-                  )}
                   {isAdmin && (
                     <MobileNavRow
                       href="/admin"
