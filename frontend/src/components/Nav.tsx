@@ -189,10 +189,6 @@ function navLinkIcon(href: string, id?: string): LucideIcon {
   return Compass;
 }
 
-function mobileLinkIcon(href: string): LucideIcon {
-  return navLinkIcon(href);
-}
-
 function MobileNavRow({
   href,
   icon: Icon,
@@ -215,21 +211,16 @@ function MobileNavRow({
       href={href}
       onClick={onNavigate}
       className={cn(
-        "group flex items-start gap-3 px-2 py-3 no-underline border-b border-line/40 last:border-b-0",
-        active ? "text-paper" : "text-ink-70 hover:text-paper"
+        "mobile-nav-row group",
+        active && "mobile-nav-row--active"
       )}
     >
-      <span
-        className={cn(
-          "mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border",
-          active ? "border-magenta/70 text-magenta bg-magenta/10" : "border-line text-ink-45 group-hover:border-ink-45"
-        )}
-      >
+      <span className={cn("mobile-nav-row-icon", active && "mobile-nav-row-icon--active")}>
         <Icon size={17} strokeWidth={1.75} />
       </span>
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="text-[15px] font-medium leading-tight">{title}</span>
+          <span className="text-[15px] font-semibold leading-tight text-paper">{title}</span>
           {badge > 0 ? <CountBadge count={badge} /> : null}
         </span>
         {hint ? <span className="block text-[12px] text-ink-45 mt-1 leading-snug">{hint}</span> : null}
@@ -267,7 +258,9 @@ export function Nav() {
       const href =
         typeof link.href === "function"
           ? user?.username
-            ? link.href(user.username)
+            ? link.id === "own-profile" && role === "client"
+              ? "/me"
+              : link.href(user.username)
             : "/me"
           : link.href;
       const isOwnProfile = link.id === "own-profile";
@@ -652,13 +645,11 @@ export function Nav() {
             aria-label="Закрыть меню"
             onClick={() => setMobileOpen(false)}
           />
-          <div className="absolute inset-x-0 top-[57px] bottom-0 bg-ink border-t border-line overflow-y-auto px-4 py-5 flex flex-col gap-6">
+          <div className="mobile-nav-sheet absolute inset-x-0 top-[57px] bottom-0 overflow-y-auto">
             {showPanelToggle && (
-              <div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2 px-1">
-                  Режим
-                </div>
-                <div className="grid grid-cols-2 border border-line" role="tablist" aria-label="Режим меню">
+              <div className="mobile-nav-section">
+                <div className="mobile-nav-section-title">Режим</div>
+                <div className="mobile-nav-mode-grid" role="tablist" aria-label="Режим меню">
                   {(
                     [
                       { id: "feed" as const, label: "Лента", hint: "Рилсы и чаты" },
@@ -678,49 +669,42 @@ export function Nav() {
                         }
                       }}
                       className={cn(
-                        "px-3 py-2.5 text-left border-0 transition-colors",
-                        panel === tab.id
-                          ? "bg-stage text-paper"
-                          : "bg-transparent text-ink-45 hover:text-paper"
+                        "mobile-nav-mode-tab",
+                        panel === tab.id && "mobile-nav-mode-tab--active"
                       )}
                     >
-                      <div className="text-[13px] font-medium leading-none">{tab.label}</div>
-                      <div className="text-[11px] mt-1 opacity-70">{tab.hint}</div>
+                      <div className="text-[14px] font-semibold leading-none">{tab.label}</div>
+                      <div className="text-[11px] mt-1 text-ink-45">{tab.hint}</div>
                     </button>
                   ))}
                 </div>
               </div>
             )}
 
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2 px-1">
+            <div className="mobile-nav-section">
+              <div className="mobile-nav-section-title">
                 {showPanelToggle ? (panel === "feed" ? "Лента" : "Биржа") : "Меню"}
               </div>
-              <nav className="flex flex-col">
-                {LINKS.map((link) => {
-                  const Icon = mobileLinkIcon(link.href);
-                  return (
-                    <MobileNavRow
-                      key={`${panel}-${link.href}`}
-                      href={link.href}
-                      icon={Icon}
-                      title={link.text}
-                      hint={link.hintText}
-                      active={isActive(link.href)}
-                      badge={link.href === "/messages" ? msgUnread : 0}
-                      onNavigate={() => setMobileOpen(false)}
-                    />
-                  );
-                })}
+              <nav className="mobile-nav-list">
+                {LINKS.map((link) => (
+                  <MobileNavRow
+                    key={`${panel}-${link.href}-${link.text}`}
+                    href={link.href}
+                    icon={link.icon}
+                    title={link.text}
+                    hint={link.hintText}
+                    active={isActive(link.href)}
+                    badge={link.href === "/messages" ? msgUnread : 0}
+                    onNavigate={() => setMobileOpen(false)}
+                  />
+                ))}
               </nav>
             </div>
 
-            <div>
-              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-ink-45 mb-2 px-1">
-                Аккаунт
-              </div>
+            <div className="mobile-nav-section">
+              <div className="mobile-nav-section-title">Аккаунт</div>
               {user ? (
-                <div className="flex flex-col">
+                <div className="mobile-nav-list">
                   <MobileNavRow
                     href="/me"
                     icon={User}
@@ -765,10 +749,10 @@ export function Nav() {
                       logout();
                       setMobileOpen(false);
                     }}
-                    className="flex items-center gap-3 px-2 py-3 text-left bg-transparent border-0 border-t border-line/50 text-ink-45 hover:text-paper"
+                    className="mobile-nav-logout"
                   >
-                    <LogOut size={18} className="shrink-0 opacity-70" />
-                    <span className="text-[14px]">{t("logout")}</span>
+                    <LogOut size={17} strokeWidth={1.75} className="shrink-0 opacity-80" />
+                    <span className="text-[15px] font-medium">{t("logout")}</span>
                   </button>
                 </div>
               ) : (
@@ -788,15 +772,15 @@ export function Nav() {
               )}
             </div>
 
-            <div className="mt-auto pt-2 border-t border-line">
+            <div className="mobile-nav-footer">
               <button
                 type="button"
                 onClick={() => setMobileSettingsOpen((v) => !v)}
-                className="w-full flex items-center justify-between gap-3 px-2 py-3 bg-transparent border-0 text-paper"
+                className="mobile-nav-settings-toggle"
                 aria-expanded={mobileSettingsOpen}
               >
-                <span className="inline-flex items-center gap-2 text-[14px] font-medium">
-                  <Settings size={16} className="text-ink-45" />
+                <span className="inline-flex items-center gap-2.5 text-[14px] font-medium text-paper">
+                  <Settings size={16} strokeWidth={1.75} className="text-ink-45" />
                   Язык и валюта
                 </span>
                 <ChevronDown
@@ -805,7 +789,7 @@ export function Nav() {
                 />
               </button>
               {mobileSettingsOpen && (
-                <div className="px-2 pb-4">
+                <div className="px-1 pb-2">
                   <LocaleSettings compact />
                 </div>
               )}
