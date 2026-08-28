@@ -189,7 +189,7 @@ export function MePersonalInfoForm({
         </div>
       </div>
 
-      {!isClient && proSettings}
+      {proSettings}
 
       <div className="flex flex-wrap gap-2 mt-6">
         <Button disabled={!dirty} onClick={onSave}>

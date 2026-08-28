@@ -279,11 +279,12 @@ function MeInner() {
   }
 
   const isClient = user?.platformRole === "client";
+  const isSeller = user?.platformRole === "seller";
   const TABS = ALL_TABS.filter((t) => !(isClient && t.id === "portfolio"));
   const settingsTab = isClient && tab === "portfolio" ? "info" : tab;
   const primarySocial = socials.find((s) => s.url) ?? null;
 
-  const proSettings = !isClient ? (
+  const proSettings = isSeller ? (
     <details className="me-pro-settings">
       <summary>Профессиональные настройки</summary>
       <div className="me-pro-settings-body">
