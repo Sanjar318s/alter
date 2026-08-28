@@ -311,13 +311,9 @@
     pointer-events: none;
   }
 
-  /* Market hub hero — full viewport band below site header */
+  /* Market hub hero — stronger cosmic wash */
   .market-hero {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    min-height: calc(100dvh - 57px);
-    padding-block: clamp(2rem, 5vh, 4rem);
+    min-height: clamp(300px, 52vh, 480px);
   }
 
   .market-hero::before {
@@ -347,14 +343,6 @@
     overflow: hidden;
   }
 
-  .market-hero-art-picture {
-    position: absolute;
-    inset: 0;
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
   .market-hero-art-img {
     position: absolute;
     inset: 0;
@@ -362,7 +350,7 @@
     height: 100%;
     max-width: none;
     object-fit: cover;
-    object-position: 58% center;
+    object-position: 68% center;
     opacity: 0.9;
   }
 
@@ -371,16 +359,15 @@
     position: absolute;
     inset: 0;
     z-index: 2;
-    pointer-events: none;
     background:
       linear-gradient(90deg, var(--color-ink) 0%, color-mix(in srgb, var(--color-ink) 90%, transparent) 42%, transparent 70%),
       radial-gradient(circle at 72% 42%, rgba(212, 86, 122, 0.14), transparent 48%);
+    pointer-events: none;
   }
 
   @media (max-width: 1023px) {
-    .market-hero-art-img {
-      object-position: 72% center;
-      opacity: 0.88;
+    .market-hero {
+      min-height: clamp(280px, 48vh, 420px);
     }
 
     .market-hero::after {
@@ -388,70 +375,27 @@
         linear-gradient(
           90deg,
           var(--color-ink) 0%,
-          color-mix(in srgb, var(--color-ink) 92%, transparent) 46%,
-          color-mix(in srgb, var(--color-ink) 35%, transparent) 68%,
+          color-mix(in srgb, var(--color-ink) 88%, transparent) 50%,
+          color-mix(in srgb, var(--color-ink) 35%, transparent) 72%,
           transparent 100%
         ),
         linear-gradient(
           180deg,
-          color-mix(in srgb, var(--color-ink) 50%, transparent) 0%,
-          transparent 40%
+          color-mix(in srgb, var(--color-ink) 55%, transparent) 0%,
+          transparent 45%
         );
+    }
+
+    .market-hero-art-img {
+      object-position: 78% center;
+      opacity: 0.82;
     }
   }
 
-  @media (max-width: 768px) {
-    .market-hero {
-      position: relative;
-      display: block;
-      min-height: auto;
-      padding: 1.5rem 0 2rem;
-      overflow: hidden;
-    }
-
-    .market-hero-shell {
-      display: block;
-      position: relative;
-      z-index: 3;
-    }
-
-    .market-hero-art {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      background-color: var(--color-ink);
-      background-image: url("/market-hero-characters-mobile.png");
-      background-size: cover;
-      background-position: 72% center;
-      background-repeat: no-repeat;
-    }
-
-    .market-hero-art-picture {
-      display: none;
-    }
-
-    .market-hero::after {
-      background:
-        linear-gradient(
-          90deg,
-          var(--color-ink) 0%,
-          color-mix(in srgb, var(--color-ink) 96%, transparent) 36%,
-          color-mix(in srgb, var(--color-ink) 72%, transparent) 56%,
-          color-mix(in srgb, var(--color-ink) 28%, transparent) 76%,
-          transparent 100%
-        ),
-        linear-gradient(
-          180deg,
-          color-mix(in srgb, var(--color-ink) 65%, transparent) 0%,
-          transparent 30%
-        );
-    }
-
-    .market-hero-copy {
-      position: relative;
-      z-index: 3;
-      max-width: 100%;
+  @media (max-width: 639px) {
+    .market-hero-art-img {
+      object-position: 72% 42%;
+      opacity: 0.78;
     }
   }
 

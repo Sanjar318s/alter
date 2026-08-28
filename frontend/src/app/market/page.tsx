@@ -55,22 +55,18 @@ export default function MarketPage() {
 
   return (
     <div className="min-h-full">
-      <section className="market-hero hero-wash border-b border-line relative overflow-hidden">
+      <section className="market-hero hero-wash border-b border-line py-14 md:py-20 lg:py-24 relative overflow-hidden">
         <div className="market-hero-art" aria-hidden>
-          <picture className="market-hero-art-picture">
-            <source media="(max-width: 768px)" srcSet="/market-hero-characters-mobile.png" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/market-hero-characters.png"
-              alt=""
-              className="market-hero-art-img"
-              loading="eager"
-              decoding="async"
-              fetchPriority="high"
-            />
-          </picture>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/market-hero-characters.png"
+            alt=""
+            className="market-hero-art-img"
+            loading="eager"
+            decoding="async"
+          />
         </div>
-        <div className={cn(SHELL, "market-hero-shell relative z-[3] w-full lg:flex-1 lg:flex lg:items-center")}>
+        <div className={cn(SHELL, "relative z-[3] h-full flex items-center")}>
           <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center w-full">
             <div className="max-w-[640px] market-hero-copy">
               <p className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.18em] text-magenta">
