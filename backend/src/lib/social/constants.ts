@@ -28,12 +28,22 @@ export type SocialSettings = {
   tiktokAuditApproved: boolean;
   metaLiveMode: boolean;
   youtubeDailyUploadCap: number;
+  /** Auto-publish to YouTube Shorts after moderation (default on). */
+  publishYoutube: boolean;
+  /** Auto-publish to TikTok (off until explicitly enabled). */
+  publishTiktok: boolean;
+  publishInstagram: boolean;
+  publishFacebook: boolean;
 };
 
 export const DEFAULT_SOCIAL_SETTINGS: SocialSettings = {
   tiktokAuditApproved: false,
   metaLiveMode: false,
   youtubeDailyUploadCap: YOUTUBE_DAILY_UPLOAD_CAP,
+  publishYoutube: true,
+  publishTiktok: false,
+  publishInstagram: false,
+  publishFacebook: false,
 };
 
 export function utcDayKey(d = new Date()) {

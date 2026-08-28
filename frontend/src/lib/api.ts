@@ -449,10 +449,29 @@ export const adminSocial = {
     }),
   settings: () =>
     request<{
-      settings: { tiktokAuditApproved: boolean; metaLiveMode: boolean; youtubeDailyUploadCap: number };
+      settings: {
+        tiktokAuditApproved: boolean;
+        metaLiveMode: boolean;
+        youtubeDailyUploadCap: number;
+        publishYoutube: boolean;
+        publishTiktok: boolean;
+        publishInstagram: boolean;
+        publishFacebook: boolean;
+      };
+      publishPlatforms: { publication: string[]; build: string[] };
       oauth: { youtube: boolean; meta: boolean; tiktok: boolean };
     }>("/api/admin/social/settings"),
-  patchSettings: (data: Partial<{ tiktokAuditApproved: boolean; metaLiveMode: boolean; youtubeDailyUploadCap: number }>) =>
+  patchSettings: (
+    data: Partial<{
+      tiktokAuditApproved: boolean;
+      metaLiveMode: boolean;
+      youtubeDailyUploadCap: number;
+      publishYoutube: boolean;
+      publishTiktok: boolean;
+      publishInstagram: boolean;
+      publishFacebook: boolean;
+    }>
+  ) =>
     request<{ settings: any }>("/api/admin/social/settings", {
       method: "POST",
       body: JSON.stringify(data),

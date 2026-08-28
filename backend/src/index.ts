@@ -64,7 +64,7 @@ app.use(express.json({ limit: "10mb" }));
 app.get("/api/health", (_req, res) => {
   const telegramSession = Boolean(process.env.TELEGRAM_SESSION || process.env.TELEGRAM_SESSION_STRING);
   const socialOAuthHints = {
-    youtube: Boolean(process.env.GOOGLE_CLIENT_ID || process.env.YOUTUBE_CLIENT_ID),
+    youtube: Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID),
     meta: Boolean(process.env.META_APP_ID || process.env.FACEBOOK_APP_ID),
     tiktok: Boolean(process.env.TIKTOK_CLIENT_KEY),
     gemini: Boolean(process.env.GEMINI_API_KEY || process.env.GOOGLE_AI_API_KEY),
