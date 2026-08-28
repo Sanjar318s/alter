@@ -324,23 +324,27 @@ function MeInner() {
         setAvatarUrl(up.url);
         await account.patch({ avatarUrl: up.url });
       } else {
-        setCoverUrl(up.url);
-        let nextCropJson: string | null = null;
-        if (coverVariantFiles) {
-          const [tabletUp, mobileUp] = await Promise.all([
-            uploadFile(coverVariantFiles.tablet, coverVariantFiles.tablet.name, coverVariantFiles.tablet.type),
-            uploadFile(coverVariantFiles.mobile, coverVariantFiles.mobile.name, coverVariantFiles.mobile.type),
-          ]);
-          nextCropJson = JSON.stringify({ tablet: tabletUp.url, mobile: mobileUp.url });
-          setCoverCropJson(nextCropJson);
+        if (!coverVariantFiles) {
+          throw new Error("Не удалось подготовить кадры для планшета и телефона");
         }
-        await account.patch({
+        const [tabletUp, mobileUp] = await Promise.all([
+          uploadFile(coverVariantFiles.tablet, coverVariantFiles.tablet.name, coverVariantFiles.tablet.type),
+          uploadFile(coverVariantFiles.mobile, coverVariantFiles.mobile.name, coverVariantFiles.mobile.type),
+        ]);
+        const nextCropJson = JSON.stringify({ tablet: tabletUp.url, mobile: mobileUp.url });
+        setCoverUrl(up.url);
+        setCoverCropJson(nextCropJson);
+        const saved = await account.patch({
           coverUrl: up.url,
-          ...(nextCropJson ? { coverCropJson: nextCropJson } : {}),
+          coverCropJson: nextCropJson,
         });
+        if (!saved.profile?.coverCropJson) {
+          throw new Error("Сервер не сохранил кадры обложки — нужен деплой API");
+        }
       }
       await refresh();
       const me = await auth.me();
+      applyProfileFromMe(me);
       await refreshSidebar(me.user.username, me.user.platformRole);
       toast(kind === "avatar" ? "Аватар обновлён" : "Обложка обновлена");
     } catch (e) {

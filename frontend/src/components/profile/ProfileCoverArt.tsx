@@ -3,6 +3,7 @@
 import { coverCropStyle, coverSources, type CoverCropMap } from "@/lib/coverCrop";
 import { SmartImage } from "@/components/media/SmartImage";
 import { cn } from "@/lib/cn";
+import { mediaSrc } from "@/lib/format";
 
 export function ProfileCoverArt({
   coverUrl,
@@ -19,14 +20,18 @@ export function ProfileCoverArt({
 
   const { desktop, tablet, mobile, hasVariants } = coverSources(coverUrl, crops);
   const legacyStyle = coverCropStyle(crops);
+  const desktopSrc = mediaSrc(desktop);
+  const tabletSrc = mediaSrc(tablet);
+  const mobileSrc = mediaSrc(mobile);
+  const versionKey = `${desktopSrc}|${tabletSrc}|${mobileSrc}`;
 
   if (hasVariants) {
     return (
-      <picture className={cn("profile-cover-picture", "profile-cover-picture--variants")}>
-        <source media="(max-width: 768px)" srcSet={mobile} />
-        <source media="(max-width: 1023px)" srcSet={tablet} />
+      <picture key={versionKey} className={cn("profile-cover-picture", "profile-cover-picture--variants")}>
+        <source media="(max-width: 768px)" srcSet={mobileSrc} />
+        <source media="(max-width: 1023px)" srcSet={tabletSrc} />
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={desktop} alt={alt} className={className} loading="eager" decoding="async" />
+        <img src={desktopSrc} alt={alt} className={className} loading="eager" decoding="async" />
       </picture>
     );
   }

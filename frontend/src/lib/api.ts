@@ -18,6 +18,7 @@ async function request<T>(
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
+    cache: "no-store",
     headers,
   });
 

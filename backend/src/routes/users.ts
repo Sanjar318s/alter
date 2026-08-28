@@ -136,6 +136,7 @@ router.get("/:username/orders", optionalAuth, (req: AuthRequest, res) => {
 });
 
 router.get("/:username", optionalAuth, (req: AuthRequest, res) => {
+  res.setHeader("Cache-Control", "private, no-store");
   const user = db.select().from(schema.users).where(eq(schema.users.username, req.params.username as string)).get();
   if (!user) return res.status(404).json({ error: "User not found" });
 

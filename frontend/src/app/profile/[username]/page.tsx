@@ -109,9 +109,12 @@ function ProfileHub({ username }: { username: string }) {
   const cards = apiBuilds || [];
 
   useEffect(() => {
+    let cancelled = false;
+    setNotFound(false);
     users
       .get(username)
       .then((d) => {
+        if (cancelled) return;
         setProfile(d);
         setApiBuilds(d.builds);
         if (d.stats) setStats({ builds: d.stats.builds, followers: d.stats.followers, following: d.stats.following, likes: d.stats.likes, orders: d.stats.orders || 0 });
@@ -119,19 +122,24 @@ function ProfileHub({ username }: { username: string }) {
         setFollowing(Boolean(d.isFollowing));
       })
       .catch(() => {
-        setNotFound(true);
+        if (!cancelled) setNotFound(true);
       });
     users
       .orders(username)
       .then((d) => {
+        if (cancelled) return;
         setHistoryOrders(d.orders || []);
         setOrderMeta({ avgBudget: d.avgBudget, deadlineCount: d.deadlineCount });
       })
       .catch(() => {
+        if (cancelled) return;
         setHistoryOrders([]);
         setOrderMeta({ avgBudget: null, deadlineCount: 0 });
       });
-  }, [username]);
+    return () => {
+      cancelled = true;
+    };
+  }, [username, user?.id]);
 
   useEffect(() => {
     return subscribeRealtime((event, data) => {
