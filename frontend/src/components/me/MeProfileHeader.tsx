@@ -5,7 +5,8 @@ import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SmartImage } from "@/components/media/SmartImage";
 
-import { coverCropStyle, type CoverCropMap } from "@/lib/coverCrop";
+import { ProfileCoverArt } from "@/components/profile/ProfileCoverArt";
+import type { CoverCropMap } from "@/lib/coverCrop";
 
 type MeProfileHeaderProps = {
   breadcrumb: string;
@@ -44,12 +45,7 @@ export function MeProfileHeader({
         aria-label="Изменить обложку"
       >
         {coverUrl ? (
-          <SmartImage
-            src={coverUrl}
-            alt="Обложка профиля"
-            className="w-full h-full object-cover"
-            style={coverCropStyle(coverCrop)}
-          />
+          <ProfileCoverArt coverUrl={coverUrl} crops={coverCrop} className="w-full h-full object-cover" alt="Обложка профиля" />
         ) : (
           <div className="me-profile-cover-placeholder">Обложка не задана</div>
         )}

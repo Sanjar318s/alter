@@ -931,6 +931,26 @@
     object-position: var(--cover-pos-desktop, 50% 35%);
   }
 
+  .profile-cover-picture {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+
+  .profile-cover-picture img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  /* Pre-rendered per-device crops: show exact export without a second cover pass. */
+  .profile-cover-picture--variants img {
+    object-fit: fill;
+  }
+
   @media (max-width: 1023px) {
     .profile-cover-image {
       object-position: var(--cover-pos-tablet, var(--cover-pos-desktop, 72% center));
@@ -971,11 +991,12 @@
     padding-bottom: 2rem;
   }
 
-  .profile-header:has(.profile-cover-image) .profile-header-body {
+  .profile-header:has(.profile-cover-image) .profile-header-body,
+  .profile-header:has(.profile-cover-picture) .profile-header-body {
     background: transparent;
   }
 
-  .profile-header:not(:has(.profile-cover-image)) .profile-header-body {
+  .profile-header:not(:has(.profile-cover-image)):not(:has(.profile-cover-picture)) .profile-header-body {
     background: var(--color-ink);
     padding-top: 1.5rem;
   }

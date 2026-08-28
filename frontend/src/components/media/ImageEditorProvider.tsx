@@ -65,9 +65,9 @@ export async function editImageList(
   files: File[],
   aspect?: number | null,
   preset?: ImageEditorPreset
-): Promise<{ files: File[]; coverCropJson?: string }> {
+): Promise<{ files: File[]; coverVariantFiles?: { tablet: File; mobile: File } }> {
   const out: File[] = [];
-  let coverCropJson: string | undefined;
+  let coverVariantFiles: { tablet: File; mobile: File } | undefined;
   for (const file of files) {
     if (file.type.startsWith("video/") || file.type === "image/gif" || !file.type.startsWith("image/")) {
       out.push(file);
@@ -79,10 +79,10 @@ export async function editImageList(
       out.push(next);
     } else {
       out.push(next.file);
-      if (next.coverCropJson) coverCropJson = next.coverCropJson;
+      if (next.coverVariantFiles) coverVariantFiles = next.coverVariantFiles;
     }
   }
-  return { files: out, coverCropJson };
+  return { files: out, coverVariantFiles };
 }
 
 export { resolveEditFile };

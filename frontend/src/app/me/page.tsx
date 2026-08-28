@@ -311,7 +311,7 @@ function MeInner() {
 
   async function onFile(kind: "avatar" | "cover", file: File) {
     try {
-      const { files: edited, coverCropJson: nextCoverCropJson } = await editImageList(
+      const { files: edited, coverVariantFiles } = await editImageList(
         edit,
         [file],
         kind === "avatar" ? 1 : 16 / 5,
@@ -325,10 +325,18 @@ function MeInner() {
         await account.patch({ avatarUrl: up.url });
       } else {
         setCoverUrl(up.url);
-        if (nextCoverCropJson) setCoverCropJson(nextCoverCropJson);
+        let nextCropJson: string | null = null;
+        if (coverVariantFiles) {
+          const [tabletUp, mobileUp] = await Promise.all([
+            uploadFile(coverVariantFiles.tablet, coverVariantFiles.tablet.name, coverVariantFiles.tablet.type),
+            uploadFile(coverVariantFiles.mobile, coverVariantFiles.mobile.name, coverVariantFiles.mobile.type),
+          ]);
+          nextCropJson = JSON.stringify({ tablet: tabletUp.url, mobile: mobileUp.url });
+          setCoverCropJson(nextCropJson);
+        }
         await account.patch({
           coverUrl: up.url,
-          ...(nextCoverCropJson ? { coverCropJson: nextCoverCropJson } : {}),
+          ...(nextCropJson ? { coverCropJson: nextCropJson } : {}),
         });
       }
       await refresh();

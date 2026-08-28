@@ -6,7 +6,7 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { compressImage } from "@/lib/compressImage";
 import { cn } from "@/lib/cn";
-import type { CoverCropMap } from "@/lib/coverCrop";
+import { COVER_DEVICE_ASPECT } from "@/lib/coverCrop";
 import type { ImageEditorPreset } from "./ImageEditorProvider";
 
 const FILTERS: { id: string; label: string; css: string }[] = [
@@ -34,7 +34,7 @@ const PRESET_META: Record<
   },
 };
 
-type CoverDeviceId = keyof CoverCropMap;
+type CoverDeviceId = "desktop" | "tablet" | "mobile";
 
 type CropState = { scale: number; ox: number; oy: number };
 
@@ -46,9 +46,9 @@ const COVER_DEVICES: {
   frameLabel: string;
   Icon: typeof Monitor;
 }[] = [
-  { id: "desktop", label: "ПК", aspect: 16 / 5, viewW: 400, frameLabel: "16:5", Icon: Monitor },
-  { id: "tablet", label: "Планшет", aspect: 16 / 6, viewW: 360, frameLabel: "16:6", Icon: Tablet },
-  { id: "mobile", label: "Телефон", aspect: 2 / 1, viewW: 300, frameLabel: "2:1", Icon: Smartphone },
+  { id: "desktop", label: "ПК", aspect: COVER_DEVICE_ASPECT.desktop, viewW: 400, frameLabel: "16:5", Icon: Monitor },
+  { id: "tablet", label: "Планшет", aspect: COVER_DEVICE_ASPECT.tablet, viewW: 360, frameLabel: "16:6", Icon: Tablet },
+  { id: "mobile", label: "Телефон", aspect: COVER_DEVICE_ASPECT.mobile, viewW: 300, frameLabel: "5:4", Icon: Smartphone },
 ];
 
 const DEFAULT_CROPS: Record<CoverDeviceId, CropState> = {
@@ -61,29 +61,9 @@ function clampZoom(value: number) {
   return Math.min(3, Math.max(0.5, value));
 }
 
-function cropToObjectPosition(
-  viewW: number,
-  viewH: number,
-  crop: CropState,
-  natW: number,
-  natH: number
-): string {
-  const cover = Math.max(viewW / natW, viewH / natH);
-  const drawScale = cover * crop.scale;
-  const imgW = natW * drawScale;
-  const imgH = natH * drawScale;
-  const imgLeft = viewW / 2 - imgW / 2 + crop.ox;
-  const imgTop = viewH / 2 - imgH / 2 + crop.oy;
-  const px = (viewW / 2 - imgLeft) / imgW;
-  const py = (viewH / 2 - imgTop) / imgH;
-  const x = Math.min(100, Math.max(0, Math.round(px * 100)));
-  const y = Math.min(100, Math.max(0, Math.round(py * 100)));
-  return `${x}% ${y}%`;
-}
-
 export type ImageEditorSavePayload = {
   file: File;
-  coverCropJson?: string;
+  coverVariantFiles?: { tablet: File; mobile: File };
 };
 
 export function ImageEditorModal({
@@ -200,45 +180,43 @@ export function ImageEditorModal({
     return canvas;
   }
 
+  async function canvasToFile(canvas: HTMLCanvasElement, name: string) {
+    const blob: Blob = await new Promise((resolve) =>
+      canvas.toBlob((b) => resolve(b || new Blob()), "image/jpeg", 0.92)
+    );
+    const jpeg = new File([blob], name, { type: "image/jpeg" });
+    const compressed = await compressImage(jpeg);
+    return compressed instanceof File
+      ? compressed
+      : new File([compressed], jpeg.name, { type: compressed.type || "image/jpeg" });
+  }
+
   async function save() {
     const img = imgRef.current;
     if (!img || busy) return;
     setBusy(true);
     try {
-      const desktop = COVER_DEVICES[0];
-      const exportAspect = isProfileCover ? desktop.aspect : ratio;
-      const exportViewW = isProfileCover ? desktop.viewW : viewW;
-      const exportCrop = isProfileCover ? crops.desktop : crop;
-      const outW = exportAspect ? 1200 : Math.min(1600, img.naturalWidth);
-      const canvas = renderCropToCanvas(
-        exportViewW,
-        exportAspect || viewW / viewH,
-        exportCrop,
-        outW
-      );
-      const blob: Blob = await new Promise((resolve) =>
-        canvas.toBlob((b) => resolve(b || file), "image/jpeg", 0.92)
-      );
-      const jpeg = new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", {
-        type: "image/jpeg",
-      });
-      const compressed = await compressImage(jpeg);
-      const out =
-        compressed instanceof File
-          ? compressed
-          : new File([compressed], jpeg.name, { type: compressed.type || "image/jpeg" });
+      const outW = isProfileCover ? 1200 : ratio ? 1200 : Math.min(1600, img.naturalWidth);
 
-      let coverCropJson: string | undefined;
       if (isProfileCover) {
-        const map: CoverCropMap = {};
-        for (const d of COVER_DEVICES) {
-          const vh = Math.round(d.viewW / d.aspect);
-          map[d.id] = cropToObjectPosition(d.viewW, vh, crops[d.id], natW, natH);
-        }
-        coverCropJson = JSON.stringify(map);
+        const [desktopFile, tabletFile, mobileFile] = await Promise.all(
+          COVER_DEVICES.map(async (d, i) => {
+            const canvas = renderCropToCanvas(d.viewW, d.aspect, crops[d.id], outW);
+            const suffix = i === 0 ? "desktop" : d.id;
+            return canvasToFile(canvas, file.name.replace(/\.[^.]+$/, "") + `-${suffix}.jpg`);
+          })
+        );
+        onSave({
+          file: desktopFile,
+          coverVariantFiles: { tablet: tabletFile, mobile: mobileFile },
+        });
+        return;
       }
 
-      onSave({ file: out, coverCropJson });
+      const exportAspect = ratio || viewW / viewH;
+      const canvas = renderCropToCanvas(viewW, exportAspect, crop, outW);
+      const out = await canvasToFile(canvas, file.name.replace(/\.[^.]+$/, "") + ".jpg");
+      onSave({ file: out });
     } catch {
       onCancel();
     } finally {
