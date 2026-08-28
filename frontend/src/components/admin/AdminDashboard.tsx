@@ -70,6 +70,7 @@ export function AdminDashboard({
   onRefresh,
   usersList,
   staff,
+  ownerUsername = "owner",
   totalActiveCases,
   criticalInbox,
   healthTone,
@@ -141,6 +142,7 @@ export function AdminDashboard({
   onRefresh: () => void;
   usersList: any[];
   staff: any[];
+  ownerUsername?: string;
   totalActiveCases: number;
   criticalInbox: any[];
   healthTone: string;
@@ -549,6 +551,7 @@ export function AdminDashboard({
       {Boolean(perms?.isOwner) && (
         <AdminChannelManagement
           staffUsernames={staff.map((s: any) => s.username).filter(Boolean)}
+          ownerUsername={ownerUsername}
           onHelp={() => onHelpTopic("channels")}
           open={channelsOpen}
           onOpenChange={onChannelsOpenChange}

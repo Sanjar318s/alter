@@ -4,7 +4,12 @@ import { db, schema } from "../db";
 import { ensureCommunityRooms } from "./blacklistChannel";
 import { notify } from "./notify";
 import { realtime } from "../routes/realtime";
-import { isOwnerUsername, ADMIN_USERNAME } from "./owner";
+import { isOwnerById, isOwnerStaffRole, getOwnerUser, getOwnerUsername } from "./owner";
+
+function resolveStaffRole(userId: string, profileStaffRole?: string | null) {
+  if (isOwnerStaffRole(profileStaffRole) || isOwnerById(userId)) return "owner" as const;
+  return (profileStaffRole || "none") as "none" | "owner" | "admin";
+}
 
 function enrichSender(userId: string) {
   const sender = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
@@ -16,7 +21,7 @@ function enrichSender(userId: string) {
     .get();
   return {
     username: sender.username,
-    staffRole: senderProfile?.staffRole || (isOwnerUsername(sender.username) ? "owner" : "none"),
+    staffRole: resolveStaffRole(sender.id, senderProfile?.staffRole),
     staffBadgeHidden: Boolean(senderProfile?.staffBadgeHidden),
     avatarUrl: senderProfile?.avatarUrl || null,
   };
@@ -90,8 +95,10 @@ export function resolvePublisherUserId() {
     return user.id;
   }
 
-  const owner = findUserByUsername(ADMIN_USERNAME);
+  const owner = getOwnerUser();
   if (owner) return owner.id;
+
+  const configured = findUserByUsername(getOwnerUsername());
 
   const ownerProfile = db.select().from(schema.profiles).where(eq(schema.profiles.staffRole, "owner")).get();
   if (ownerProfile) return ownerProfile.userId;

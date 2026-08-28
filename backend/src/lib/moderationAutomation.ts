@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { getActiveBan } from "./blocking";
-import { isAdminUser, isOwnerUsername } from "./owner";
+import { getOwnerUser, isAdminUser, isOwnerById } from "./owner";
 import { logAuditEvent } from "./audit";
 import { postBlacklistChannelCard } from "./blacklistChannel";
 
@@ -15,9 +15,9 @@ function asTime(v: Date | number | null | undefined) {
 }
 
 function findModeratorActorId() {
-  const users = db.select().from(schema.users).all();
-  const owner = users.find((u) => isOwnerUsername(u.username));
+  const owner = getOwnerUser();
   if (owner) return owner.id;
+  const users = db.select().from(schema.users).all();
   const admin = users.find((u) => isAdminUser(u));
   return admin?.id || null;
 }
@@ -26,7 +26,7 @@ export function evaluateAndAutoBan(userId: string, trigger: "report" | "profanit
   const user = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
   if (!user) return { applied: false as const, reason: "user_not_found" as const };
   if (isAdminUser(user)) return { applied: false as const, reason: "staff_user" as const };
-  if (isOwnerUsername(user.username)) return { applied: false as const, reason: "owner_user" as const };
+  if (isOwnerById(user.id)) return { applied: false as const, reason: "owner_user" as const };
   if (getActiveBan(userId)) return { applied: false as const, reason: "already_blocked" as const };
 
   const since = Date.now() - WINDOW_MS;

@@ -9,7 +9,6 @@
     "start": "node dist/index.js",
     "lint": "tsc --noEmit",
     "test": "tsx --test src/__tests__/critical.test.ts",
-    "purge-demo": "tsx src/scripts/purgeDemo.ts",
     "owner:register": "tsx src/scripts/registerOwner.ts",
     "telegram:auth": "tsx src/scripts/telegramAuth.ts",
     "telegram:sync": "tsx src/scripts/telegramPoll.ts",

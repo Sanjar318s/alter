@@ -3,7 +3,7 @@ import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { v4 as uuid } from "uuid";
 import { eq, and, inArray } from "drizzle-orm";
-import { isOwnerUsername } from "../lib/owner";
+import { isOwnerById } from "../lib/owner";
 import { enqueueSocialModeration, loadSocialAggregate } from "../lib/social/queue";
 import { recordPublicationView } from "../lib/premium/recordView";
 import { evaluateBloggerV1 } from "../lib/premium/evaluateBloggerV1";
@@ -198,7 +198,7 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   if (!mediaUrls?.length) return res.status(400).json({ error: "mediaUrls required" });
 
   const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
-  if (me?.platformRole === "client" && !isOwnerUsername(me.username)) {
+  if (me?.platformRole === "client" && !isOwnerById(me.id)) {
     return res.status(403).json({ error: "Клиент не может публиковать рилсы" });
   }
 

@@ -3,13 +3,12 @@ import { and, eq, or } from "drizzle-orm";
 import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { adminMiddleware } from "../middleware/admin";
-import { ADMIN_USERNAME, flagsForUsername, isOwnerUsername } from "../lib/owner";
+import { getOwnerUsername, flagsForUsername, isOwnerById } from "../lib/owner";
 import { ownerOnly, requireAdminPermission, setStaffRole, upsertAdminPermissions } from "../middleware/roles";
 import { logAuditEvent } from "../lib/audit";
 import { getActiveBan } from "../lib/blocking";
 import { escalateOverdueReports } from "../lib/reportEscalation";
 import { getModerationSettings, updateModerationSettings } from "../lib/moderationSettings";
-import { purgeDemoUsers } from "../db/purgeDemoUsers";
 import { v4 as uuid } from "uuid";
 
 const router = Router();
@@ -346,7 +345,7 @@ router.patch("/withdrawals/:id", (req, res) => {
 router.get("/permissions/me", (req: AuthRequest, res) => {
   if (!req.userId) return res.status(401).json({ error: "Unauthorized" });
   const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId)).get();
-  const isOwner = isOwnerUsername(me?.username);
+  const isOwner = isOwnerById(req.userId);
   const own = db.select().from(schema.adminPermissions).where(eq(schema.adminPermissions.userId, req.userId)).get();
   res.json({
     isOwner,
@@ -365,26 +364,33 @@ router.get("/permissions/me", (req: AuthRequest, res) => {
 router.get("/staff", ownerOnly, (_req, res) => {
   const users = db.select().from(schema.users).all();
   const admins = users
-    .filter((u) => (u.roleFlags || "").split(",").map((x) => x.trim()).includes("admin"))
+    .filter(
+      (u) =>
+        isOwnerById(u.id) ||
+        (u.roleFlags || "")
+          .split(",")
+          .map((x) => x.trim())
+          .includes("admin")
+    )
     .map((u) => {
       const profile = db.select().from(schema.profiles).where(eq(schema.profiles.userId, u.id)).get();
       const perms = db.select().from(schema.adminPermissions).where(eq(schema.adminPermissions.userId, u.id)).get();
       return {
         id: u.id,
         username: u.username,
-        role: isOwnerUsername(u.username) ? "owner" : "admin",
+        role: isOwnerById(u.id) ? "owner" : "admin",
         badgeHidden: profile?.staffBadgeHidden ?? false,
         permissions: perms || null,
       };
     });
-  res.json({ ownerUsername: ADMIN_USERNAME, admins });
+  res.json({ ownerUsername: getOwnerUsername(), admins });
 });
 
 router.patch("/staff/:userId", ownerOnly, (req: AuthRequest, res) => {
   const targetId = req.params.userId as string;
   const user = db.select().from(schema.users).where(eq(schema.users.id, targetId)).get();
   if (!user) return res.status(404).json({ error: "User not found" });
-  if (isOwnerUsername(user.username)) return res.status(400).json({ error: "Owner role is fixed" });
+  if (isOwnerById(user.id)) return res.status(400).json({ error: "Owner role is fixed" });
   const makeAdmin = Boolean(req.body.makeAdmin);
   const base = (user.roleFlags || "cosplayer")
     .split(",")
@@ -433,7 +439,7 @@ router.patch("/staff/:userId/badge", (req: AuthRequest, res) => {
   if (!actor) return res.status(401).json({ error: "Unauthorized" });
   const targetUser = db.select().from(schema.users).where(eq(schema.users.id, targetId)).get();
   if (!targetUser) return res.status(404).json({ error: "User not found" });
-  const actorOwner = isOwnerUsername(actor.username);
+  const actorOwner = isOwnerById(actor.id);
   if (!actorOwner && actorId !== targetId) return res.status(403).json({ error: "Cannot change other user badge" });
   const profile = db.select().from(schema.profiles).where(eq(schema.profiles.userId, targetId)).get();
   if (profile) {
@@ -468,7 +474,7 @@ router.get("/users", requireAdminPermission("canViewUsers"), (req: AuthRequest, 
       const activeBan = getActiveBan(u.id);
       const blockedActive = Boolean(activeBan);
       const violationsScore = reportsCount * 2 + profanityCount + highSeverityCount * 2 + blockedCount * 3;
-      const ownerAccount = isOwnerUsername(u.username);
+      const ownerAccount = isOwnerById(u.id);
       const riskBucket = ownerAccount
         ? "clean"
         : blockedActive
@@ -600,7 +606,7 @@ router.get("/users/:id/summary", requireAdminPermission("canViewUsers"), (req, r
   const suspicious = [...auditsByTarget, ...auditsByActor].filter((e) => e.severity === "high");
   const riskScore = reports.length * 2 + profane.length * 2 + suspicious.length * 3 + deleted.length;
   const riskLevel = riskScore >= 9 ? "high" : riskScore >= 4 ? "medium" : "low";
-  const ownerAccount = isOwnerUsername(user.username);
+  const ownerAccount = isOwnerById(user.id);
 
   res.json({
     user: {
@@ -646,21 +652,6 @@ router.get("/users/:id/summary", requireAdminPermission("canViewUsers"), (req, r
     risk: ownerAccount ? { score: 0, level: "low" as const } : { score: riskScore, level: riskLevel },
     ownerProtected: ownerAccount,
   });
-});
-
-router.post("/users/purge-demo", ownerOnly, (_req: AuthRequest, res) => {
-  const { removedUsers, usernames } = purgeDemoUsers();
-  if (removedUsers > 0) {
-    logAuditEvent({
-      type: "demo_users_purged",
-      actorId: _req.userId!,
-      targetType: "user",
-      targetId: "demo",
-      severity: "high",
-      payload: { removedUsers, usernames },
-    });
-  }
-  res.json({ ok: true, removedUsers, usernames });
 });
 
 const PLATFORM_ROLES = new Set(["client", "blogger", "seller"]);

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
 import { useAuth } from "@/lib/AuthContext";
+import { isAdminUser, isPlatformOwnerUser } from "@/lib/owner";
 import { admin, health, messages, uploadFile } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useLocale } from "@/lib/LocaleContext";
@@ -149,6 +150,7 @@ export default function AdminPage() {
   const [withdrawals, setWithdrawals] = useState<any[]>([]);
   const [usersList, setUsersList] = useState<any[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
+  const [ownerUsername, setOwnerUsername] = useState("owner");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
@@ -180,9 +182,7 @@ export default function AdminPage() {
     socialOAuthConfigured?: Record<string, boolean>;
   } | null>(null);
 
-  const isAdmin =
-    (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
-    (user?.username || "").toLowerCase() === "nyx.cosplay";
+  const isAdmin = isAdminUser(user);
 
   function ensureStaffDraft(st: any[]) {
     const next: Record<string, Record<string, boolean>> = {};
@@ -215,6 +215,7 @@ export default function AdminPage() {
         if (s.status === "fulfilled") {
           const admins = s.value.admins || [];
           setStaff(admins);
+          setOwnerUsername(s.value.ownerUsername || admins.find((x: any) => x.role === "owner")?.username || "owner");
           ensureStaffDraft(admins);
         }
         admin
@@ -407,6 +408,7 @@ export default function AdminPage() {
         onRefresh={load}
         usersList={usersList}
         staff={staff}
+        ownerUsername={ownerUsername}
         totalActiveCases={totalActiveCases}
         criticalInbox={criticalInbox}
         healthTone={healthTone}

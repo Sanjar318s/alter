@@ -7,9 +7,9 @@ import { eq, and, or, ne } from "drizzle-orm";
 import { ensureCommunityRooms, postBlacklistChannelCard } from "../lib/blacklistChannel";
 import { notify } from "../lib/notify";
 import { realtime } from "./realtime";
-import { isOwnerUsername } from "../lib/owner";
+import { isOwnerById } from "../lib/owner";
 import { detectProfanity, logAuditEvent } from "../lib/audit";
-import { hasAdminPermission, isOwnerById } from "../middleware/roles";
+import { hasAdminPermission } from "../middleware/roles";
 import { evaluateAndAutoBan } from "../lib/moderationAutomation";
 import { autoAssignReport } from "../lib/reportAssignment";
 
@@ -32,9 +32,7 @@ function parseManagerIds(json?: string | null) {
 }
 
 function isOwnerByUserId(userId?: string | null) {
-  if (!userId) return false;
-  const u = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
-  return Boolean(u && isOwnerUsername(u.username));
+  return Boolean(userId && isOwnerById(userId));
 }
 
 function canPostToChannel(channel: any, userId: string) {
@@ -59,7 +57,7 @@ function enrichSender(userId: string) {
     .get();
   return {
     username: sender.username,
-    staffRole: senderProfile?.staffRole || (isOwnerUsername(sender.username) ? "owner" : "none"),
+    staffRole: isOwnerById(sender.id) ? "owner" : senderProfile?.staffRole || "none",
     staffBadgeHidden: Boolean(senderProfile?.staffBadgeHidden),
     avatarUrl: senderProfile?.avatarUrl || null,
   };
@@ -634,7 +632,7 @@ router.get("/channels/:channelId/members", authMiddleware, (req: AuthRequest, re
         username: u.username,
         avatarUrl: p?.avatarUrl || null,
         role: m.role || "member",
-        staffRole: p?.staffRole || (isOwnerUsername(u.username) ? "owner" : "none"),
+        staffRole: isOwnerById(u.id) ? "owner" : p?.staffRole || "none",
       };
     })
     .filter(Boolean);

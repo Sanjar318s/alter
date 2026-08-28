@@ -3,9 +3,9 @@ import express from "express";
 import cors from "cors";
 import path from "path";
 import { migrate } from "./db/migrate";
-import { purgeDemoUsers } from "./db/purgeDemoUsers";
 import { dbDriver } from "./db";
 import { clearOwnerBlocks } from "./lib/ownerImmunity";
+import { syncPlatformOwner } from "./lib/owner";
 import { storageDriver, uploadsRouter, verifyR2Bucket } from "./lib/storage";
 
 import authRoutes from "./routes/auth";
@@ -145,18 +145,16 @@ void verifyR2Bucket()
     console.warn("⚠ R2 bucket check failed:", err instanceof Error ? err.message : err);
   });
 try {
+  const ownerUsername = syncPlatformOwner();
+  if (ownerUsername) console.log(`✓ Platform owner synced (@${ownerUsername})`);
+} catch (err) {
+  console.warn("⚠ Owner sync skipped:", err instanceof Error ? err.message : err);
+}
+try {
   const cleared = clearOwnerBlocks();
   if (cleared > 0) console.log(`✓ Cleared ${cleared} stale block(s) on owner account`);
 } catch (err) {
   console.warn("⚠ Owner immunity cleanup skipped:", err instanceof Error ? err.message : err);
-}
-try {
-  const { removedUsers, usernames } = purgeDemoUsers();
-  if (removedUsers > 0) {
-    console.log(`✓ Removed ${removedUsers} demo user(s): ${usernames.join(", ")}`);
-  }
-} catch (err) {
-  console.warn("⚠ Demo purge skipped:", err instanceof Error ? err.message : err);
 }
 
 app.listen(Number(PORT), "0.0.0.0", () => {

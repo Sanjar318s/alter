@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Heart, MessageCircle, User } from "lucide-react";
 import { publications as publicationsApi } from "@/lib/api";
-import { normalizePublication, type Publication } from "@/lib/demo/publications";
+import { normalizePublication, type Publication } from "@/lib/publications";
 import { SmartImage } from "@/components/media/SmartImage";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";

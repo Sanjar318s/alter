@@ -4,7 +4,7 @@ import { Heart, MessageCircle } from "lucide-react";
 import { Frame } from "@/components/Frame";
 import { SmartImage } from "@/components/media/SmartImage";
 import { formatCount } from "@/lib/format";
-import type { Publication } from "@/lib/demo/publications";
+import type { Publication } from "@/lib/publications";
 
 export function PublicationGrid({
   posts,

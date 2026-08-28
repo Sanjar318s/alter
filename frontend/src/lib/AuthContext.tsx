@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { auth } from "@/lib/api";
 
 export type PlatformRole = "client" | "blogger" | "seller";
+export type StaffRole = "none" | "owner" | "admin";
 
 interface User {
   id: string;
@@ -13,6 +14,7 @@ interface User {
   avatarUrl?: string;
   platformRole?: PlatformRole | null;
   socialCrosspostOptIn?: boolean;
+  staffRole?: StaffRole;
 }
 
 type RegisterStart = {
@@ -46,6 +48,9 @@ function mapUser(data: { user: any; profile?: any }): User {
   const raw = data.user.platformRole;
   const platformRole: PlatformRole | null =
     raw === "client" || raw === "blogger" || raw === "seller" ? raw : null;
+  const rawRole = data.profile?.staffRole;
+  const staffRole: StaffRole =
+    rawRole === "owner" || rawRole === "admin" ? rawRole : "none";
   return {
     id: data.user.id,
     email: data.user.email,
@@ -54,6 +59,7 @@ function mapUser(data: { user: any; profile?: any }): User {
     avatarUrl: data.profile?.avatarUrl,
     platformRole,
     socialCrosspostOptIn: data.user.socialCrosspostOptIn !== false && data.user.socialCrosspostOptIn !== 0,
+    staffRole,
   };
 }
 

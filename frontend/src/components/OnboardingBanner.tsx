@@ -16,7 +16,7 @@ const STEPS = [
   {
     title: "Профиль",
     text: "Портфолио и статус: берёт ли человек заказы",
-    href: "/profile/nyx.cosplay",
+    href: "/explore",
   },
   {
     title: "Студия",

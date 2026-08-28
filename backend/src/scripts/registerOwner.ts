@@ -4,13 +4,13 @@ import { v4 as uuid } from "uuid";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { migrate } from "../db/migrate";
-import { ADMIN_USERNAME, flagsForUsername, normalizeUsername } from "../lib/owner";
+import { OWNER_USERNAME, flagsForUsername, normalizeUsername } from "../lib/owner";
 import { normalizePhone } from "../lib/otp";
 
 async function main() {
   migrate();
 
-  const username = normalizeUsername(process.env.OWNER_USERNAME || ADMIN_USERNAME);
+  const username = normalizeUsername(process.env.OWNER_USERNAME || OWNER_USERNAME);
   const phone = normalizePhone(process.env.OWNER_PHONE || "");
   const password = process.env.OWNER_PASSWORD || "";
   if (!phone || phone.replace(/\D/g, "").length < 10) {

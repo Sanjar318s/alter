@@ -7,7 +7,7 @@ import { Frame } from "@/components/Frame";
 import { IconButton } from "@/components/ui/IconButton";
 import { SmartImage } from "@/components/media/SmartImage";
 import { formatCount } from "@/lib/format";
-import type { Publication } from "@/lib/demo/publications";
+import type { Publication } from "@/lib/publications";
 import { CaptionText } from "./CaptionText";
 import { CommentThread } from "@/components/comments/CommentThread";
 

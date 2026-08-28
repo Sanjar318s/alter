@@ -156,7 +156,7 @@ export default function RegisterPage() {
                 minLength={3}
                 autoComplete="username"
                 aria-autocomplete="list"
-                placeholder="nyx.cosplay"
+                placeholder="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 suppressHydrationWarning
