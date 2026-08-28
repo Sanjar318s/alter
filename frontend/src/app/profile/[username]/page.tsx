@@ -286,7 +286,7 @@ function ProfileHub({ username }: { username: string }) {
           )}
           <div className="profile-cover-scrim" />
         </div>
-        <div className="profile-header-body px-4 sm:px-6 lg:px-8 pb-8">
+        <div className="profile-header-body px-4 sm:px-6 lg:px-8">
           <div className="max-w-[1240px] mx-auto">
             <div className="profile-header-avatar">
               <Frame className="w-[96px] h-[96px] sm:w-[112px] sm:h-[112px] overflow-hidden border-[3px] border-ink shadow-[0_8px_28px_rgba(0,0,0,0.5)]">
