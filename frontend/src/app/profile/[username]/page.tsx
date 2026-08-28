@@ -287,130 +287,140 @@ function ProfileHub({ username }: { username: string }) {
           <div className="profile-cover-scrim" />
         </div>
         <div className="profile-header-body px-4 sm:px-6 lg:px-8 pb-8">
-        <div className="max-w-[1240px] mx-auto flex flex-wrap gap-6 items-start min-w-0">
-          <div className="relative profile-header-avatar">
-            <Frame className="w-[104px] h-[104px] overflow-hidden border-[3px] border-ink shadow-[0_8px_24px_rgba(0,0,0,0.45)]">
-              <SmartImage
-                src={profile?.profile?.avatarUrl}
-                alt={`Аватар косплеера ${username}`}
-                fallback={username}
-              />
-            </Frame>
-            <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-magenta border-2 border-ink" />
-          </div>
-          <div className="flex-1 min-w-0 basis-[min(100%,240px)]">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-display font-extrabold text-[clamp(28px,6vw,52px)] leading-none break-all">{username}</h1>
-              {p?.isVerified && <BadgeCheck className="text-magenta" size={22} />}
-              <StaffBadge role={p?.staffRole || "none"} hidden={p?.staffBadgeHidden} />
-              {profile?.user?.premiumActive && (
-                <span className="font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-1 bg-amber text-ink">
-                  Premium
-                </span>
-              )}
-              <Badge status={status} />
+          <div className="max-w-[1240px] mx-auto">
+            <div className="profile-header-avatar">
+              <Frame className="w-[96px] h-[96px] sm:w-[112px] sm:h-[112px] overflow-hidden border-[3px] border-ink shadow-[0_8px_28px_rgba(0,0,0,0.5)]">
+                <SmartImage
+                  src={profile?.profile?.avatarUrl}
+                  alt={`Аватар косплеера ${username}`}
+                  fallback={username}
+                />
+              </Frame>
+              <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 bg-magenta border-2 border-ink" />
             </div>
-            <div className="flex gap-2 mt-3">
-              {roles.map((r: string) => (
-                <span
-                  key={r}
-                  className={cn(
-                    "font-mono text-[11px] uppercase px-2.5 py-1 rounded-[4px]",
-                    r.includes("maker") ? "bg-amber text-ink" : "bg-magenta text-paper"
-                  )}
-                >
-                  {r.includes("photo") ? "Фотограф" : r.includes("maker") ? "Мейкер" : "Косплеер"}
-                </span>
-              ))}
-            </div>
-            {profile?.user?.id && <PartnerBadge userId={profile.user.id} />}
-            <div className="flex items-center gap-2 mt-3 text-[13px] text-ink-70">
-              <MapPin size={14} /> {city || "Город не указан"}
-              {p?.lastSeen && (
-                <span className="font-mono text-[11px] text-ink-45">
-                  · Была в сети {new Date(p.lastSeen).toLocaleString("ru", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                </span>
-              )}
-            </div>
-            <p className="text-[14px] text-ink-70 mt-3 max-w-[560px]">{bio}</p>
-            <div className="flex gap-3 mt-3">
-              {Object.entries(links).map(([name, href]) => (
-                <a key={name} href={href} target="_blank" rel="noopener noreferrer" className="text-ink-45 hover:text-magenta flex items-center gap-1">
-                  <BrandIcon name={name} size={16} />
-                  <ExternalLink size={12} />
-                </a>
-              ))}
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-2 w-full sm:w-auto sm:ml-auto relative justify-end">
-            {isOwner ? (
-              <>
-                {canPublishWorks && (
-                  <Button size="sm" onClick={() => setBuildOpen(true)}>Добавить работу</Button>
-                )}
-                {canPublishReels && !canPublishWorks && (
-                  <Button size="sm" onClick={() => setCreateOpen(true)}>+ Рилс</Button>
-                )}
-                <Button href="/me" variant="outline" size="sm" className="hidden sm:inline-flex">
-                  {isClientProfile ? "Настройки" : "Редактировать профиль"}
-                </Button>
-              </>
-            ) : (
-              <>
-                {canOrderFromProfile && (
-                  <Button size="sm" onClick={() => setCommissionOpen(true)} className="w-full sm:w-auto">
-                    <Sparkles size={14} className="mr-1" /> Заказать
-                  </Button>
-                )}
-                <Button variant="outline" size="sm" onClick={message} className="hidden sm:inline-flex">
-                  <Send size={14} className="mr-1" /> Написать
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="hidden sm:inline-flex"
-                  onClick={toggleFollow}
-                >
-                  <UserPlus size={14} className="mr-1" /> {following ? "Вы подписаны" : "Подписаться"}
-                </Button>
-              </>
-            )}
-            <IconButton label="Ещё" onClick={() => setMenuOpen((v) => !v)}>
-              <Ellipsis size={18} />
-            </IconButton>
-            {menuOpen && (
-              <div className="absolute right-0 top-12 bg-stage border border-line w-48 z-20 py-1">
-                <button type="button" className="w-full text-left px-3 py-2 text-[13px]" onClick={share}>
-                  <Share2 size={14} className="inline mr-2" /> Поделиться
-                </button>
-                {!isOwner && (
-                  <>
-                    <button type="button" className="w-full text-left px-3 py-2 text-[13px] sm:hidden" onClick={message}>
-                      <Send size={14} className="inline mr-2" /> Написать сообщение
-                    </button>
-                    <button type="button" className="w-full text-left px-3 py-2 text-[13px] sm:hidden" onClick={() => { toggleFollow(); setMenuOpen(false); }}>
-                      <UserPlus size={14} className="inline mr-2" /> {following ? "Вы подписаны" : "Подписаться"}
-                    </button>
-                    <button type="button" className="w-full text-left px-3 py-2 text-[13px]" onClick={async () => {
-                      await messages.report({ targetType: "user", targetId: profile?.user?.id || username, reason: "abuse" });
-                      toast("Жалоба отправлена модераторам");
-                    }}>
-                      <Flag size={14} className="inline mr-2" /> Пожаловаться
-                    </button>
-                    {!isPlatformOwner && (
-                    <button type="button" className="w-full text-left px-3 py-2 text-[13px] text-[#FF426F]" onClick={async () => {
-                      if (profile?.user?.id) await messages.block(profile.user.id);
-                      toast("Пользователь в чёрном списке");
-                    }}>
-                      Заблокировать
-                    </button>
+
+            <div className="profile-header-main">
+              <div className="flex flex-wrap items-start justify-between gap-3 gap-y-4">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+                    <h1 className="font-display font-extrabold text-[clamp(24px,5.5vw,48px)] leading-none break-all">
+                      {username}
+                    </h1>
+                    {p?.isVerified && <BadgeCheck className="text-magenta shrink-0" size={22} />}
+                    <StaffBadge role={p?.staffRole || "none"} hidden={p?.staffBadgeHidden} />
+                    {profile?.user?.premiumActive && (
+                      <span className="font-mono text-[10px] uppercase tracking-[0.12em] px-2 py-1 bg-amber text-ink shrink-0">
+                        Premium
+                      </span>
                     )}
-                  </>
+                    <Badge status={status} />
+                  </div>
+                </div>
+                <div className="flex flex-wrap gap-2 w-full sm:w-auto relative justify-start sm:justify-end shrink-0">
+                  {isOwner ? (
+                    <>
+                      {canPublishWorks && (
+                        <Button size="sm" onClick={() => setBuildOpen(true)}>Добавить работу</Button>
+                      )}
+                      {canPublishReels && !canPublishWorks && (
+                        <Button size="sm" onClick={() => setCreateOpen(true)}>+ Рилс</Button>
+                      )}
+                      <Button href="/me" variant="outline" size="sm">
+                        {isClientProfile ? "Настройки" : "Редактировать профиль"}
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {canOrderFromProfile && (
+                        <Button size="sm" onClick={() => setCommissionOpen(true)} className="w-full sm:w-auto">
+                          <Sparkles size={14} className="mr-1" /> Заказать
+                        </Button>
+                      )}
+                      <Button variant="outline" size="sm" onClick={message} className="hidden sm:inline-flex">
+                        <Send size={14} className="mr-1" /> Написать
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="hidden sm:inline-flex"
+                        onClick={toggleFollow}
+                      >
+                        <UserPlus size={14} className="mr-1" /> {following ? "Вы подписаны" : "Подписаться"}
+                      </Button>
+                    </>
+                  )}
+                  <IconButton label="Ещё" onClick={() => setMenuOpen((v) => !v)}>
+                    <Ellipsis size={18} />
+                  </IconButton>
+                  {menuOpen && (
+                    <div className="absolute right-0 top-12 bg-stage border border-line w-48 z-20 py-1">
+                      <button type="button" className="w-full text-left px-3 py-2 text-[13px]" onClick={share}>
+                        <Share2 size={14} className="inline mr-2" /> Поделиться
+                      </button>
+                      {!isOwner && (
+                        <>
+                          <button type="button" className="w-full text-left px-3 py-2 text-[13px] sm:hidden" onClick={message}>
+                            <Send size={14} className="inline mr-2" /> Написать сообщение
+                          </button>
+                          <button type="button" className="w-full text-left px-3 py-2 text-[13px] sm:hidden" onClick={() => { toggleFollow(); setMenuOpen(false); }}>
+                            <UserPlus size={14} className="inline mr-2" /> {following ? "Вы подписаны" : "Подписаться"}
+                          </button>
+                          <button type="button" className="w-full text-left px-3 py-2 text-[13px]" onClick={async () => {
+                            await messages.report({ targetType: "user", targetId: profile?.user?.id || username, reason: "abuse" });
+                            toast("Жалоба отправлена модераторам");
+                          }}>
+                            <Flag size={14} className="inline mr-2" /> Пожаловаться
+                          </button>
+                          {!isPlatformOwner && (
+                          <button type="button" className="w-full text-left px-3 py-2 text-[13px] text-[#FF426F]" onClick={async () => {
+                            if (profile?.user?.id) await messages.block(profile.user.id);
+                            toast("Пользователь в чёрном списке");
+                          }}>
+                            Заблокировать
+                          </button>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-3">
+                {roles.map((r: string) => (
+                  <span
+                    key={r}
+                    className={cn(
+                      "font-mono text-[11px] uppercase px-2.5 py-1 rounded-[4px]",
+                      r.includes("maker") ? "bg-amber text-ink" : "bg-magenta text-paper"
+                    )}
+                  >
+                    {r.includes("photo") ? "Фотограф" : r.includes("maker") ? "Мейкер" : "Косплеер"}
+                  </span>
+                ))}
+              </div>
+              {profile?.user?.id && <PartnerBadge userId={profile.user.id} />}
+              <div className="flex items-center gap-2 mt-3 text-[13px] text-ink-70">
+                <MapPin size={14} /> {city || "Город не указан"}
+                {p?.lastSeen && (
+                  <span className="font-mono text-[11px] text-ink-45">
+                    · Была в сети {new Date(p.lastSeen).toLocaleString("ru", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </span>
                 )}
               </div>
-            )}
+              {bio ? <p className="text-[14px] text-ink-70 mt-3 max-w-[560px]">{bio}</p> : null}
+              {Object.keys(links).length > 0 && (
+                <div className="flex gap-3 mt-3">
+                  {Object.entries(links).map(([name, href]) => (
+                    <a key={name} href={href} target="_blank" rel="noopener noreferrer" className="text-ink-45 hover:text-magenta flex items-center gap-1">
+                      <BrandIcon name={name} size={16} />
+                      <ExternalLink size={12} />
+                    </a>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
         </div>
       </header>
 
