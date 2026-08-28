@@ -307,7 +307,12 @@ function MeInner() {
 
   async function onFile(kind: "avatar" | "cover", file: File) {
     try {
-      const edited = await editImageList(edit, [file], kind === "avatar" ? 1 : 16 / 9);
+      const edited = await editImageList(
+        edit,
+        [file],
+        kind === "avatar" ? 1 : 16 / 5,
+        kind === "avatar" ? "avatar" : "profile-cover"
+      );
       const picked = edited[0];
       if (!picked) return;
       const up = await uploadFile(picked, picked.name, picked.type);

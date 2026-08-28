@@ -1,3 +1,7 @@
+"use client";
+
+import { useId, useRef } from "react";
+import { Camera } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SmartImage } from "@/components/media/SmartImage";
 
@@ -14,44 +18,62 @@ export function MeProfileHeader({
   coverUrl,
   onCoverChange,
 }: MeProfileHeaderProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const inputId = useId();
+
+  function pickCover() {
+    inputRef.current?.click();
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) onCoverChange(file);
+    e.target.value = "";
+  }
+
   return (
     <header className="me-profile-header-block">
-      <div className="me-profile-cover">
+      <button
+        type="button"
+        className="me-profile-cover group w-full p-0 border-0 cursor-pointer text-left"
+        onClick={pickCover}
+        aria-label="Изменить обложку"
+      >
         {coverUrl ? (
           <SmartImage src={coverUrl} alt="Обложка профиля" className="w-full h-full object-cover" />
         ) : (
           <div className="me-profile-cover-placeholder">Обложка не задана</div>
         )}
-      </div>
+        <span className="me-profile-cover-edit">
+          <Camera size={16} strokeWidth={1.75} />
+          Изменить обложку
+        </span>
+      </button>
+      <input
+        ref={inputRef}
+        id={inputId}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        className="hidden"
+        onChange={onFileChange}
+      />
       <div className="me-profile-header">
         <div>
-        <div className="font-mono text-[11px] text-ink-45 mb-2">{breadcrumb}</div>
-        <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-magenta">
-          Мой профиль
-        </span>
-        <h1 className="font-display font-extrabold text-[26px] md:text-[30px] mt-1 leading-tight">
-          МОЙ ПРОФИЛЬ
-        </h1>
+          <div className="font-mono text-[11px] text-ink-45 mb-2">{breadcrumb}</div>
+          <span className="font-mono text-[11px] uppercase tracking-[0.1em] text-magenta">
+            Мой профиль
+          </span>
+          <h1 className="font-display font-extrabold text-[26px] md:text-[30px] mt-1 leading-tight">
+            МОЙ ПРОФИЛЬ
+          </h1>
         </div>
         <div className="me-profile-header-actions">
-        <Button href={publicProfileHref} variant="outline" size="sm">
-          Смотреть публичный профиль
-        </Button>
-        <label>
-          <span className="inline-flex items-center justify-center px-4 py-2 text-[12px] font-medium border border-line rounded-[4px] text-paper bg-transparent hover:border-paper cursor-pointer transition-colors">
+          <Button href={publicProfileHref} variant="outline" size="sm">
+            Смотреть публичный профиль
+          </Button>
+          <Button variant="outline" size="sm" type="button" onClick={pickCover}>
             Изменить обложку
-          </span>
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) onCoverChange(file);
-              e.target.value = "";
-            }}
-          />
-        </label>
+          </Button>
         </div>
       </div>
     </header>

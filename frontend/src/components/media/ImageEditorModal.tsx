@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { RotateCw } from "lucide-react";
+import { Minus, Plus, RotateCw, User } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { compressImage } from "@/lib/compressImage";
 import { cn } from "@/lib/cn";
+import type { ImageEditorPreset } from "./ImageEditorProvider";
 
 const FILTERS: { id: string; label: string; css: string }[] = [
   { id: "none", label: "Без", css: "" },
@@ -15,14 +16,37 @@ const FILTERS: { id: string; label: string; css: string }[] = [
   { id: "vivid", label: "Яркий", css: "saturate(1.45) contrast(1.08)" },
 ];
 
+const PRESET_META: Record<
+  ImageEditorPreset,
+  { title: string; hint?: string; frameLabel?: string }
+> = {
+  default: { title: "Редактор фото" },
+  "profile-cover": {
+    title: "Обложка профиля",
+    hint: "Перетащите фото и подберите масштаб. Квадрат снизу слева — зона аватара.",
+    frameLabel: "16:5",
+  },
+  avatar: {
+    title: "Аватар",
+    hint: "Квадрат 1:1 — так аватар будет виден в профиле.",
+    frameLabel: "1:1",
+  },
+};
+
+function clampZoom(value: number) {
+  return Math.min(3, Math.max(0.5, value));
+}
+
 export function ImageEditorModal({
   file,
   aspect,
+  preset = "default",
   onCancel,
   onSave,
 }: {
   file: File;
   aspect?: number | null;
+  preset?: ImageEditorPreset;
   onCancel: () => void;
   onSave: (file: File) => void;
 }) {
@@ -41,9 +65,13 @@ export function ImageEditorModal({
   const [busy, setBusy] = useState(false);
   const drag = useRef<{ x: number; y: number; ox: number; oy: number } | null>(null);
 
+  const meta = PRESET_META[preset];
   const ratio = aspect && aspect > 0 ? aspect : null;
-  const viewW = 320;
-  const viewH = ratio ? Math.round(320 / ratio) : 320;
+  const viewW = preset === "profile-cover" ? 400 : 320;
+  const viewH = ratio ? Math.round(viewW / ratio) : 320;
+  const avatarSize = Math.round(viewW * 0.2);
+  const avatarLeft = Math.round(viewW * 0.04);
+  const avatarBottom = Math.round(-avatarSize * 0.42);
   const [natW, setNatW] = useState(0);
   const [natH, setNatH] = useState(0);
 
@@ -66,10 +94,12 @@ export function ImageEditorModal({
   }, [file]);
 
   const filterCss = `brightness(${bright}%) contrast(${contrast}%) saturate(${sat}%) ${FILTERS.find((f) => f.id === filter)?.css || ""}`;
-  /** Cover scale so the image fills the crop frame at zoom=1 (matches export). */
-  const cover =
-    natW > 0 && natH > 0 ? Math.max(viewW / natW, viewH / natH) : 1;
+  const cover = natW > 0 && natH > 0 ? Math.max(viewW / natW, viewH / natH) : 1;
   const previewScale = cover * scale;
+
+  function bumpZoom(delta: number) {
+    setScale((s) => clampZoom(Number((s + delta).toFixed(2))));
+  }
 
   async function save() {
     const img = imgRef.current;
@@ -94,10 +124,17 @@ export function ImageEditorModal({
       const dh = img.naturalHeight * drawScale * (outH / viewH);
       ctx.drawImage(img, -dw / 2 + ox * (outW / viewW), -dh / 2 + oy * (outH / viewH), dw, dh);
       ctx.restore();
-      const blob: Blob = await new Promise((resolve) => canvas.toBlob((b) => resolve(b || file), "image/jpeg", 0.92));
-      const jpeg = new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" });
+      const blob: Blob = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b || file), "image/jpeg", 0.92)
+      );
+      const jpeg = new File([blob], file.name.replace(/\.[^.]+$/, "") + ".jpg", {
+        type: "image/jpeg",
+      });
       const compressed = await compressImage(jpeg);
-      const out = compressed instanceof File ? compressed : new File([compressed], jpeg.name, { type: compressed.type || "image/jpeg" });
+      const out =
+        compressed instanceof File
+          ? compressed
+          : new File([compressed], jpeg.name, { type: compressed.type || "image/jpeg" });
       onSave(out);
     } catch {
       onCancel();
@@ -106,12 +143,23 @@ export function ImageEditorModal({
     }
   }
 
+  const showFilters = preset === "default";
+
   return (
-    <Modal title="Редактор фото" onClose={onCancel} wide>
+    <Modal title={meta.title} onClose={onCancel} wide>
       <div className="flex flex-col gap-3">
+        {meta.hint ? (
+          <p className="text-[12px] text-ink-70 leading-relaxed">{meta.hint}</p>
+        ) : null}
+
+        <div className="flex items-center justify-between gap-2 font-mono text-[10px] uppercase tracking-[0.1em] text-ink-45">
+          <span>Область кадрирования</span>
+          {meta.frameLabel ? <span>{meta.frameLabel}</span> : null}
+        </div>
+
         <div
           ref={stageRef}
-          className="relative mx-auto overflow-hidden bg-ink border border-line touch-none"
+          className="relative mx-auto overflow-visible bg-ink border border-line touch-none"
           style={{ width: viewW, height: viewH }}
           onPointerDown={(e) => {
             drag.current = { x: e.clientX, y: e.clientY, ox, oy };
@@ -126,25 +174,70 @@ export function ImageEditorModal({
             drag.current = null;
           }}
         >
-          {url && natW > 0 && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={url}
-              alt=""
-              draggable={false}
-              width={natW}
-              height={natH}
-              className="absolute left-1/2 top-1/2 max-w-none select-none pointer-events-none"
+          <div className="absolute inset-0 overflow-hidden">
+            {url && natW > 0 && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={url}
+                alt=""
+                draggable={false}
+                width={natW}
+                height={natH}
+                className="absolute left-1/2 top-1/2 max-w-none select-none pointer-events-none"
+                style={{
+                  transform: `translate(-50%, -50%) translate(${ox}px, ${oy}px) rotate(${rot}deg) scale(${previewScale})`,
+                  filter: filterCss,
+                }}
+              />
+            )}
+            <div className="absolute inset-0 pointer-events-none border-2 border-magenta/70" />
+          </div>
+
+          {preset === "profile-cover" && (
+            <div
+              className="absolute z-10 pointer-events-none rounded-[8px] border-2 border-dashed border-paper/90 bg-ink/50 backdrop-blur-[1px] flex flex-col items-center justify-center gap-0.5"
               style={{
-                transform: `translate(-50%, -50%) translate(${ox}px, ${oy}px) rotate(${rot}deg) scale(${previewScale})`,
-                filter: filterCss,
+                width: avatarSize,
+                height: avatarSize,
+                left: avatarLeft,
+                bottom: avatarBottom,
               }}
-            />
+              aria-hidden
+            >
+              <User size={18} className="text-paper/80" strokeWidth={1.75} />
+              <span className="font-mono text-[9px] uppercase tracking-[0.08em] text-paper/75">
+                Аватар
+              </span>
+            </div>
           )}
-          <div className="absolute inset-0 pointer-events-none border-2 border-magenta/70" />
         </div>
+
+        <div className="flex items-center justify-center gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label="Уменьшить"
+            onClick={() => bumpZoom(-0.1)}
+          >
+            <Minus size={14} />
+          </Button>
+          <span className="font-mono text-[12px] text-paper min-w-[3.5rem] text-center">
+            {Math.round(scale * 100)}%
+          </span>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label="Увеличить"
+            onClick={() => bumpZoom(0.1)}
+          >
+            <Plus size={14} />
+          </Button>
+        </div>
+
         <label className="font-mono text-[11px] text-ink-45">
-          Зум
+          Масштаб
           <input
             className="w-full"
             type="range"
@@ -152,48 +245,55 @@ export function ImageEditorModal({
             max={3}
             step={0.02}
             value={scale}
-            onChange={(e) => setScale(Number(e.target.value))}
+            onChange={(e) => setScale(clampZoom(Number(e.target.value)))}
           />
         </label>
+
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setRot((r) => (r + 90) % 360)}>
             <RotateCw size={14} className="mr-1" /> Поворот
           </Button>
         </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            ["Яркость", bright, setBright],
-            ["Контраст", contrast, setContrast],
-            ["Насыщенность", sat, setSat],
-          ].map(([label, val, set]) => (
-            <label key={String(label)} className="font-mono text-[10px] text-ink-45">
-              {label as string}
-              <input
-                className="w-full"
-                type="range"
-                min={50}
-                max={150}
-                value={val as number}
-                onChange={(e) => (set as (n: number) => void)(Number(e.target.value))}
-              />
-            </label>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-1">
-          {FILTERS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              className={cn(
-                "px-2 py-1 text-[11px] border bg-transparent",
-                filter === f.id ? "border-magenta text-magenta" : "border-line text-ink-45"
-              )}
-              onClick={() => setFilter(f.id)}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
+
+        {showFilters && (
+          <>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                ["Яркость", bright, setBright],
+                ["Контраст", contrast, setContrast],
+                ["Насыщенность", sat, setSat],
+              ].map(([label, val, set]) => (
+                <label key={String(label)} className="font-mono text-[10px] text-ink-45">
+                  {label as string}
+                  <input
+                    className="w-full"
+                    type="range"
+                    min={50}
+                    max={150}
+                    value={val as number}
+                    onChange={(e) => (set as (n: number) => void)(Number(e.target.value))}
+                  />
+                </label>
+              ))}
+            </div>
+            <div className="flex flex-wrap gap-1">
+              {FILTERS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  className={cn(
+                    "px-2 py-1 text-[11px] border bg-transparent",
+                    filter === f.id ? "border-magenta text-magenta" : "border-line text-ink-45"
+                  )}
+                  onClick={() => setFilter(f.id)}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
         <div className="flex gap-2">
           <Button disabled={!ready || busy} onClick={save}>
             {busy ? "Сохраняем…" : "Сохранить"}
