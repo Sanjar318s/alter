@@ -252,7 +252,7 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
       </aside>
       <button
         type="button"
-        className="md:hidden fixed bottom-16 left-4 z-50 w-11 h-11 bg-stage border border-line text-paper shadow-lg"
+        className="md:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] right-4 z-50 w-11 h-11 bg-stage border border-line text-paper shadow-lg"
         onClick={() => setOpen(true)}
         aria-label="Меню студии"
       >
@@ -268,7 +268,7 @@ export function StudioShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       )}
-      <div className="flex-1 min-w-0 overflow-y-auto">{children}</div>
+      <div className="flex-1 min-w-0 overflow-y-auto studio-scroll-pad">{children}</div>
     </div>
   );
 }

@@ -72,11 +72,11 @@ export default function ClientsPage() {
         {!loading && list.length === 0 && <EmptyState title="Клиенты появятся здесь после первого заказа" />}
         <div className="flex flex-col gap-3">
           {list.map((c) => (
-            <div key={c.id} className="border border-line p-3 flex flex-wrap gap-3 items-center">
-              <div className="w-10 h-10 overflow-hidden">
+            <div key={c.id} className="border border-line p-3 flex flex-col sm:flex-row flex-wrap gap-3 items-stretch sm:items-center">
+              <div className="w-10 h-10 overflow-hidden shrink-0">
                 <SmartImage src={c.avatarUrl} alt={c.username} fallback={c.username} />
               </div>
-              <div className="flex-1 min-w-[160px]">
+              <div className="flex-1 min-w-0 basis-[12rem]">
                 <Link href={`/profile/${c.username}`} className="text-paper no-underline font-medium">{c.displayName || c.username}</Link>
                 <div className="font-mono text-[11px] text-ink-45">
                   {c.ordersCount} зак. · {formatSum(c.spent)} · {c.kind === "regular" ? "постоянный" : "новый"}
@@ -89,11 +89,13 @@ export default function ClientsPage() {
                   onBlur={() => ordersApi.clientNote(c.id, notes[c.id] || "").catch((e) => toast(e.message, true))}
                 />
               </div>
-              <Button size="sm" variant="outline" onClick={async () => {
+              <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+              <Button size="sm" variant="outline" className="flex-1 sm:flex-none" onClick={async () => {
                 const conv = await messagesApi.createConversation(c.id);
                 router.push(`/messages/${conv.conversationId}`);
               }}>Написать</Button>
-              <Button size="sm" href="/studio">Новый заказ</Button>
+              <Button size="sm" href="/studio" className="flex-1 sm:flex-none">Новый заказ</Button>
+              </div>
             </div>
           ))}
         </div>

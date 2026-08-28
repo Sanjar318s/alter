@@ -28,11 +28,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={push}>
       {children}
-      <div className="fixed bottom-6 right-6 z-[80] flex flex-col gap-2">
+      <div className="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-[80] flex flex-col gap-2 pointer-events-none">
         {items.map((t) => (
           <div
             key={t.id}
-            className={`font-mono text-[12px] px-4 py-2.5 border ${
+            className={`pointer-events-auto font-mono text-[12px] px-4 py-2.5 border ${
               t.error
                 ? "border-amber text-amber bg-stage"
                 : "border-line text-paper bg-stage"

@@ -520,13 +520,17 @@ function MeInner() {
                 </label>
                 )}
                 {socials.map((s, i) => (
-                  <div key={i} className="flex gap-2 items-center">
-                    <BrandIcon name={s.platform} />
-                    <input className="field flex-1" value={s.platform} onChange={(e) => { const n = [...socials]; n[i].platform = e.target.value; setSocials(n); mark(); }} />
-                    <input className="field flex-1" value={s.url} onChange={(e) => { const n = [...socials]; n[i].url = e.target.value; setSocials(n); mark(); }} />
-                    <button type="button" onClick={() => { setSocials(socials.filter((_, j) => j !== i)); mark(); }} className="bg-transparent border-0 text-ink-45">
-                      <Trash2 size={16} />
-                    </button>
+                  <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-center min-w-0">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <BrandIcon name={s.platform} />
+                      <input className="field flex-1 min-w-0" value={s.platform} onChange={(e) => { const n = [...socials]; n[i].platform = e.target.value; setSocials(n); mark(); }} />
+                    </div>
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <input className="field flex-1 min-w-0" value={s.url} onChange={(e) => { const n = [...socials]; n[i].url = e.target.value; setSocials(n); mark(); }} />
+                      <button type="button" onClick={() => { setSocials(socials.filter((_, j) => j !== i)); mark(); }} className="shrink-0 min-h-11 min-w-11 flex items-center justify-center bg-transparent border-0 text-ink-45">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
                   </div>
                 ))}
                 <Button variant="outline" size="sm" onClick={() => { setSocials([...socials, { platform: "telegram", url: "" }]); mark(); }}>

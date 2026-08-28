@@ -75,7 +75,7 @@ export function OnboardingBanner() {
   };
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-stage border-t border-line px-5 sm:px-8 lg:px-10 py-2.5 sm:py-3">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-stage border-t border-line px-5 sm:px-8 lg:px-10 py-2.5 sm:py-3 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))]">
       <div className="max-w-[1360px] mx-auto flex items-center gap-3">
         <span className="font-mono text-[10px] uppercase tracking-[0.1em] text-magenta shrink-0 hidden sm:inline">
           С чего начать

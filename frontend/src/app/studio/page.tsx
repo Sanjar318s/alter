@@ -331,7 +331,7 @@ function StudioInner() {
         </DndContext>
       </div>
 
-      <div className="sticky bottom-0 border-t border-line bg-ink px-4 sm:px-6 py-2 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-ink-45 min-w-0">
+      <div className="sticky bottom-0 border-t border-line bg-ink px-4 sm:px-6 py-2 pr-14 md:pr-6 flex flex-wrap gap-x-4 gap-y-1 font-mono text-[11px] text-ink-45 min-w-0 z-10">
         <span>{canMutate ? "Перетащите карту между колонками" : "Ghost view: перетаскивание и редактирование отключены"}</span>
         <span>Всего заказов {items.length}</span>
         <span>{t("amount")} {formatSum(totalSum)}</span>

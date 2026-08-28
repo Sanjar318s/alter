@@ -33,7 +33,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <>
       <Nav />
-      <main className={cn("flex-1 min-w-0 max-w-full overflow-x-clip pb-16")}>
+      <main className={cn("flex-1 min-w-0 max-w-full overflow-x-clip pb-[calc(5rem+env(safe-area-inset-bottom,0px))] md:pb-16")}>
         {children}
       </main>
       <Footer />

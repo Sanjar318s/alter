@@ -882,12 +882,19 @@
     background: color-mix(in srgb, var(--color-ink) 72%, transparent);
     font-size: 11px;
     color: var(--color-paper);
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.15s ease;
   }
-  .me-profile-cover:hover .me-profile-cover-edit,
-  .me-profile-cover:focus-visible .me-profile-cover-edit {
-    opacity: 1;
+
+  @media (hover: hover) and (pointer: fine) {
+    .me-profile-cover-edit {
+      opacity: 0;
+    }
+
+    .me-profile-cover:hover .me-profile-cover-edit,
+    .me-profile-cover:focus-visible .me-profile-cover-edit {
+      opacity: 1;
+    }
   }
 
   .me-profile-header {
@@ -1071,9 +1078,28 @@
     cursor: pointer;
     border: 0;
   }
-  .me-profile-avatar:hover .me-profile-avatar-overlay,
-  .me-profile-avatar:focus-within .me-profile-avatar-overlay {
-    opacity: 1;
+
+  @media (hover: hover) and (pointer: fine) {
+    .me-profile-avatar:hover .me-profile-avatar-overlay,
+    .me-profile-avatar:focus-within .me-profile-avatar-overlay {
+      opacity: 1;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .me-profile-avatar-overlay {
+      opacity: 0;
+    }
+  }
+
+  .studio-scroll-pad {
+    padding-bottom: calc(5rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  @media (min-width: 768px) {
+    .studio-scroll-pad {
+      padding-bottom: 0;
+    }
   }
 
   .me-role-badge {

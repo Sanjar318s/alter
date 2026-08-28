@@ -26,7 +26,7 @@ export default function AnalyticsPage() {
     <StudioShell>
       <div className="p-4 sm:p-6">
         <PageHeader eyebrow="Аналитика" title="Заказы, доход и аудитория" />
-        <div className="flex gap-2 mb-6">
+        <div className="flex flex-wrap gap-2 mb-6">
           {["7d", "30d", "90d", "year"].map((p) => (
             <button
               key={p}

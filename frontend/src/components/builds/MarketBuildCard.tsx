@@ -101,7 +101,7 @@ export function MarketBuildCard({
             type="button"
             aria-label="Лайк"
             onClick={() => onToggleLike(item.id, Boolean(liked))}
-            className="flex items-center gap-1 bg-transparent border-0 text-ink-70 hover:text-magenta cursor-pointer"
+            className="flex items-center justify-center gap-1 min-h-11 min-w-11 px-2 bg-transparent border-0 text-ink-70 hover:text-magenta cursor-pointer"
           >
             <Heart size={14} className={liked ? "fill-magenta stroke-magenta" : ""} />
             <span className="font-mono text-[11px]">{formatCount(displayLikes)}</span>

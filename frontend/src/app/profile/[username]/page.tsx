@@ -386,7 +386,7 @@ function ProfileHub({ username }: { username: string }) {
                 </div>
               </div>
 
-              <div className="flex gap-2 mt-3">
+              <div className="flex flex-wrap gap-2 mt-3">
                 {roles.map((r: string) => (
                   <span
                     key={r}
@@ -400,10 +400,10 @@ function ProfileHub({ username }: { username: string }) {
                 ))}
               </div>
               {profile?.user?.id && <PartnerBadge userId={profile.user.id} />}
-              <div className="flex items-center gap-2 mt-3 text-[13px] text-ink-70">
-                <MapPin size={14} /> {city || "Город не указан"}
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-3 text-[13px] text-ink-70">
+                <MapPin size={14} className="shrink-0" /> <span>{city || "Город не указан"}</span>
                 {p?.lastSeen && (
-                  <span className="font-mono text-[11px] text-ink-45">
+                  <span className="font-mono text-[11px] text-ink-45 min-w-0">
                     · Была в сети {new Date(p.lastSeen).toLocaleString("ru", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </span>
                 )}
@@ -636,11 +636,11 @@ function ProfileHub({ username }: { username: string }) {
         </div>
       </div>
 
-      {isOwner ? null : (
-        <div className="md:hidden sticky bottom-0 p-3 bg-ink border-t border-line">
+      {canOrderFromProfile && !isOwner ? (
+        <div className="md:hidden sticky bottom-0 z-50 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] bg-ink/95 border-t border-line backdrop-blur-sm">
           <Button className="w-full" onClick={() => setCommissionOpen(true)}>Заказать</Button>
         </div>
-      )}
+      ) : null}
 
       {commissionOpen && (
         <Modal title="Заявка на заказ" onClose={() => setCommissionOpen(false)}>

@@ -32,6 +32,12 @@ export default function CalendarPage() {
   const [addOpen, setAddOpen] = useState(false);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    if (window.matchMedia("(max-width: 639px)").matches) {
+      setView("week");
+    }
+  }, []);
+
   const from = useMemo(() => {
     if (view === "day") return new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate()).toISOString();
     if (view === "week") return startOfWeek(cursor).toISOString();
@@ -120,7 +126,10 @@ export default function CalendarPage() {
                 key={key + d.getDate()}
                 type="button"
                 onClick={() => setDayOpen(key)}
-                className="min-h-[88px] border border-line p-1.5 text-left bg-stage hover:border-magenta"
+                className={cn(
+                  "min-h-[88px] border border-line p-1.5 text-left bg-stage hover:border-magenta",
+                  view === "month" && "min-h-[72px] sm:min-h-[88px] text-[10px] sm:text-[11px]"
+                )}
               >
                 <div className="font-mono text-[10px] text-ink-45">{d.getDate()}</div>
                 {list.slice(0, 3).map((it) => (
