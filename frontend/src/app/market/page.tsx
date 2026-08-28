@@ -55,9 +55,18 @@ export default function MarketPage() {
   return (
     <div className="min-h-full">
       <section className="market-hero hero-wash border-b border-line py-14 md:py-20 lg:py-24 relative overflow-hidden">
-        <div className="market-hero-art" aria-hidden />
+        <div className="market-hero-art" aria-hidden>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/market-hero-characters.png"
+            alt=""
+            className="market-hero-art-img"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
         <div className={SHELL}>
-          <div className="relative z-[1] grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
+          <div className="relative z-[3] grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
             <div className="max-w-[640px] market-hero-copy">
               <p className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.18em] text-magenta">
                 {t("marketEyebrow")}
