@@ -8,6 +8,9 @@ type BrandLogoProps = {
   size?: number;
   className?: string;
   imageClassName?: string;
+  /** Serve the original PNG without Next image compression (hero / large marks). */
+  unoptimized?: boolean;
+  quality?: number;
 };
 
 export function BrandLogo({
@@ -16,6 +19,8 @@ export function BrandLogo({
   size = 36,
   className,
   imageClassName,
+  unoptimized = false,
+  quality = 90,
 }: BrandLogoProps) {
   const inner = (
     <>
@@ -24,6 +29,9 @@ export function BrandLogo({
         alt="AlterCosPlay"
         width={size}
         height={size}
+        quality={quality}
+        unoptimized={unoptimized}
+        sizes={unoptimized ? undefined : `${size}px`}
         className={cn("shrink-0 rounded-full", imageClassName)}
         priority
       />

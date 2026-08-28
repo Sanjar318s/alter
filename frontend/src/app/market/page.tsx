@@ -55,8 +55,9 @@ export default function MarketPage() {
   return (
     <div className="min-h-full">
       <section className="market-hero hero-wash border-b border-line py-14 md:py-20 lg:py-24 relative overflow-hidden">
+        <div className="market-hero-art" aria-hidden />
         <div className={SHELL}>
-          <div className="relative z-[1] grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
+          <div className="relative z-[1] grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center">
             <div className="max-w-[640px]">
               <p className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.18em] text-magenta">
                 {t("marketEyebrow")}
@@ -74,8 +75,14 @@ export default function MarketPage() {
                 </Button>
               </div>
             </div>
-            <div className="hidden lg:flex justify-center items-center">
-              <BrandLogo href="/market" showText={false} size={280} imageClassName="shadow-[0_0_80px_rgba(212,86,122,0.35)]" />
+            <div className="market-hero-visual hidden lg:flex justify-center items-center">
+              <BrandLogo
+                href="/market"
+                showText={false}
+                size={300}
+                unoptimized
+                imageClassName="market-hero-logo"
+              />
             </div>
           </div>
         </div>

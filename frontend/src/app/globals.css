@@ -330,8 +330,41 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: radial-gradient(circle at 70% 40%, rgba(212, 86, 122, 0.08), transparent 45%);
+    background:
+      linear-gradient(90deg, var(--color-ink) 0%, color-mix(in srgb, var(--color-ink) 88%, transparent) 38%, transparent 72%),
+      radial-gradient(circle at 72% 42%, rgba(212, 86, 122, 0.14), transparent 48%);
     pointer-events: none;
+    z-index: 0;
+  }
+
+  .market-hero-art {
+    position: absolute;
+    inset: 0;
+    background-image: url("/market-hero-characters.png");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: 72% center;
+    opacity: 0.92;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  @media (max-width: 1023px) {
+    .market-hero-art {
+      background-position: 85% center;
+      opacity: 0.35;
+    }
+  }
+
+  .market-hero-visual {
+    position: relative;
+    min-height: 300px;
+  }
+
+  .market-hero-logo {
+    position: relative;
+    z-index: 1;
+    filter: drop-shadow(0 0 48px rgba(212, 86, 122, 0.45)) drop-shadow(0 18px 40px rgba(0, 0, 0, 0.55));
   }
 
   /* Explore catalog hero — lighter cosmic band */
