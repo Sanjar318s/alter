@@ -70,7 +70,7 @@ export default function MarketPage() {
             />
           </picture>
         </div>
-        <div className={cn(SHELL, "relative z-[3] w-full flex-1 flex items-center")}>
+        <div className={cn(SHELL, "market-hero-shell relative z-[3] w-full lg:flex-1 lg:flex lg:items-center")}>
           <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center w-full">
             <div className="max-w-[640px] market-hero-copy">
               <p className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.18em] text-magenta">
