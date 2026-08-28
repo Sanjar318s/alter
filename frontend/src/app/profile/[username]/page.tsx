@@ -42,10 +42,10 @@ import { parseCoverCropJson } from "@/lib/coverCrop";
 import { cn } from "@/lib/cn";
 import { formatCount } from "@/lib/format";
 import { useLocale } from "@/lib/LocaleContext";
-import { normalizePublication, type Publication } from "@/lib/demo/publications";
+import { normalizePublication, type Publication } from "@/lib/publications";
 import { messages, publications as publicationsApi, users } from "@/lib/api";
 import { useAuth } from "@/lib/AuthContext";
-import { isOwnerUsername, isPlatformOwnerUser } from "@/lib/owner";
+import { isOwnerProfile, isPlatformOwnerUser } from "@/lib/owner";
 import { useToast } from "@/components/ui/Toast";
 import { subscribeRealtime } from "@/lib/realtimeHub";
 
@@ -104,7 +104,7 @@ function ProfileHub({ username }: { username: string }) {
   }, [sp]);
 
   const isOwner = user?.username === username;
-  const isPlatformOwner = isOwnerUsername(username) || profile?.profile?.staffRole === "owner";
+  const isPlatformOwner = isOwnerProfile(profile?.profile);
   const viewerIsPlatformOwner = isPlatformOwnerUser(user);
   const cards = apiBuilds || [];
 

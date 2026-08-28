@@ -34,7 +34,7 @@ import { useLocale } from "@/lib/LocaleContext";
 import { panelForPath, panelHomeHref, useNavPanel, type NavPanel } from "@/lib/NavPanelContext";
 import type { PlatformRole } from "@/lib/AuthContext";
 import { homePathForUser } from "@/lib/appHome";
-import { isPlatformOwnerUser } from "@/lib/owner";
+import { isAdminUser, isPlatformOwnerUser } from "@/lib/owner";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
 type LinkDef = {
@@ -293,9 +293,7 @@ export function Nav() {
         id: link.id,
       };
     });
-  const isAdmin =
-    (user?.roleFlags || "").split(",").map((s) => s.trim()).includes("admin") ||
-    (user?.username || "").toLowerCase() === "nyx.cosplay";
+  const isAdmin = isAdminUser(user);
   const showPanelToggle = Boolean(role) || isOwnerUser;
   const brandHref = homePathForUser(user);
 

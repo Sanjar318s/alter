@@ -5,7 +5,7 @@ import { eq, and } from "drizzle-orm";
 import { notify } from "../lib/notify";
 import { pushStats } from "../lib/pushRealtime";
 import { getUserStats } from "../lib/userStats";
-import { isOwnerUsername } from "../lib/owner";
+import { isOwnerById } from "../lib/owner";
 import { getBloggerPremiumProgress } from "../lib/premium/evaluateBloggerV1";
 
 const router = Router();
@@ -142,8 +142,8 @@ router.get("/:username", optionalAuth, (req: AuthRequest, res) => {
 
   const profile = db.select().from(schema.profiles).where(eq(schema.profiles.userId, user.id)).get();
   const effectiveProfile = profile
-    ? { ...profile, staffRole: profile.staffRole || (isOwnerUsername(user.username) ? "owner" : "none") }
-    : { userId: user.id, staffRole: isOwnerUsername(user.username) ? "owner" : "none", staffBadgeHidden: false } as any;
+    ? { ...profile, staffRole: profile.staffRole || (isOwnerById(user.id) ? "owner" : "none") }
+    : { userId: user.id, staffRole: isOwnerById(user.id) ? "owner" : "none", staffBadgeHidden: false } as any;
   const isOwner = req.userId === user.id;
   let privacy: Record<string, string> = {};
   try {

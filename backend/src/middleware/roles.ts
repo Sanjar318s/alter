@@ -1,8 +1,8 @@
 import { NextFunction, Response } from "express";
-import { and, eq } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { AuthRequest } from "./auth";
-import { ADMIN_USERNAME, isOwnerUsername } from "../lib/owner";
+import { getOwnerUsername, isOwnerById } from "../lib/owner";
 
 export type AdminPermissionKey =
   | "canViewUsers"
@@ -13,28 +13,13 @@ export type AdminPermissionKey =
   | "canManageStaff"
   | "canUseBlacklist";
 
-function ensureOwnerProfile(userId: string) {
-  const profile = db.select().from(schema.profiles).where(eq(schema.profiles.userId, userId)).get();
-  if (!profile) return;
-  if (profile.staffRole !== "owner" || !profile.staffBadgeHidden) {
-    db.update(schema.profiles)
-      .set({ staffRole: "owner", staffBadgeHidden: false })
-      .where(eq(schema.profiles.userId, userId))
-      .run();
-  }
-}
-
-export function isOwnerById(userId: string) {
-  const user = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
-  if (!user) return false;
-  const ok = isOwnerUsername(user.username);
-  if (ok) ensureOwnerProfile(userId);
-  return ok;
-}
+export { isOwnerById };
 
 export function ownerOnly(req: AuthRequest, res: Response, next: NextFunction) {
   if (!req.userId) return res.status(401).json({ error: "Unauthorized" });
-  if (!isOwnerById(req.userId)) return res.status(403).json({ error: `Owner only (${ADMIN_USERNAME})` });
+  if (!isOwnerById(req.userId)) {
+    return res.status(403).json({ error: `Owner only (@${getOwnerUsername()})` });
+  }
   next();
 }
 

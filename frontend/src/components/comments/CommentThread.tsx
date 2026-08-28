@@ -11,7 +11,7 @@ import {
   countComments,
   formatCommentTime,
   type CommentItem,
-} from "@/lib/demo/comments";
+} from "@/lib/comments";
 import { cn } from "@/lib/cn";
 import { EmojiStickerPicker } from "@/components/messages/EmojiStickerPicker";
 

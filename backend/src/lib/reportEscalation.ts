@@ -1,7 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { db, schema } from "../db";
-import { isOwnerUsername } from "./owner";
+import { isOwnerById } from "./owner";
 import { logAuditEvent } from "./audit";
 import { getModerationSettings } from "./moderationSettings";
 
@@ -45,7 +45,7 @@ function reportWatcherIds() {
   const users = db.select().from(schema.users).all();
   const ids = new Set<string>();
   for (const u of users) {
-    if (isOwnerUsername(u.username)) {
+    if (isOwnerById(u.id)) {
       ids.add(u.id);
       continue;
     }

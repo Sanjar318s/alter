@@ -21,9 +21,9 @@ test("registration → заказ → платёж → чат", async ({ page, r
   const token = session.token as string;
   const headers = { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 
-  const users = await request.get(`${api}/api/users/search?q=luna`, { headers });
+  const users = await request.get(`${api}/api/users/search?q=${username.slice(0, 4)}`, { headers });
   const found = await users.json();
-  const clientId = found.users?.[0]?.id;
+  const clientId = found.users?.find((u: { username?: string }) => u.username === username)?.id;
   expect(clientId).toBeTruthy();
 
   const orderRes = await request.post(`${api}/api/orders`, {
@@ -55,8 +55,8 @@ test("registration → заказ → платёж → чат", async ({ page, r
   expect(msg.ok()).toBeTruthy();
 
   await page.goto("/login");
-  await page.getByPlaceholder("you@mail.com или +998…").fill("demo.nyx@alter.local");
-  await page.locator('input[type="password"]').fill("alter123");
+  await page.getByPlaceholder("you@mail.com или +998…").fill(email);
+  await page.locator('input[type="password"]').fill(password);
   await page.getByRole("button", { name: "Войти" }).click();
   await expect(page).toHaveURL(/explore/);
 });

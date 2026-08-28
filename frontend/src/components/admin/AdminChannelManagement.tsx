@@ -52,11 +52,11 @@ const WRITE_MODE_LABELS: Record<WriteMode, string> = {
   channel_admins: "Владелец и админы канала",
 };
 
-const WRITE_MODE_HINTS: Record<WriteMode, string> = {
+const WRITE_MODE_HINTS = (ownerUsername: string): Record<WriteMode, string> => ({
   members: "Любой участник канала может отправлять сообщения.",
-  owner_only: "Писать может только владелец (@nyx.cosplay). Читать могут все.",
+  owner_only: `Писать может только владелец (@${ownerUsername}). Читать могут все.`,
   channel_admins: "Писать могут владелец и назначенные админы канала.",
-};
+});
 
 type ChannelDraft = {
   title: string;
@@ -267,11 +267,13 @@ function SortableChannelRow({
 
 export function AdminChannelManagement({
   staffUsernames,
+  ownerUsername,
   onHelp,
   open,
   onOpenChange,
 }: {
   staffUsernames: string[];
+  ownerUsername: string;
   onHelp?: () => void;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -633,14 +635,14 @@ export function AdminChannelManagement({
                   </option>
                 ))}
               </select>
-              <span className="block mt-1 text-[11px] text-ink-45">{WRITE_MODE_HINTS[draft.writeMode]}</span>
+              <span className="block mt-1 text-[11px] text-ink-45">{WRITE_MODE_HINTS(ownerUsername)[draft.writeMode]}</span>
             </label>
 
             <label className="text-[12px] text-ink-45 block">
               Админы канала (ники через запятую)
               <input
                 className="field-box mt-1 h-10 text-[13px] w-full"
-                placeholder="nyx.cosplay, demo.admin"
+                placeholder={`${ownerUsername}, moderator`}
                 value={draft.managerUsernames}
                 onChange={(e) => setDraft((d) => ({ ...d, managerUsernames: e.target.value }))}
               />

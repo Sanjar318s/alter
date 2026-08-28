@@ -1,7 +1,6 @@
 import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
-import { isAdminUser, isOwnerUsername } from "./owner";
-import { isOwnerById } from "../middleware/roles";
+import { isAdminUser, isOwnerById } from "./owner";
 
 export function getActiveBan(userId: string) {
   if (isOwnerById(userId)) return null;
@@ -32,7 +31,7 @@ export function getActiveBan(userId: string) {
         details: row.details || "",
         evidence: files,
         actorUsername: actor?.username || "staff",
-        actorRole: actor ? (isOwnerUsername(actor.username) ? "owner" : "admin") : "admin",
+        actorRole: actor ? (isOwnerById(actor.id) ? "owner" : "admin") : "admin",
         createdAt: row.createdAt,
         expiresAt: row.expiresAt || null,
       };

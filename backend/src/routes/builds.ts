@@ -5,7 +5,7 @@ import { v4 as uuid } from "uuid";
 import { eq, and } from "drizzle-orm";
 import { franchiseSlug, notify, unlinkUpload } from "../lib/notify";
 import { pushStats } from "../lib/pushRealtime";
-import { isOwnerUsername } from "../lib/owner";
+import { isOwnerById } from "../lib/owner";
 import { enqueueSocialModeration, loadSocialAggregate } from "../lib/social/queue";
 
 const router = Router();
@@ -119,7 +119,7 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   const body = req.body || {};
   if (!body.title) return res.status(400).json({ error: "title required" });
   const me = db.select().from(schema.users).where(eq(schema.users.id, req.userId!)).get();
-  if (me?.platformRole && me.platformRole !== "seller" && !isOwnerUsername(me.username)) {
+  if (me?.platformRole && me.platformRole !== "seller" && !isOwnerById(me.id)) {
     return res.status(403).json({ error: "Публиковать работы может только роль «Продавец»" });
   }
   const id = uuid();

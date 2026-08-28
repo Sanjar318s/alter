@@ -2,7 +2,7 @@ import { v4 as uuid } from "uuid";
 import { eq } from "drizzle-orm";
 import { db, schema } from "../db";
 import { BLACKLIST_CHANNEL_ID, COMMUNITY_ROOMS, conversationIdForRoom } from "./communityRooms";
-import { isAdminUser, isOwnerUsername } from "./owner";
+import { isAdminUser, isOwnerById } from "./owner";
 import { realtime } from "../routes/realtime";
 
 export function ensureCommunityRooms() {
@@ -120,7 +120,7 @@ export function postBlacklistChannelCard(input: {
   if (!actor || !isAdminUser(actor)) return null;
 
   const blocked = db.select().from(schema.users).where(eq(schema.users.id, input.blockedUserId)).get();
-  if (blocked && isOwnerUsername(blocked.username)) return null;
+  if (blocked && isOwnerById(blocked.id)) return null;
   ensureCommunityRooms();
 
   const convId = conversationIdForRoom(BLACKLIST_CHANNEL_ID);
@@ -128,7 +128,7 @@ export function postBlacklistChannelCard(input: {
     blockedUsername: blocked?.username,
     blockedId: input.blockedUserId,
     actorUsername: actor.username,
-    actorRole: isOwnerUsername(actor.username) ? "owner" : "admin",
+    actorRole: isOwnerById(actor.id) ? "owner" : "admin",
     reason: input.reason,
     details: input.details,
     files: input.files,

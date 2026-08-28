@@ -72,6 +72,7 @@ import { formatBlacklistCardLine } from "@/lib/blacklistCardFormat";
 import { admin, messages as messagesApi, uploadFile, users } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/AuthContext";
+import { isOwnerStaffRole, isPlatformOwnerUser } from "@/lib/owner";
 import { editImageList, useEditImage } from "@/components/media/ImageEditorProvider";
 import { subscribeRealtime } from "@/lib/realtimeHub";
 
@@ -432,7 +433,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
     channelListMode === "topics" ? getTopicChannels() : getRegionChannels(),
     apiChannels
   );
-  const isOwner = (user?.username || "").toLowerCase() === "nyx.cosplay";
+  const isOwner = isPlatformOwnerUser(user);
   const isChannelManager = Boolean(
     isChannel &&
       user?.username &&
@@ -502,7 +503,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
     const msg: Msg = {
       id: String(Date.now()),
       own: true,
-      sender: user?.username || "nyx.cosplay",
+      sender: user?.username || "",
       senderAvatar: user?.avatarUrl,
       text: body,
       type,
@@ -620,7 +621,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
     await send();
   }
 
-  const peerIsPlatformOwner = (activeDm?.peerUsername || peer?.user?.username || "").toLowerCase() === "nyx.cosplay";
+  const peerIsPlatformOwner = isOwnerStaffRole(peer?.profile?.staffRole);
   const peerHref = peer?.user?.username ? `/profile/${peer.user.username}` : "#";
 
   function bumpPrefs() {
@@ -660,7 +661,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
       toast("Не удалось определить пользователя", true);
       return;
     }
-    if ((m.sender || "").toLowerCase() === "nyx.cosplay") {
+    if (isOwnerStaffRole(m.senderRole)) {
       toast("Нельзя заблокировать владельца платформы", true);
       return;
     }
@@ -1243,7 +1244,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
               Админы канала (ники через запятую)
               <input
                 className="field-box mt-1 h-9 text-[12px] w-full"
-                placeholder="например: nyx.cosplay, demo.admin"
+                placeholder="например: username1, username2"
                 value={channelManagersDraft}
                 onChange={(e) => setChannelManagersDraft(e.target.value)}
               />
@@ -1736,7 +1737,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
           anchor={msgMenu.anchor}
           own={msgMenu.message.own}
           isModerator={isModerator}
-          canBlockTarget={(msgMenu.message.sender || "").toLowerCase() !== "nyx.cosplay"}
+          canBlockTarget={!isOwnerStaffRole(msgMenu.message.senderRole)}
           favorited={isMessageFavorite(msgMenu.message.id)}
           threadSubscribed={isThreadSubscribed(msgMenu.message.id)}
           pinned={isMessagePinned(threadConvId, msgMenu.message.id)}
