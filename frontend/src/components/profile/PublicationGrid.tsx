@@ -41,6 +41,7 @@ export function PublicationGrid({
                   : `Публикация ${index + 1}`
               }
               fallback={post.id}
+              size="card"
             />
             <div className="absolute inset-0 bg-ink/60 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity flex items-center justify-center gap-4 z-[1]">
               <span className="flex items-center gap-1 text-[12px] text-paper">

@@ -3,19 +3,29 @@ import { eq } from "drizzle-orm";
 import { v4 as uuid } from "uuid";
 import { db, schema } from "../db";
 import { loadEventBySlug, loadPartnerBundle, partnerIsLive, serializePartner } from "../lib/partnerHub";
+import { getCached, publicCacheHeaders, setCached } from "../lib/shortCache";
 
 const router = Router();
 
 router.get("/", (req, res) => {
   const type = String(req.query.type || "").trim();
   const city = String(req.query.city || "").trim().toLowerCase();
+  const key = `partners:${type}:${city}`;
+  const hit = getCached<{ partners: unknown[] }>(key, 60_000);
+  if (hit) {
+    publicCacheHeaders(res, 60);
+    return res.json(hit);
+  }
   const rows = db.select().from(schema.partners).all();
   const partners = rows
     .filter((p) => partnerIsLive(p))
     .filter((p) => (type ? p.type === type : true))
     .filter((p) => (city ? (p.city || "").toLowerCase().includes(city) : true))
     .map((p) => serializePartner(p));
-  res.json({ partners });
+  const payload = { partners };
+  setCached(key, payload);
+  publicCacheHeaders(res, 60);
+  res.json(payload);
 });
 
 router.get("/events", (_req, res) => {

@@ -42,6 +42,7 @@ import {
 } from "@/lib/communityChannels";
 import { Button } from "@/components/ui/Button";
 import { Modal } from "@/components/ui/Modal";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { AdminBadge, AdminHelpButton, AdminPanel, AdminPrimaryButton } from "@/components/admin/AdminUi";
 
 type WriteMode = "members" | "owner_only" | "channel_admins";
@@ -574,7 +575,18 @@ export function AdminChannelManagement({
       </div>
 
       {loading ? (
-        <p className="text-ink-45 text-[13px] py-6 text-center">Загрузка каналов…</p>
+        <div className="flex flex-col gap-2 py-2" role="status" aria-label="Загрузка каналов">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="border border-line/70 p-3 flex items-center gap-3">
+              <Skeleton className="w-8 h-8 shrink-0 rounded-none" />
+              <div className="flex-1 flex flex-col gap-2 min-w-0">
+                <Skeleton className="h-3.5 w-[40%]" />
+                <Skeleton className="h-3 w-[55%]" />
+              </div>
+              <Skeleton className="h-8 w-20 shrink-0" />
+            </div>
+          ))}
+        </div>
       ) : visible.length === 0 ? (
         <p className="text-ink-45 text-[13px] py-6 text-center">Каналы не найдены</p>
       ) : (

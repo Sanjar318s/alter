@@ -1,5 +1,20 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
+/** Public GETs that are safe to reuse briefly in the browser. */
+const BROWSER_CACHEABLE = [
+  /^\/api\/explore(\?|$)/,
+  /^\/api\/publications\/feed(\?|$)/,
+  /^\/api\/fx(\?|$)/,
+  /^\/api\/placements(\?|$)/,
+  /^\/api\/partners(\?|$)/,
+];
+
+function canUseBrowserCache(path: string, method: string, hasAuth: boolean) {
+  if (method !== "GET") return false;
+  if (hasAuth && path.startsWith("/api/explore")) return false;
+  return BROWSER_CACHEABLE.some((re) => re.test(path));
+}
+
 async function request<T>(
   path: string,
   options: RequestInit = {}
@@ -16,9 +31,12 @@ async function request<T>(
     headers["Authorization"] = `Bearer ${token}`;
   }
 
+  const method = (options.method || "GET").toUpperCase();
+  const useCache = canUseBrowserCache(path, method, Boolean(token));
+
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
-    cache: "no-store",
+    cache: useCache ? "default" : "no-store",
     headers,
   });
 

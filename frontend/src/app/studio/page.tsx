@@ -48,6 +48,7 @@ import { admin, messages as messagesApi, orders as ordersApi } from "@/lib/api";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/AuthContext";
+import { Skeleton, SkeletonPage } from "@/components/ui/Skeleton";
 
 const STEPS = [
   { id: "new" as const, label: "Новая заявка", icon: FileText },
@@ -63,7 +64,7 @@ const ARCHIVED: OrderStatus[] = ["done", "shipped", "archive", "cancelled"];
 
 export default function StudioPage() {
   return (
-    <Suspense fallback={<div className="flex flex-1 items-center p-6 font-mono text-ink-45">Загрузка…</div>}>
+    <Suspense fallback={<SkeletonPage className="pt-6" />}>
       <StudioInner />
     </Suspense>
   );
@@ -295,7 +296,17 @@ function StudioInner() {
             </button>
           </div>
         )}
-        {loading && <div className="font-mono text-[12px] text-ink-45 mb-4">Загрузка заказов…</div>}
+        {loading && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 mb-4" role="status" aria-label="Загрузка заказов">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="border border-line p-3 flex flex-col gap-2">
+                <Skeleton className="h-3.5 w-[70%]" />
+                <Skeleton className="h-3 w-[45%]" />
+                <Skeleton className="h-20 w-full rounded-none" />
+              </div>
+            ))}
+          </div>
+        )}
         {!loading && items.length === 0 && !error && (
           <EmptyState
             title="Пока нет заказов"

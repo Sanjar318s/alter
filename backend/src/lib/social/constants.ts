@@ -6,18 +6,49 @@ export const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-2.0-flash";
 export const GEMINI_MAX_PER_DAY = Number(process.env.GEMINI_MAX_PER_DAY || 200);
 export const GEMINI_MIN_INTERVAL_MS = Number(process.env.GEMINI_MIN_INTERVAL_MS || 8000);
 
-export const YOUTUBE_DAILY_UPLOAD_CAP = Number(process.env.YOUTUBE_DAILY_UPLOAD_CAP || 5);
+export const YOUTUBE_DAILY_UPLOAD_CAP = Number(process.env.YOUTUBE_DAILY_UPLOAD_CAP || 80);
 
 /** TikTok Content Posting privacy enums */
 export const TIKTOK_PRIVACY_SELF_ONLY = "SELF_ONLY";
 export const TIKTOK_PRIVACY_PUBLIC = "PUBLIC_TO_EVERYONE";
 
+/** Lead block for brand social posts — plain language, benefits only. */
+export const ALTER_COSPLAY_PITCH_RU = [
+  "✨ AlterCosPlay — площадка для косплееров, блогеров и мастеров.",
+  "Бесплатно: рилсы, портфолио, заказы и рост аудитории в одном месте.",
+  "Блогерам — витрина и продвижение. Продавцам — биржа работ и клиенты.",
+  "Есть путь к партнёрству с брендом. Таких условий на обычных соцсетях нет.",
+  `👉 https://altercosplay.vercel.app`,
+].join("\n");
+
+export function authorSpotlightBlock(opts: {
+  username: string;
+  bio?: string | null;
+  socialLinks?: Record<string, string> | null;
+}): string {
+  const profileUrl = `${SITE_URL}/profile/${encodeURIComponent(opts.username)}`;
+  const lines = [
+    "━━━━━━━━━━━━━━━━━━━━",
+    `⭐ АВТОР НА ALTERCOSPLAY → ${profileUrl}`,
+    "━━━━━━━━━━━━━━━━━━━━",
+  ];
+  const bio = (opts.bio || "").trim();
+  if (bio) {
+    lines.push("", "О себе:", bio.slice(0, 600));
+  }
+  const links = opts.socialLinks || {};
+  const linkLines = Object.entries(links)
+    .filter(([, url]) => Boolean(url && String(url).trim()))
+    .map(([platform, url]) => `${platform}: ${String(url).trim()}`);
+  if (linkLines.length) {
+    lines.push("", "Соцсети автора:", ...linkLines);
+  }
+  return lines.join("\n");
+}
+
+/** @deprecated use authorSpotlightBlock + ALTER_COSPLAY_PITCH_RU */
 export const SOCIAL_FOOTER_RU = (username: string) =>
-  [
-    `Автор: @${username}`,
-    `Профиль: ${SITE_URL}/profile/${username}`,
-    "Смотрите больше на AlterCosPlay и подписывайтесь на канал AlterCosPlay.",
-  ].join("\n");
+  authorSpotlightBlock({ username });
 
 export const REJECT_NOTIFY_TEXT =
   "Этот материал останется на AlterCosPlay, но не уйдёт в соцсети бренда — тематика должна быть про косплей, костюмы или процесс.";

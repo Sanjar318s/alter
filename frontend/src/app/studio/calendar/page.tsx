@@ -10,6 +10,7 @@ import { calendar, orders as ordersApi } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { cn } from "@/lib/cn";
 import { useRouter } from "next/navigation";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type View = "month" | "week" | "day";
 
@@ -116,7 +117,14 @@ export default function CalendarPage() {
             {cursor.toLocaleDateString("ru", { month: "long", year: "numeric" })}
           </span>
         </div>
-        {loading && <p className="font-mono text-[12px] text-ink-45">Загрузка…</p>}
+        {loading && (
+          <div className="grid grid-cols-7 gap-1 mb-4" role="status" aria-label="Загрузка">
+            {Array.from({ length: 14 }).map((_, i) => (
+              <Skeleton key={i} className="min-h-[72px] sm:min-h-[88px] rounded-none" />
+            ))}
+          </div>
+        )}
+        {!loading && (
         <div className={cn("grid gap-1", view === "month" ? "grid-cols-7" : view === "week" ? "grid-cols-7" : "grid-cols-1")}>
           {cells.map((d) => {
             const list = itemsOn(d);
@@ -140,6 +148,7 @@ export default function CalendarPage() {
             );
           })}
         </div>
+        )}
       </div>
       {dayOpen && (
         <Modal title={dayOpen} onClose={() => setDayOpen(null)}>

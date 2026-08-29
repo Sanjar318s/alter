@@ -11,11 +11,18 @@ import {
   LayoutDashboard,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { PartnerAdSlot } from "@/components/marketing/PartnerAdSlot";
+import dynamic from "next/dynamic";
 import { useLocale } from "@/lib/LocaleContext";
 import { useAuth } from "@/lib/AuthContext";
 import { APP_FEED_HOME } from "@/lib/appHome";
 import { isPlatformOwnerUser } from "@/lib/owner";
+import { Parallax } from "@/components/motion/Parallax";
+import { SkeletonPage } from "@/components/ui/Skeleton";
+
+const PartnerAdSlot = dynamic(
+  () => import("@/components/marketing/PartnerAdSlot").then((m) => m.PartnerAdSlot),
+  { ssr: false }
+);
 
 const SHELL = "max-w-[1360px] mx-auto px-5 sm:px-8 lg:px-10";
 
@@ -24,13 +31,23 @@ export default function LandingPage() {
   const router = useRouter();
 
   useEffect(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("alter_token")) {
+      router.prefetch(APP_FEED_HOME);
+    }
+  }, [router]);
+
+  useEffect(() => {
     if (loading) return;
     if (user?.platformRole || isPlatformOwnerUser(user)) {
       router.replace(APP_FEED_HOME);
     }
   }, [loading, user, router]);
 
-  if (!loading && (user?.platformRole || isPlatformOwnerUser(user))) {
+  if (loading) {
+    return <SkeletonPage className="pt-14" />;
+  }
+
+  if (user?.platformRole || isPlatformOwnerUser(user)) {
     return (
       <div className="flex flex-1 items-center justify-center p-8 font-mono text-[13px] text-ink-45">
         Переходим в ленту…
@@ -52,12 +69,20 @@ function Hero() {
   const { t } = useLocale();
 
   return (
-    <section className="hero-wash border-b border-line py-14 md:py-20 lg:py-24">
+    <section className="hero-wash border-b border-line py-14 md:py-20 lg:py-24 relative overflow-hidden">
+      <Parallax
+        speed={0.08}
+        className="pointer-events-none absolute inset-x-0 -top-[10%] h-[120%] opacity-40"
+      >
+        <div className="landing-hero-glow w-full h-full" />
+      </Parallax>
       <div className={SHELL}>
         <div className="relative z-[1] max-w-[720px]">
-          <p className="font-display font-extrabold text-[clamp(36px,6vw,64px)] leading-[1.05] tracking-tight text-paper">
-            AlterCosPlay
-          </p>
+          <Parallax speed={0.04}>
+            <p className="font-display font-extrabold text-[clamp(36px,6vw,64px)] leading-[1.05] tracking-tight text-paper">
+              AlterCosPlay
+            </p>
+          </Parallax>
           <span className="font-mono text-[11px] sm:text-[12px] uppercase tracking-[0.18em] text-magenta mt-4 block">
             {t("heroEyebrow")}
           </span>

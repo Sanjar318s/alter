@@ -8,6 +8,7 @@ import { SmartImage } from "@/components/media/SmartImage";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Frame } from "@/components/Frame";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
 export default function EventPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -23,7 +24,15 @@ export default function EventPage({ params }: { params: Promise<{ slug: string }
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading) return <div className="p-8 font-mono text-ink-45">Загрузка…</div>;
+  if (loading) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto" role="status" aria-label="Загрузка">
+        <Skeleton className="aspect-[21/9] w-full rounded-none mb-6" />
+        <Skeleton className="h-8 w-2/3 mb-3" />
+        <SkeletonText lines={4} />
+      </div>
+    );
+  }
   if (error || !event) {
     return (
       <div className="p-8">

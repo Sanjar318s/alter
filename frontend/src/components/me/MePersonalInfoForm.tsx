@@ -175,9 +175,11 @@ export function MePersonalInfoForm({
             className="field-box min-h-[100px] resize-y"
             maxLength={500}
             rows={4}
+            placeholder="Коротко о себе — этот текст уйдёт в описание YouTube Shorts под ссылкой на ваш профиль"
             value={bio}
             onChange={(e) => onBioChange(e.target.value)}
           />
+          <p className="text-[11px] text-ink-45 mt-1">Соцсети ниже тоже попадут в описание Shorts.</p>
         </div>
         <div className="me-form-field me-form-grid-full">
           <label>Соцсети</label>

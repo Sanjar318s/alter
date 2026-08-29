@@ -1,12 +1,17 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { usePathname } from "next/navigation";
 import { Nav } from "@/components/Nav";
 import { Footer } from "@/components/Footer";
 import { OnboardingBanner } from "@/components/OnboardingBanner";
-import { RoleSelectModal } from "@/components/RoleSelectModal";
 import { cn } from "@/lib/cn";
 import { isViewportLockRoute } from "@/lib/viewportLock";
+
+const RoleSelectModal = dynamic(
+  () => import("@/components/RoleSelectModal").then((m) => m.RoleSelectModal),
+  { ssr: false }
+);
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

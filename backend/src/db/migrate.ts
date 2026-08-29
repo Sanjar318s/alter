@@ -539,6 +539,20 @@ export function migrate() {
     CREATE INDEX IF NOT EXISTS idx_premium_grants_user ON premium_grants(user_id, status);
   `);
 
+  sqlite.exec(`
+    CREATE INDEX IF NOT EXISTS idx_builds_hidden_created ON builds(hidden, created_at);
+    CREATE INDEX IF NOT EXISTS idx_builds_user ON builds(user_id);
+    CREATE INDEX IF NOT EXISTS idx_builds_category_hidden ON builds(category, hidden);
+    CREATE INDEX IF NOT EXISTS idx_builds_likes ON builds(likes_count);
+    CREATE INDEX IF NOT EXISTS idx_publications_kind_created ON publications(kind, created_at);
+    CREATE INDEX IF NOT EXISTS idx_publications_user_kind ON publications(user_id, kind);
+    CREATE INDEX IF NOT EXISTS idx_build_likes_build ON build_likes(build_id);
+    CREATE INDEX IF NOT EXISTS idx_publication_likes_pub ON publication_likes(publication_id);
+    CREATE INDEX IF NOT EXISTS idx_build_photos_build ON build_photos(build_id);
+    CREATE INDEX IF NOT EXISTS idx_comments_target ON comments(target_type, target_id);
+    CREATE INDEX IF NOT EXISTS idx_publication_mentions_pub ON publication_mentions(publication_id);
+  `);
+
   addColumn("users", "social_crosspost_opt_in", "INTEGER DEFAULT 1");
   addColumn("publications", "counted_views", "INTEGER DEFAULT 0");
   addColumn("comments", "counts_for_premium", "INTEGER DEFAULT 0");

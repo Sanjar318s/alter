@@ -7,6 +7,7 @@ const TTL = 60 * 60 * 1000;
 
 router.get("/", async (_req, res) => {
   if (cache && Date.now() - cache.fetchedAt < TTL) {
+    res.setHeader("Cache-Control", "public, max-age=900, stale-while-revalidate=3600");
     return res.json(cache);
   }
   try {
@@ -19,8 +20,10 @@ router.get("/", async (_req, res) => {
       if (typeof data.rates[k] === "number") rates[k] = data.rates[k];
     }
     cache = { rates, updatedAt: data.time_last_update_utc || new Date().toISOString(), fetchedAt: Date.now() };
+    res.setHeader("Cache-Control", "public, max-age=900, stale-while-revalidate=3600");
     res.json(cache);
   } catch {
+    res.setHeader("Cache-Control", "public, max-age=60");
     res.json(cache || { rates: { UZS: 1 }, updatedAt: null, fetchedAt: Date.now() });
   }
 });

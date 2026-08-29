@@ -25,6 +25,7 @@ import { builds as buildsApi, explore, placements as placementsApi } from "@/lib
 import { PartnerCard } from "@/components/marketing/PartnerCard";
 import type { AdPlacementResponse } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { SkeletonGrid } from "@/components/ui/Skeleton";
 
 const PAGE = 24;
 
@@ -62,7 +63,7 @@ type ExploreCard = {
 export default function ExplorePage() {
   const { t } = useLocale();
   return (
-    <Suspense fallback={<div className="pt-11 px-6 text-ink-45 font-mono text-sm">{t("loading")}</div>}>
+    <Suspense fallback={<SkeletonGrid count={8} className="pt-11 px-6" />}>
       <ExploreClient />
     </Suspense>
   );
@@ -117,8 +118,13 @@ function ExploreClient() {
   const [sidebarEvent, setSidebarEvent] = useState<AdPlacementResponse["placement"]>(null);
 
   useEffect(() => {
-    placementsApi.get("explore_feed_sponsor").then((r) => setFeedSponsor(r.placement)).catch(() => {});
-    placementsApi.get("explore_sidebar_event").then((r) => setSidebarEvent(r.placement)).catch(() => {});
+    Promise.all([
+      placementsApi.get("explore_feed_sponsor").catch(() => ({ placement: null })),
+      placementsApi.get("explore_sidebar_event").catch(() => ({ placement: null })),
+    ]).then(([feed, side]) => {
+      setFeedSponsor(feed.placement);
+      setSidebarEvent(side.placement);
+    });
   }, []);
 
   useEffect(() => {
@@ -541,6 +547,7 @@ function ExploreClient() {
             {error && (
               <EmptyState title="Не удалось загрузить" action={<Button onClick={() => load(true)}>Повторить</Button>} />
             )}
+            {loading && items.length === 0 && !error && <SkeletonGrid count={8} />}
             {!loading && items.length === 0 && (
               <EmptyState
                 title="Ничего не найдено"
@@ -569,6 +576,7 @@ function ExploreClient() {
                             : item.character || item.title
                         }
                         fallback={item.title}
+                        size="thumb"
                       />
                     </div>
                     <div className="flex-1 min-w-0 md:hidden">

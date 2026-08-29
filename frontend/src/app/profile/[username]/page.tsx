@@ -27,18 +27,27 @@ import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { IconButton } from "@/components/ui/IconButton";
 import { Modal } from "@/components/ui/Modal";
+import dynamic from "next/dynamic";
 import { BrandIcon } from "@/components/ui/BrandIcon";
-import { CreatePublicationModal } from "@/components/profile/CreatePublicationModal";
 import { PostLightbox } from "@/components/profile/PostLightbox";
 import { PublicationGrid } from "@/components/profile/PublicationGrid";
-import { CreateBuildModal } from "@/components/builds/CreateBuildModal";
 import { BuildCard } from "@/components/builds/BuildCard";
 import { CommissionRequestForm } from "@/components/orders/CommissionRequestForm";
+
+const CreatePublicationModal = dynamic(
+  () => import("@/components/profile/CreatePublicationModal").then((m) => m.CreatePublicationModal),
+  { ssr: false }
+);
+const CreateBuildModal = dynamic(
+  () => import("@/components/builds/CreateBuildModal").then((m) => m.CreateBuildModal),
+  { ssr: false }
+);
 import { SmartImage } from "@/components/media/SmartImage";
 import { StaffBadge } from "@/components/staff/StaffBadge";
 import { PartnerBadge } from "@/components/profile/PartnerBadge";
 import { ProfileCoverArt } from "@/components/profile/ProfileCoverArt";
 import { parseCoverCropJson } from "@/lib/coverCrop";
+import { SkeletonProfile } from "@/components/ui/Skeleton";
 import { cn } from "@/lib/cn";
 import { formatCount } from "@/lib/format";
 import { useLocale } from "@/lib/LocaleContext";
@@ -67,7 +76,7 @@ function normalizeTab(raw: string | null): Tab {
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
   const { username } = use(params);
   return (
-    <Suspense fallback={<div className="p-6 font-mono text-ink-45">Загрузка…</div>}>
+    <Suspense fallback={<SkeletonProfile />}>
       <ProfileHub username={decodeURIComponent(username)} />
     </Suspense>
   );
@@ -713,7 +722,6 @@ function ProfileHub({ username }: { username: string }) {
       {createOpen && canPublishReels && (
         <CreatePublicationModal
           onClose={() => setCreateOpen(false)}
-          defaultSocialOptIn={user?.socialCrosspostOptIn !== false}
           onSubmit={async (payload) => {
             try {
               const res = await publicationsApi.create({
@@ -726,7 +734,6 @@ function ProfileHub({ username }: { username: string }) {
                   type: m.type,
                 })),
                 kind: "post",
-                socialCrosspostOptIn: payload.socialCrosspostOptIn,
               });
               const pub = normalizePublication(res.publication);
               setPosts((p) => [pub, ...p]);

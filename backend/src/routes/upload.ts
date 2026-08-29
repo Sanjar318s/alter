@@ -2,6 +2,7 @@ import { Router } from "express";
 import { v4 as uuid } from "uuid";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { putUpload } from "../lib/storage";
+import { putImageWithVariants } from "../lib/imageVariants";
 
 const ALLOWED = new Set([
   "image/jpeg",
@@ -30,6 +31,8 @@ const EXT: Record<string, string> = {
   "application/pdf": "pdf",
   "application/zip": "zip",
 };
+
+const IMAGE_FOR_VARIANTS = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const MAX = 25 * 1024 * 1024;
 
@@ -60,6 +63,20 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
         const name = String(req.headers["x-file-name"] || `file.${EXT[cleanMime]}`);
         const filename = `${uuid()}.${EXT[cleanMime]}`;
         const body = Buffer.concat(chunks);
+
+        if (IMAGE_FOR_VARIANTS.has(cleanMime)) {
+          const stored = await putImageWithVariants(filename, body, cleanMime);
+          return res.status(201).json({
+            url: stored.url,
+            cardUrl: stored.cardUrl || null,
+            thumbUrl: stored.thumbUrl || null,
+            fileName: name,
+            fileSize: size,
+            mime: cleanMime,
+            storage: stored.driver,
+          });
+        }
+
         const stored = await putUpload(filename, body, cleanMime);
         res.status(201).json({
           url: stored.url,

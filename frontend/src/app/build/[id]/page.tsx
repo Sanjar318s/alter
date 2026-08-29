@@ -7,8 +7,8 @@ import { ArrowLeft, Flag, Heart, MessageCircle, Share2 } from "lucide-react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { CommentThread } from "@/components/comments/CommentThread";
+import dynamic from "next/dynamic";
 import { BuildGallery } from "@/components/builds/BuildGallery";
-import { CreateBuildModal } from "@/components/builds/CreateBuildModal";
 import { CommissionRequestForm } from "@/components/orders/CommissionRequestForm";
 import { Modal } from "@/components/ui/Modal";
 import { formatCount } from "@/lib/format";
@@ -17,6 +17,12 @@ import { builds as buildsApi, commissions, messages as messagesApi } from "@/lib
 import { useToast } from "@/components/ui/Toast";
 import { useAuth } from "@/lib/AuthContext";
 import { SocialStats } from "@/components/social/SocialStats";
+import { Skeleton, SkeletonText, SkeletonCard } from "@/components/ui/Skeleton";
+
+const CreateBuildModal = dynamic(
+  () => import("@/components/builds/CreateBuildModal").then((m) => m.CreateBuildModal),
+  { ssr: false }
+);
 
 export default function BuildPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -50,7 +56,20 @@ export default function BuildPage({ params }: { params: Promise<{ id: string }> 
       </div>
     );
   }
-  if (!data) return <div className="pt-16 px-6 font-mono text-ink-45">Загрузка…</div>;
+  if (!data) {
+    return (
+      <div className="pt-16 px-4 sm:px-6 max-w-[960px] mx-auto" role="status" aria-label="Загрузка">
+        <Skeleton className="aspect-[16/10] w-full rounded-none mb-6" />
+        <Skeleton className="h-8 w-2/3 mb-3" />
+        <SkeletonText lines={3} className="mb-8" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const b = data.build;
   const photos = (data.photos || []).map((p: any) => p.imageUrl).filter(Boolean);
@@ -198,7 +217,7 @@ function BuildCommissionForm({
   }, [authorId]);
 
   if (error) return <p className="text-[13px] text-amber">{error}</p>;
-  if (!commissionId) return <p className="font-mono text-[12px] text-ink-45">Загрузка…</p>;
+  if (!commissionId) return <Skeleton className="h-40 w-full rounded-none" />;
   return (
     <CommissionRequestForm
       commissionId={commissionId}

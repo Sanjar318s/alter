@@ -48,9 +48,17 @@ import {
   type LiveChannelRow,
 } from "@/lib/communityChannels";
 import { ChatMessageRow, type ChatMsg } from "@/components/messages/ChatMessageRow";
-import { EmojiStickerPicker } from "@/components/messages/EmojiStickerPicker";
-import { GifPicker } from "@/components/messages/GifPicker";
+import dynamic from "next/dynamic";
 import { ForwardMessageModal } from "@/components/messages/ForwardMessageModal";
+
+const GifPicker = dynamic(
+  () => import("@/components/messages/GifPicker").then((m) => m.GifPicker),
+  { ssr: false }
+);
+const EmojiStickerPicker = dynamic(
+  () => import("@/components/messages/EmojiStickerPicker").then((m) => m.EmojiStickerPicker),
+  { ssr: false }
+);
 import { MessageContextMenu, type MessageMenuAction } from "@/components/messages/MessageContextMenu";
 import { ReportModal } from "@/components/messages/ReportModal";
 import { Modal } from "@/components/ui/Modal";
@@ -1025,7 +1033,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
                 )}
               >
                 <Frame className="w-11 h-11 shrink-0 overflow-hidden">
-                  <SmartImage src={d.avatarUrl} alt={d.name} fallback={d.name} />
+                  <SmartImage src={d.avatarUrl} alt={d.name} fallback={d.name} size="thumb" />
                 </Frame>
                 <div className="flex-1 min-w-0">
                   <div className="text-[13px]">{d.name}</div>
@@ -1092,7 +1100,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
               onClick={() => setMediaView({ items: [peer?.profile?.avatarUrl].filter(Boolean), index: 0, title: peerName })}
             >
               <Frame className="w-9 h-9 overflow-hidden">
-                <SmartImage src={peer?.profile?.avatarUrl || activeDm?.avatarUrl} alt={peerName} fallback={peerName} />
+                <SmartImage src={peer?.profile?.avatarUrl || activeDm?.avatarUrl} alt={peerName} fallback={peerName} size="thumb" />
               </Frame>
             </button>
           )}
@@ -1580,7 +1588,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
           onClick={() => setMediaView({ items: [peer?.profile?.avatarUrl].filter(Boolean), index: 0, title: peerName })}
         >
           <Frame className="w-20 h-20 overflow-hidden">
-            <SmartImage src={peer?.profile?.avatarUrl || activeDm?.avatarUrl} alt={peerName} fallback={peerName} />
+            <SmartImage src={peer?.profile?.avatarUrl || activeDm?.avatarUrl} alt={peerName} fallback={peerName} size="thumb" />
           </Frame>
         </button>
         <Link href={peerHref} className="block text-center font-display font-extrabold mt-3 text-paper no-underline hover:text-magenta">

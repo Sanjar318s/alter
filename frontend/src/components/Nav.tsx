@@ -245,6 +245,17 @@ export function Nav() {
   const { t } = useLocale();
   const { panel, setPanel } = useNavPanel();
   const [mobileSettingsOpen, setMobileSettingsOpen] = useState(false);
+
+  useEffect(() => {
+    for (const r of ["/explore", "/market", "/reels", "/messages", "/studio", "/me"]) {
+      try {
+        router.prefetch(r);
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [router]);
+
   const isOwnerUser = isPlatformOwnerUser(user);
   const role = (isOwnerUser ? user?.platformRole ?? "seller" : user?.platformRole) ?? null;
   const LINKS = (role
@@ -517,7 +528,7 @@ export function Nav() {
                   className="flex items-center gap-2 pl-2 bg-transparent border-0 text-paper cursor-pointer"
                 >
                   <span className="w-8 h-8 bg-stage border border-line shrink-0 overflow-hidden">
-                    <SmartImage src={user.avatarUrl} alt={user.username} fallback={user.username} />
+                    <SmartImage src={user.avatarUrl} alt={user.username} fallback={user.username} size="thumb" />
                   </span>
                   <span className="text-left hidden xl:block">
                     <span className="block text-[13px] leading-tight">{user.username}</span>

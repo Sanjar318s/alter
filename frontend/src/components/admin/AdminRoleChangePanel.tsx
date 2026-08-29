@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { admin } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 const ROLE_LABEL: Record<string, string> = {
   client: "Клиент",
@@ -51,12 +52,22 @@ export function AdminRoleChangePanel() {
           Обновить
         </Button>
       </div>
-      {loading && <p className="text-[13px] text-ink-45">Загрузка…</p>}
+      {loading && (
+        <div className="flex flex-col gap-3" role="status" aria-label="Загрузка">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="border border-line/80 p-3 flex flex-col gap-2">
+              <Skeleton className="h-3.5 w-40" />
+              <Skeleton className="h-3 w-56" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+          ))}
+        </div>
+      )}
       {!loading && requests.length === 0 && (
         <p className="text-[13px] text-ink-45">Нет заявок в статусе pending</p>
       )}
       <ul className="flex flex-col gap-3">
-        {requests.map((r) => (
+        {!loading && requests.map((r) => (
           <li key={r.id} className="border border-line/80 p-3">
             <div className="font-mono text-[12px] text-magenta">
               @{r.username || "?"} · {ROLE_LABEL[r.currentRole] || r.currentRole} →{" "}

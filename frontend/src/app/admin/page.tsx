@@ -6,16 +6,36 @@ import { StudioShell } from "@/components/StudioShell";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Modal } from "@/components/ui/Modal";
+import { SkeletonPage } from "@/components/ui/Skeleton";
 import { useAuth } from "@/lib/AuthContext";
 import { isAdminUser, isPlatformOwnerUser } from "@/lib/owner";
 import { admin, health, messages, uploadFile } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import dynamic from "next/dynamic";
 import { useLocale } from "@/lib/LocaleContext";
-import { AdminDashboard, type HelpTopic, type UserSectionKey } from "@/components/admin/AdminDashboard";
-import { BlockUserModal, BLOCK_REASONS } from "@/components/admin/BlockUserModal";
-import { UserDossierModal } from "@/components/admin/UserDossierModal";
-import { AdminRoleChangePanel } from "@/components/admin/AdminRoleChangePanel";
-import { AdminSocialPanel } from "@/components/admin/AdminSocialPanel";
+import type { HelpTopic, UserSectionKey } from "@/components/admin/AdminDashboard";
+import { BLOCK_REASONS } from "@/components/admin/BlockUserModal";
+
+const AdminDashboard = dynamic(
+  () => import("@/components/admin/AdminDashboard").then((m) => m.AdminDashboard),
+  { ssr: false, loading: () => <SkeletonPage className="pt-6" /> }
+);
+const BlockUserModal = dynamic(
+  () => import("@/components/admin/BlockUserModal").then((m) => m.BlockUserModal),
+  { ssr: false }
+);
+const UserDossierModal = dynamic(
+  () => import("@/components/admin/UserDossierModal").then((m) => m.UserDossierModal),
+  { ssr: false }
+);
+const AdminRoleChangePanel = dynamic(
+  () => import("@/components/admin/AdminRoleChangePanel").then((m) => m.AdminRoleChangePanel),
+  { ssr: false }
+);
+const AdminSocialPanel = dynamic(
+  () => import("@/components/admin/AdminSocialPanel").then((m) => m.AdminSocialPanel),
+  { ssr: false }
+);
 
 const ROLE_PRESETS: Record<string, Record<string, boolean>> = {
   support: {
@@ -323,7 +343,7 @@ export default function AdminPage() {
   if (loading) {
     return (
       <StudioShell>
-        <p className="p-6 font-mono text-ink-45">Загрузка...</p>
+        <SkeletonPage className="pt-6" />
       </StudioShell>
     );
   }

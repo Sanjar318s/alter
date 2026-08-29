@@ -4,7 +4,8 @@
 #
 
 app = 'alter-api-young-lantern-9418'
-primary_region = 'sin'
+# Frankfurt is closer to Central Asia / RU than Singapore (free region switch on redeploy).
+primary_region = 'fra'
 
 [build]
   dockerfile = 'Dockerfile'

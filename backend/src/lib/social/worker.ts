@@ -51,6 +51,62 @@ function parseMediaJson(raw?: string | null): string[] {
   }
 }
 
+function parseLinksJson(raw?: string | null): Record<string, string> {
+  try {
+    const v = JSON.parse(raw || "{}");
+    if (!v || typeof v !== "object" || Array.isArray(v)) return {};
+    const out: Record<string, string> = {};
+    for (const [k, val] of Object.entries(v as Record<string, unknown>)) {
+      if (typeof val === "string" && val.trim()) out[k] = val.trim();
+    }
+    return out;
+  } catch {
+    return {};
+  }
+}
+
+function loadAuthorProfileExtras(userId: string) {
+  const profile = db.select().from(schema.profiles).where(eq(schema.profiles.userId, userId)).get();
+  return {
+    bio: profile?.bio || null,
+    socialLinks: parseLinksJson(profile?.linksJson),
+  };
+}
+
+function loadPublicationMentions(publicationId: string) {
+  return db
+    .select()
+    .from(schema.publicationMentions)
+    .where(eq(schema.publicationMentions.publicationId, publicationId))
+    .all()
+    .map((m) => {
+      const u = m.userId
+        ? db.select().from(schema.users).where(eq(schema.users.id, m.userId)).get()
+        : null;
+      return {
+        username: u?.username || null,
+        displayName: m.displayName,
+        type: m.type,
+      };
+    });
+}
+
+function loadBuildMentions(buildId: string) {
+  return db
+    .select()
+    .from(schema.credits)
+    .where(and(eq(schema.credits.targetType, "build"), eq(schema.credits.targetId, buildId)))
+    .all()
+    .map((c) => {
+      const u = db.select().from(schema.users).where(eq(schema.users.id, c.creditedUserId)).get();
+      return {
+        username: u?.username || null,
+        displayName: u?.username || c.role,
+        type: "user" as const,
+      };
+    });
+}
+
 async function processModerate(job: SocialJobRow) {
   const mod = db
     .select()
@@ -159,11 +215,6 @@ async function processModerate(job: SocialJobRow) {
   completeJob(job.id);
 }
 
-function authorStillOptedIn(userId: string) {
-  const u = db.select().from(schema.users).where(eq(schema.users.id, userId)).get();
-  return u?.socialCrosspostOptIn !== 0;
-}
-
 async function processPublish(job: SocialJobRow) {
   const platform = job.platform;
   if (!platform) {
@@ -195,15 +246,15 @@ async function processPublish(job: SocialJobRow) {
         completeJob(job.id);
         return;
       }
-      if (!authorStillOptedIn(pub.userId)) {
-        completeJob(job.id);
-        return;
-      }
       const author = db.select().from(schema.users).where(eq(schema.users.id, pub.userId)).get();
+      const extras = loadAuthorProfileExtras(pub.userId);
       const copy = buildDescription("publication", {
         caption: pub.caption,
         tags: parseTagsJson(pub.tagsJson),
         username: author?.username || "user",
+        bio: extras.bio,
+        socialLinks: extras.socialLinks,
+        mentions: loadPublicationMentions(pub.id),
       });
       const media = pickMedia(parseMediaJson(pub.mediaJson));
       const videoUrl = media.primaryUrl;
@@ -284,11 +335,8 @@ async function processPublish(job: SocialJobRow) {
         completeJob(job.id);
         return;
       }
-      if (!authorStillOptedIn(build.userId)) {
-        completeJob(job.id);
-        return;
-      }
       const author = db.select().from(schema.users).where(eq(schema.users.id, build.userId)).get();
+      const extras = loadAuthorProfileExtras(build.userId);
       const photos = db
         .select()
         .from(schema.buildPhotos)
@@ -306,6 +354,9 @@ async function processPublish(job: SocialJobRow) {
         character: build.character,
         username: author?.username || "user",
         buildId: build.id,
+        bio: extras.bio,
+        socialLinks: extras.socialLinks,
+        mentions: loadBuildMentions(build.id),
       });
 
       if (post) {

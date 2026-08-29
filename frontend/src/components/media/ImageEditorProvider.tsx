@@ -1,7 +1,13 @@
 "use client";
 
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { ImageEditorModal, type ImageEditorSavePayload } from "./ImageEditorModal";
+import dynamic from "next/dynamic";
+import type { ImageEditorSavePayload } from "./ImageEditorModal";
+
+const ImageEditorModal = dynamic(
+  () => import("./ImageEditorModal").then((m) => m.ImageEditorModal),
+  { ssr: false }
+);
 
 export type ImageEditorPreset = "default" | "profile-cover" | "avatar";
 

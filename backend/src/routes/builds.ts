@@ -2,11 +2,12 @@ import { Router } from "express";
 import { db, schema } from "../db";
 import { authMiddleware, optionalAuth, AuthRequest } from "../middleware/auth";
 import { v4 as uuid } from "uuid";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { franchiseSlug, notify, unlinkUpload } from "../lib/notify";
 import { pushStats } from "../lib/pushRealtime";
 import { isOwnerById } from "../lib/owner";
 import { enqueueSocialModeration, loadSocialAggregate } from "../lib/social/queue";
+import { getCached, publicCacheHeaders, setCached } from "../lib/shortCache";
 
 const router = Router();
 
@@ -71,17 +72,61 @@ function syncPhotos(buildId: string, photos?: { imageUrl: string; id?: string }[
 
 router.get("/", (req, res) => {
   const { franchise, userId } = req.query;
-  let builds = db.select().from(schema.builds).all().filter((b) => !b.hidden);
-  if (franchise) builds = builds.filter((b) => b.franchise === franchise);
-  if (userId) builds = builds.filter((b) => b.userId === userId);
-  const users = db.select().from(schema.users).all();
-  const usernameById = new Map(users.map((u) => [u.id, u.username]));
-  res.json({
-    builds: builds.map((b) => ({
+  const franchiseStr = franchise ? String(franchise) : "";
+  const userIdStr = userId ? String(userId) : "";
+  const cacheKey = !userIdStr ? `builds:list:${franchiseStr}` : null;
+  if (cacheKey) {
+    const hit = getCached<{ builds: unknown[] }>(cacheKey, 45_000);
+    if (hit) {
+      publicCacheHeaders(res, 45);
+      return res.json(hit);
+    }
+  }
+
+  const conditions = [eq(schema.builds.hidden, false)];
+  if (franchiseStr) conditions.push(eq(schema.builds.franchise, franchiseStr));
+  if (userIdStr) conditions.push(eq(schema.builds.userId, userIdStr));
+
+  const rows = db
+    .select({
+      id: schema.builds.id,
+      userId: schema.builds.userId,
+      title: schema.builds.title,
+      franchise: schema.builds.franchise,
+      character: schema.builds.character,
+      coverImageUrl: schema.builds.coverImageUrl,
+      createdAt: schema.builds.createdAt,
+      likesCount: schema.builds.likesCount,
+      commentsCount: schema.builds.commentsCount,
+      year: schema.builds.year,
+      price: schema.builds.price,
+      currency: schema.builds.currency,
+      category: schema.builds.category,
+      tagsJson: schema.builds.tagsJson,
+      commissionStatus: schema.builds.commissionStatus,
+      hidden: schema.builds.hidden,
+      description: schema.builds.description,
+      workType: schema.builds.workType,
+      username: schema.users.username,
+    })
+    .from(schema.builds)
+    .innerJoin(schema.users, eq(schema.builds.userId, schema.users.id))
+    .where(and(...conditions))
+    .orderBy(desc(schema.builds.createdAt))
+    .limit(userIdStr ? 200 : 500)
+    .all();
+
+  const payload = {
+    builds: rows.map((b) => ({
       ...b,
-      username: usernameById.get(b.userId) || null,
+      username: b.username || null,
     })),
-  });
+  };
+  if (cacheKey) {
+    setCached(cacheKey, payload);
+    publicCacheHeaders(res, 45);
+  }
+  res.json(payload);
 });
 
 router.get("/:id", optionalAuth, (req: AuthRequest, res) => {
@@ -144,11 +189,7 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   syncPhotos(id, body.photos);
   syncCredits(id, req.userId!, body.credits);
   const build = db.select().from(schema.builds).where(eq(schema.builds.id, id)).get();
-  const optIn =
-    body.socialCrosspostOptIn !== undefined
-      ? Boolean(body.socialCrosspostOptIn)
-      : me?.socialCrosspostOptIn !== 0;
-  if (build && !build.hidden && optIn) {
+  if (build && !build.hidden) {
     enqueueSocialModeration("build", id, req.userId!);
   }
   res.status(201).json({

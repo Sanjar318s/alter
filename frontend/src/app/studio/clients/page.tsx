@@ -11,6 +11,7 @@ import { messages as messagesApi, orders as ordersApi } from "@/lib/api";
 import { useLocale } from "@/lib/LocaleContext";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/ui/Toast";
+import { SkeletonMessageList } from "@/components/ui/Skeleton";
 
 export default function ClientsPage() {
   const toast = useToast();
@@ -68,7 +69,7 @@ export default function ClientsPage() {
             <option value="spent">По сумме</option>
           </select>
         </div>
-        {loading && <p className="font-mono text-[12px] text-ink-45">Загрузка…</p>}
+        {loading && <SkeletonMessageList className="px-0" />}
         {!loading && list.length === 0 && <EmptyState title="Клиенты появятся здесь после первого заказа" />}
         <div className="flex flex-col gap-3">
           {list.map((c) => (

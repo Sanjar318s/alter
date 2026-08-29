@@ -78,7 +78,6 @@ export function CreateBuildModal({
   const [offerServices, setOfferServices] = useState(initial?.commissionStatus === "open");
   const [price, setPrice] = useState(String(initial?.price || ""));
   const [credits, setCredits] = useState<{ username: string; role: string }[]>([]);
-  const [socialOptIn, setSocialOptIn] = useState(true);
   const [q, setQ] = useState("");
   const [hits, setHits] = useState<any[]>([]);
   const [busy, setBusy] = useState(false);
@@ -147,7 +146,6 @@ export function CreateBuildModal({
         commissionStatus: offerServices ? "open" : "closed",
         photos: photos.map((p) => ({ imageUrl: p.url })),
         credits,
-        ...(!initial?.id ? { socialCrosspostOptIn: socialOptIn } : {}),
       };
       if (initial?.id) await buildsApi.update(initial.id, payload);
       else await buildsApi.create(payload);
@@ -200,8 +198,8 @@ export function CreateBuildModal({
       )}
       {step === 2 && (
         <div className="flex flex-col gap-3">
-          <input className="field" placeholder="Название работы" value={title} onChange={(e) => setTitle(e.target.value)} />
-          <input className="field" placeholder="Персонаж" value={character} onChange={(e) => setCharacter(e.target.value)} />
+          <input className="field" placeholder="Название работы — так увидят на бирже и в соцсетях бренда" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <input className="field" placeholder="Персонаж (например Raiden Shogun)" value={character} onChange={(e) => setCharacter(e.target.value)} />
           <input
             className="field"
             list="fr"
@@ -213,10 +211,13 @@ export function CreateBuildModal({
           <textarea
             className="field-box"
             rows={4}
-            placeholder="Коротко о работе: что сделали, материалы, особенности"
+            placeholder="Коротко о работе: что сделали, материалы, особенности. Этот текст уйдёт в описание поста бренда."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           />
+          <p className="text-[11px] text-ink-45 -mt-1 leading-relaxed">
+            В соцсетях: AlterCosPlay → ваш профиль, «О себе» и соцсети → описание работы → соавторы → теги.
+          </p>
           <input
             className="field"
             type="number"
@@ -252,18 +253,9 @@ export function CreateBuildModal({
             </span>
           </label>
           {!initial?.id && (
-            <label className="flex items-start gap-2 text-[13px] text-ink-70 cursor-pointer">
-              <input
-                type="checkbox"
-                className="mt-1"
-                checked={socialOptIn}
-                onChange={(e) => setSocialOptIn(e.target.checked)}
-              />
-              <span>
-                <span className="text-paper">Разрешить репост в YouTube / Instagram / Facebook / TikTok аккаунтов AlterCosPlay</span>
-                <span className="block text-[12px] text-ink-45">Работа может появиться в Instagram и Facebook бренда</span>
-              </span>
-            </label>
+            <p className="text-[11px] text-ink-45 leading-relaxed border border-line/70 px-3 py-2">
+              Публикация бесплатна. Взамен работа может выйти в Instagram / Facebook / других каналах AlterCosPlay — это условие платформы.
+            </p>
           )}
           {offerServices && (
             <input
@@ -276,9 +268,10 @@ export function CreateBuildModal({
           )}
           <div className="border-t border-line pt-3">
             <p className="font-mono text-[11px] text-ink-45 mb-2">Соавторы (необязательно)</p>
+            <p className="text-[11px] text-ink-45 mb-2">В соцсетях станут ссылками на их профили AlterCosPlay</p>
             <input
               className="field"
-              placeholder="@username соавтора"
+              placeholder="@ник соавтора с платформы"
               value={q}
               onChange={(e) => {
                 setQ(e.target.value);

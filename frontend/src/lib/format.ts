@@ -50,8 +50,30 @@ export function uzsPerUnit(currency: string, rates: Record<string, number>) {
   return 1 / rate;
 }
 
-export function mediaSrc(url?: string | null) {
+export function mediaSrc(url?: string | null, size: "full" | "card" | "thumb" = "full") {
   if (!url) return "";
-  if (url.startsWith("http") || url.startsWith("blob:") || url.startsWith("data:")) return url;
-  return url;
+  if (url.startsWith("blob:") || url.startsWith("data:")) return url;
+  if (size === "full") return url;
+  try {
+    const isHttp = url.startsWith("http://") || url.startsWith("https://");
+    const u = isHttp ? new URL(url) : null;
+    const pathOnly = u ? u.pathname : url.split("?")[0];
+    const m = pathOnly.match(/^(.*\/)?([^/]+?)(\.[a-z0-9]+)?$/i);
+    if (!m) return url;
+    const dir = m[1] || "";
+    let stem = m[2];
+    if (/-card$/i.test(stem) || /-thumb$/i.test(stem)) {
+      stem = stem.replace(/-(card|thumb)$/i, "");
+    }
+    const nextPath = `${dir}${stem}-${size}.webp`;
+    if (u) {
+      u.pathname = nextPath;
+      return u.toString();
+    }
+    const q = url.includes("?") ? url.slice(url.indexOf("?")) : "";
+    return nextPath + q;
+  } catch {
+    return url;
+  }
 }
+

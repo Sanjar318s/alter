@@ -13,6 +13,7 @@ import { useToast } from "@/components/ui/Toast";
 import { PostLightbox } from "@/components/profile/PostLightbox";
 import { SocialStats } from "@/components/social/SocialStats";
 import { cn } from "@/lib/cn";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 type FeedItem = Publication & {
   author?: { username?: string; displayName?: string; avatarUrl?: string | null } | null;
@@ -94,8 +95,23 @@ export function ReelsFeed({ className, compact = false }: ReelsFeedProps) {
 
   if (loading) {
     return (
-      <div className={cn("p-8 font-mono text-ink-45 text-center", compact && "h-full min-h-0 flex items-center justify-center", className)}>
-        Загрузка рилсов…
+      <div
+        className={cn(
+          "bg-ink flex items-center justify-center",
+          compact ? "h-full min-h-0" : "h-[calc(100dvh-57px)]",
+          className
+        )}
+        role="status"
+        aria-label="Загрузка рилсов"
+      >
+        <div className="relative w-full max-w-[420px] h-[min(80dvh,720px)] overflow-hidden border border-line/40">
+          <Skeleton className="absolute inset-0 rounded-none" />
+          <div className="absolute bottom-6 left-4 right-16 flex flex-col gap-2 z-[1]">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-3 w-48" />
+            <Skeleton className="h-3 w-24" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -150,16 +166,24 @@ export function ReelsFeed({ className, compact = false }: ReelsFeedProps) {
               >
                 {isVideo ? (
                   <video
-                    src={media}
+                    key={`${item.id}-${Math.abs(i - index) <= 1 ? "on" : "off"}`}
+                    src={Math.abs(i - index) <= 1 ? media : undefined}
                     className="absolute inset-0 w-full h-full object-cover"
                     playsInline
                     muted={i !== index}
                     autoPlay={i === index}
                     loop
                     controls={false}
+                    preload={i === index ? "auto" : Math.abs(i - index) === 1 ? "metadata" : "none"}
                   />
                 ) : (
-                  <SmartImage src={media} alt={item.caption || "Рилс"} className="absolute inset-0" />
+                  <SmartImage
+                    src={media}
+                    alt={item.caption || "Рилс"}
+                    className="absolute inset-0"
+                    size={i === index ? "full" : "card"}
+                    priority={i === index}
+                  />
                 )}
                 <div className="absolute inset-x-0 bottom-0 p-4 pt-16 bg-gradient-to-t from-ink via-ink/70 to-transparent">
                   <Link
@@ -167,7 +191,12 @@ export function ReelsFeed({ className, compact = false }: ReelsFeedProps) {
                     className="inline-flex items-center gap-2 no-underline text-paper"
                   >
                     <span className="w-8 h-8 overflow-hidden border border-line bg-stage">
-                      <SmartImage src={item.author?.avatarUrl || undefined} alt="" fallback={username || "u"} />
+                      <SmartImage
+                        src={item.author?.avatarUrl || undefined}
+                        alt=""
+                        fallback={username || "u"}
+                        size="thumb"
+                      />
                     </span>
                     <span className="font-display font-bold text-[14px]">@{username || "автор"}</span>
                   </Link>

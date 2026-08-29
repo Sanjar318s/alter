@@ -2,11 +2,12 @@ import { Router } from "express";
 import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { v4 as uuid } from "uuid";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, desc } from "drizzle-orm";
 import { isOwnerById } from "../lib/owner";
 import { enqueueSocialModeration, loadSocialAggregate } from "../lib/social/queue";
 import { recordPublicationView } from "../lib/premium/recordView";
 import { evaluateBloggerV1 } from "../lib/premium/evaluateBloggerV1";
+import { getCached, publicCacheHeaders, setCached } from "../lib/shortCache";
 
 const router = Router();
 
@@ -140,16 +141,25 @@ function enrichBatched(pubs: PubRow[], withAuthor: boolean) {
 
 // GET /api/publications/feed — global reels/posts feed
 router.get("/feed", (_req, res) => {
-  const limit = 40;
+  const cacheKey = "publications:feed";
+  const hit = getCached<{ publications: unknown[] }>(cacheKey, 30_000);
+  if (hit) {
+    publicCacheHeaders(res, 30);
+    return res.json(hit);
+  }
+
   const posts = db
     .select()
     .from(schema.publications)
     .where(eq(schema.publications.kind, "post"))
-    .all()
-    .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-    .slice(0, limit);
+    .orderBy(desc(schema.publications.createdAt))
+    .limit(40)
+    .all();
 
-  res.json({ publications: enrichBatched(posts, true) });
+  const payload = { publications: enrichBatched(posts, true) };
+  setCached(cacheKey, payload);
+  publicCacheHeaders(res, 30);
+  res.json(payload);
 });
 
 // GET /api/publications/user/:username — posts
@@ -186,13 +196,12 @@ router.get("/user/:username/stories", (req, res) => {
 
 // POST /api/publications — create
 router.post("/", authMiddleware, (req: AuthRequest, res) => {
-  const { caption, mediaUrls, tags, mentions, kind, socialCrosspostOptIn } = req.body as {
+  const { caption, mediaUrls, tags, mentions, kind } = req.body as {
     caption?: string;
     mediaUrls?: string[];
     tags?: string[];
     mentions?: { userId?: string; username?: string; displayName: string; type: "user" | "person" }[];
     kind?: "post" | "story";
-    socialCrosspostOptIn?: boolean;
   };
 
   if (!mediaUrls?.length) return res.status(400).json({ error: "mediaUrls required" });
@@ -237,9 +246,7 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   }
 
   const pub = db.select().from(schema.publications).where(eq(schema.publications.id, id)).get();
-  const optIn =
-    socialCrosspostOptIn !== undefined ? Boolean(socialCrosspostOptIn) : me?.socialCrosspostOptIn !== 0;
-  if (pubKind === "post" && optIn) {
+  if (pubKind === "post") {
     enqueueSocialModeration("publication", id, req.userId!);
   }
   const social = loadSocialAggregate("publication", [id]).get(id) || null;

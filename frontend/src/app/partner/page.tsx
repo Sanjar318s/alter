@@ -9,6 +9,7 @@ import { Frame } from "@/components/Frame";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useToast } from "@/components/ui/Toast";
+import { Skeleton, SkeletonText } from "@/components/ui/Skeleton";
 
 export default function PartnerPortalPage() {
   const { user, loading: authLoading } = useAuth();
@@ -59,7 +60,14 @@ export default function PartnerPortalPage() {
     }
   }
 
-  if (authLoading || loading) return <div className="p-8 font-mono text-ink-45">Загрузка…</div>;
+  if (authLoading || loading) {
+    return (
+      <div className="p-8 max-w-3xl mx-auto" role="status" aria-label="Загрузка">
+        <Skeleton className="h-8 w-48 mb-4" />
+        <SkeletonText lines={4} />
+      </div>
+    );
+  }
 
   if (!list.length) {
     return (

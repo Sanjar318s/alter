@@ -55,7 +55,7 @@ export function MarketBuildCard({
     <article className={cn("group flex flex-col", className)}>
       <Link href={buildHref} className="block no-underline text-paper">
         <Frame hover className="aspect-[4/5] overflow-hidden group-hover:scale-[1.02] transition-transform shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
-          <SmartImage src={item.coverImageUrl} alt={imageAlt} fallback={item.title} />
+          <SmartImage src={item.coverImageUrl} alt={imageAlt} fallback={item.title} size="card" />
           <div className="absolute top-2 right-2 z-[3] flex items-center gap-2">
             <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-ink/75 border border-line/80 text-[10px] font-mono text-ink-70">
               <Heart size={10} className={liked ? "fill-magenta stroke-magenta text-magenta" : ""} />
@@ -88,6 +88,7 @@ export function MarketBuildCard({
               src={item.authorAvatar}
               alt={`Аватар ${item.author}`}
               fallback={item.author}
+              size="thumb"
             />
           </span>
           <span className="text-[12px] truncate">@{item.author}</span>

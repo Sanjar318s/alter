@@ -2,6 +2,7 @@
 
 import { coverCropStyle, coverSources, type CoverCropMap } from "@/lib/coverCrop";
 import { SmartImage } from "@/components/media/SmartImage";
+import { Parallax } from "@/components/motion/Parallax";
 import { cn } from "@/lib/cn";
 import { mediaSrc } from "@/lib/format";
 
@@ -27,14 +28,20 @@ export function ProfileCoverArt({
 
   if (hasVariants) {
     return (
-      <picture key={versionKey} className={cn("profile-cover-picture", "profile-cover-picture--variants")}>
-        <source media="(max-width: 768px)" srcSet={mobileSrc} />
-        <source media="(max-width: 1023px)" srcSet={tabletSrc} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={desktopSrc} alt={alt} className={className} loading="eager" decoding="async" />
-      </picture>
+      <Parallax speed={0.1} className="profile-cover-parallax">
+        <picture key={versionKey} className={cn("profile-cover-picture", "profile-cover-picture--variants")}>
+          <source media="(max-width: 768px)" srcSet={mobileSrc} />
+          <source media="(max-width: 1023px)" srcSet={tabletSrc} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={desktopSrc} alt={alt} className={className} loading="eager" decoding="async" />
+        </picture>
+      </Parallax>
     );
   }
 
-  return <SmartImage src={coverUrl} alt={alt} className={className} style={legacyStyle} />;
+  return (
+    <Parallax speed={0.1} className="profile-cover-parallax">
+      <SmartImage src={coverUrl} alt={alt} className={className} style={legacyStyle} priority />
+    </Parallax>
+  );
 }

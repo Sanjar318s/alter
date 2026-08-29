@@ -9,6 +9,8 @@ import { SmartImage } from "@/components/media/SmartImage";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { useLocale } from "@/lib/LocaleContext";
+import { SkeletonProfile } from "@/components/ui/Skeleton";
+import { Parallax } from "@/components/motion/Parallax";
 
 export default function PartnerVitrinePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
@@ -25,7 +27,7 @@ export default function PartnerVitrinePage({ params }: { params: Promise<{ slug:
       .finally(() => setLoading(false));
   }, [slug]);
 
-  if (loading) return <div className="p-8 font-mono text-ink-45">Загрузка…</div>;
+  if (loading) return <SkeletonProfile className="pt-0" />;
   if (error || !partner) {
     return (
       <div className="p-8">
@@ -38,7 +40,9 @@ export default function PartnerVitrinePage({ params }: { params: Promise<{ slug:
     <div className="pt-11 pb-16">
       <div className="relative h-[200px] sm:h-[280px] bg-stage border-b border-line overflow-hidden">
         {partner.coverUrl ? (
-          <SmartImage src={partner.coverUrl} alt="" className="w-full h-full object-cover opacity-60" />
+          <Parallax speed={0.12} className="absolute inset-x-0 -top-[8%] h-[116%]">
+            <SmartImage src={partner.coverUrl} alt="" className="w-full h-full object-cover opacity-60" priority />
+          </Parallax>
         ) : null}
         <div className="absolute inset-0 bg-gradient-to-t from-ink to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 max-w-[1200px] mx-auto px-5 sm:px-8 py-6 flex items-end gap-4">

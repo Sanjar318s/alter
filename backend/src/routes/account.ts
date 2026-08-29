@@ -81,7 +81,6 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
     materialsJson,
     uiLocale,
     uiCurrency,
-    socialCrosspostOptIn,
   } = req.body;
 
   const ALLOWED_PLATFORM_ROLES = new Set(["client", "blogger", "seller"]);
@@ -95,15 +94,13 @@ router.patch("/profile", authMiddleware, (req: AuthRequest, res) => {
         error: "Роль уже выбрана. Смена возможна только через заявку модератору.",
       });
     }
-    db.update(schema.users).set({ platformRole: next }).where(eq(schema.users.id, user.id)).run();
-  }
-
-  if (socialCrosspostOptIn !== undefined) {
     db.update(schema.users)
-      .set({ socialCrosspostOptIn: socialCrosspostOptIn ? 1 : 0 })
+      .set({ platformRole: next, socialCrosspostOptIn: 1 })
       .where(eq(schema.users.id, user.id))
       .run();
   }
+
+  // Crosspost is platform policy — users cannot opt out after joining.
 
   const nextUsername = username && username !== user.username ? String(username).trim() : user.username;
   if (username && username !== user.username) {

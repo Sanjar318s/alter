@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { PageHeader } from "@/components/ui/PageHeader";
 import { analytics } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { Skeleton } from "@/components/ui/Skeleton";
 
 export default function AnalyticsPage() {
   const toast = useToast();
@@ -38,11 +39,22 @@ export default function AnalyticsPage() {
             </button>
           ))}
         </div>
-        {loading && <p className="font-mono text-[12px] text-ink-45">Загрузка…</p>}
-        {data && data.ordersCount === 0 && Object.keys(data.byStatus || {}).length === 0 && (
+        {loading && (
+          <div className="grid sm:grid-cols-2 gap-4" role="status" aria-label="Загрузка">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="border border-line p-4 flex flex-col gap-3">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-8 w-20" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-[70%]" />
+              </div>
+            ))}
+          </div>
+        )}
+        {!loading && data && data.ordersCount === 0 && Object.keys(data.byStatus || {}).length === 0 && (
           <EmptyState title="Аналитика появится после первых заказов" />
         )}
-        {data && (
+        {!loading && data && (
           <div className="grid sm:grid-cols-2 gap-4">
             <div className="border border-line p-4">
               <div className="font-mono text-[11px] text-ink-45 mb-2">Заказы по статусам</div>

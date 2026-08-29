@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Unbounded, Onest, JetBrains_Mono, Noto_Sans_JP, Noto_Sans_KR } from "next/font/google";
+import { Unbounded, Onest, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
 import { Shell } from "@/components/Shell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { JsonLd } from "@/components/seo/JsonLd";
+import { RegisterSW } from "@/components/pwa/RegisterSW";
+import { PreconnectHints } from "@/components/perf/PreconnectHints";
 import {
   OG_IMAGE_PATH,
   organizationJsonLd,
@@ -16,6 +18,7 @@ import {
 
 // Syne / Space Grotesk / Space Mono ship no Cyrillic, so every Russian string fell
 // back to a system sans. These three carry the same character with cyrillic subsets.
+// JP/KR use system fonts (free + smaller bundle for RU-majority traffic).
 
 const unbounded = Unbounded({
   variable: "--font-unbounded",
@@ -35,20 +38,6 @@ const jetbrainsMono = JetBrains_Mono({
   display: "swap",
 });
 
-const notoJp = Noto_Sans_JP({
-  variable: "--font-noto-jp",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
-const notoKr = Noto_Sans_KR({
-  variable: "--font-noto-kr",
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
@@ -59,6 +48,12 @@ export const metadata: Metadata = {
     "Биржа готовых работ косплея, рилсы о процессе и контенте, заказ услуги у продавцов — в одном профиле AlterCosPlay.",
   keywords: SEO_KEYWORDS,
   applicationName: SITE_NAME,
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: SITE_NAME,
+  },
   alternates: { canonical: "/" },
   icons: {
     icon: [{ url: "/logo.png", type: "image/png" }],
@@ -105,7 +100,7 @@ export default function RootLayout({
   return (
     <html
       lang="ru"
-      className={`${unbounded.variable} ${onest.variable} ${jetbrainsMono.variable} ${notoJp.variable} ${notoKr.variable}`}
+      className={`${unbounded.variable} ${onest.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-dvh flex flex-col">
@@ -114,6 +109,8 @@ export default function RootLayout({
           <ErrorBoundary>
             <Shell>{children}</Shell>
           </ErrorBoundary>
+          <RegisterSW />
+          <PreconnectHints />
         </Providers>
       </body>
     </html>

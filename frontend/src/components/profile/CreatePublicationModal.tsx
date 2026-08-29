@@ -15,24 +15,20 @@ type CreatePayload = {
   tags: string[];
   mentions: MentionChip[];
   kind: "post";
-  socialCrosspostOptIn: boolean;
 };
 
 export function CreatePublicationModal({
   onClose,
   onSubmit,
-  defaultSocialOptIn = true,
 }: {
   onClose: () => void;
   onSubmit: (payload: CreatePayload) => Promise<void>;
-  defaultSocialOptIn?: boolean;
 }) {
   const [caption, setCaption] = useState("");
   const [tags, setTags] = useState<string[]>([]);
   const [mentions, setMentions] = useState<MentionChip[]>([]);
   const [files, setFiles] = useState<{ id: string; preview: string; url?: string }[]>([]);
   const [submitting, setSubmitting] = useState(false);
-  const [socialOptIn, setSocialOptIn] = useState(defaultSocialOptIn);
   const fileRef = useRef<HTMLInputElement>(null);
   const edit = useEditImage();
 
@@ -70,7 +66,6 @@ export function CreatePublicationModal({
         tags: allTags,
         mentions: [...mentions, ...captionMentions],
         kind: "post",
-        socialCrosspostOptIn: socialOptIn,
       });
       onClose();
     } finally {
@@ -100,7 +95,8 @@ export function CreatePublicationModal({
         >
           {files.length === 0 ? (
             <>
-              <p className="text-[13px] text-ink-70">Перетащите фото или видео</p>
+              <p className="text-[13px] text-ink-70">Видео или фото рилса</p>
+              <p className="text-[11px] text-ink-45 mt-1">На YouTube Shorts уйдёт первое видео из списка</p>
               <Button type="button" variant="outline" size="sm" className="mt-3 gap-1.5" onClick={() => fileRef.current?.click()}>
                 <ImagePlus size={14} />
                 Выбрать файл
@@ -132,31 +128,25 @@ export function CreatePublicationModal({
         </div>
 
         <label className="block">
-          <span className="text-[12px] text-ink-45">Описание</span>
+          <span className="text-[12px] text-ink-45">Подпись</span>
           <textarea
             className="field-box mt-1.5 min-h-[88px] resize-y"
             maxLength={2200}
-            placeholder="Расскажите о съёмке… #тег @username"
+            placeholder="Текст как в обычном рилсе. Первые слова — название на YouTube. #теги и @ники соавторов попадут в описание Shorts со ссылками на профили."
             value={caption}
             onChange={(e) => setCaption(e.target.value)}
           />
+          <span className="block mt-1 text-[11px] text-ink-45 leading-relaxed">
+            В Shorts: AlterCosPlay → ваш профиль, «О себе» и соцсети → подпись → соавторы → теги.
+          </span>
           <span className="block mt-1 font-mono text-[10px] text-ink-45 text-right">{caption.length}/2200</span>
         </label>
 
         <MentionTagInput tags={tags} mentions={mentions} onTagsChange={setTags} onMentionsChange={setMentions} />
 
-        <label className="flex items-start gap-2 text-[12px] text-ink-70 cursor-pointer">
-          <input
-            type="checkbox"
-            className="mt-0.5"
-            checked={socialOptIn}
-            onChange={(e) => setSocialOptIn(e.target.checked)}
-          />
-          <span>
-            Разрешить репост в YouTube / Instagram / Facebook / TikTok аккаунтов AlterCosPlay.
-            <span className="block text-ink-45 mt-0.5">Может появиться в TikTok и других соцсетях бренда.</span>
-          </span>
-        </label>
+        <p className="text-[11px] text-ink-45 leading-relaxed border border-line/70 px-3 py-2">
+          Публикация бесплатна. Взамен рилс может выйти в YouTube / TikTok / других каналах AlterCosPlay — это условие платформы.
+        </p>
 
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>Отмена</Button>

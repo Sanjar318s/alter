@@ -55,6 +55,7 @@ export function MentionTagInput({
     <div className="flex flex-col gap-4">
       <div>
         <label className="text-[12px] text-ink-45">Теги</label>
+        <p className="text-[11px] text-ink-45 mt-0.5 mb-1">Станут хештегами в описании YouTube Shorts</p>
         <div className="flex flex-wrap gap-1.5 mt-1.5">
           {tags.map((t) => (
             <span key={t} className="inline-flex items-center gap-1 font-mono text-[10px] uppercase px-2 py-1 border border-magenta/40 text-magenta rounded-[4px]">
@@ -67,7 +68,7 @@ export function MentionTagInput({
         </div>
         <input
           className="field-box mt-2 text-[13px]"
-          placeholder="#genshin — Enter"
+          placeholder="#genshin — Enter. Попадёт в Shorts"
           value={tagInput}
           onChange={(e) => setTagInput(e.target.value)}
           onKeyDown={(e) => {
@@ -81,9 +82,10 @@ export function MentionTagInput({
 
       <div>
         <label className="text-[12px] text-ink-45">Отметить пользователя</label>
+        <p className="text-[11px] text-ink-45 mt-0.5 mb-1">В Shorts — ссылка на его профиль AlterCosPlay</p>
         <input
           className="field-box mt-1.5 text-[13px]"
-          placeholder="@username"
+          placeholder="@ник с платформы"
           value={mentionInput}
           onChange={(e) => setMentionInput(e.target.value)}
         />

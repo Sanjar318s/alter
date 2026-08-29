@@ -2,6 +2,7 @@
 
 import { Suspense, use } from "react";
 import MessagesInner from "../MessagesInner";
+import { SkeletonMessageList } from "@/components/ui/Skeleton";
 
 export default function ConversationPage({
   params,
@@ -10,7 +11,7 @@ export default function ConversationPage({
 }) {
   const { id } = use(params);
   return (
-    <Suspense fallback={<div className="p-6 font-mono text-ink-45">Загрузка…</div>}>
+    <Suspense fallback={<SkeletonMessageList className="p-6" />}>
       <MessagesInner conversationId={id} />
     </Suspense>
   );

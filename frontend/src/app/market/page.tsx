@@ -10,6 +10,8 @@ import { useLocale } from "@/lib/LocaleContext";
 import { useAuth } from "@/lib/AuthContext";
 import { explore } from "@/lib/api";
 import { cn } from "@/lib/cn";
+import { Parallax } from "@/components/motion/Parallax";
+import { SkeletonCardRow } from "@/components/ui/Skeleton";
 
 const SHELL = "max-w-[1360px] mx-auto px-5 sm:px-8 lg:px-10";
 
@@ -57,14 +59,16 @@ export default function MarketPage() {
     <div className="min-h-full">
       <section className="market-hero hero-wash border-b border-line py-14 md:py-20 lg:py-24 relative overflow-hidden">
         <div className="market-hero-art" aria-hidden>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/market-hero-characters.png"
-            alt=""
-            className="market-hero-art-img"
-            loading="eager"
-            decoding="async"
-          />
+          <Parallax speed={0.14} className="absolute inset-x-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/market-hero-characters.png"
+              alt=""
+              className="market-hero-art-img"
+              loading="eager"
+              decoding="async"
+            />
+          </Parallax>
         </div>
         <div className={cn(SHELL, "relative z-[3] h-full flex items-center")}>
           <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-10 items-center w-full">
@@ -114,7 +118,7 @@ export default function MarketPage() {
           </div>
 
           {loading ? (
-            <div className="font-mono text-[13px] text-ink-45 py-8">{t("loading")}</div>
+            <SkeletonCardRow count={5} />
           ) : items.length === 0 ? (
             <div className="border border-line border-dashed p-8 text-center text-ink-70 text-[14px]">
               {t("marketEmpty")}

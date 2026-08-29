@@ -139,8 +139,10 @@ export function RoleSelectModal() {
             Я согласен(на) с{" "}
             <Link href="/rules" target="_blank" className="text-magenta no-underline hover:underline">
               правилами платформы
-            </Link>{" "}
-            и не буду иметь претензий по этим правилам, включая одноразовый выбор роли и условия активности.
+            </Link>
+            , одноразовым выбором роли и условиями активности. Понимаю, что AlterCosPlay бесплатна взамен права
+            публиковать мои рилсы и работы в YouTube, TikTok, Instagram, Facebook и других каналах бренда — отключить
+            это нельзя.
           </span>
         </label>
 

@@ -89,7 +89,6 @@ function MeInner() {
   const [withdrawOpen, setWithdrawOpen] = useState(false);
   const [privacyOpen, setPrivacyOpen] = useState(false);
   const [socials, setSocials] = useState<{ platform: string; url: string }[]>([]);
-  const [socialCrosspostOptIn, setSocialCrosspostOptIn] = useState(true);
   const [notifs, setNotifs] = useState<Record<string, boolean>>({
     orders: true,
     messages: true,
@@ -130,7 +129,6 @@ function MeInner() {
     const p = me.profile || {};
     setNick(me.user.username);
     setEmail(me.user.email || "");
-    setSocialCrosspostOptIn(me.user.socialCrosspostOptIn !== false && me.user.socialCrosspostOptIn !== 0);
     setDisplay(p.displayName || "");
     setBio(p.bio || "");
     setCity(p.city || "");
@@ -295,7 +293,6 @@ function MeInner() {
         experienceYears: expYears === "" ? null : Number(expYears),
         materialsJson: JSON.stringify(materials.split(",").map((s) => s.trim()).filter(Boolean)),
         linksJson: JSON.stringify(Object.fromEntries(links.filter((s) => s.url).map((s) => [s.platform, s.url]))),
-        socialCrosspostOptIn,
       });
       if (socialsOverride) setSocials(socialsOverride);
       await refresh();
@@ -520,25 +517,10 @@ function MeInner() {
             {settingsTab === "socials" && (
               <div className="me-sidebar-card flex flex-col gap-3 max-w-[520px]">
                 {!isClient && (
-                <label className="flex items-start gap-2 text-[13px] text-ink-70 cursor-pointer border border-line p-3">
-                  <input
-                    type="checkbox"
-                    className="mt-1"
-                    checked={socialCrosspostOptIn}
-                    onChange={(e) => {
-                      setSocialCrosspostOptIn(e.target.checked);
-                      mark();
-                    }}
-                  />
-                  <span>
-                    <span className="text-paper">Репост в соцсети бренда AlterCosPlay</span>
-                    <span className="block text-[12px] text-ink-45 mt-0.5">
-                      {isSeller
-                        ? "По умолчанию для новых рилсов и работ. Можно снять галочку при публикации."
-                        : "По умолчанию для новых рилсов. Можно снять галочку при публикации."}
-                    </span>
-                  </span>
-                </label>
+                  <p className="text-[12px] text-ink-45 leading-relaxed border border-line p-3">
+                    Рилсы и работы могут выходить в каналах AlterCosPlay (YouTube, TikTok и др.) — это условие бесплатной
+                    платформы. Ссылки ниже попадут в описание Shorts под вашим профилем.
+                  </p>
                 )}
                 {socials.map((s, i) => (
                   <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-center min-w-0">

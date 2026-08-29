@@ -2,6 +2,7 @@ import { Router } from "express";
 import { optionalAuth, AuthRequest } from "../middleware/auth";
 import { rateLimit } from "../middleware/rateLimit";
 import { pickPlacement, recordAdEvent } from "../lib/partnerHub";
+import { getCached, publicCacheHeaders, setCached } from "../lib/shortCache";
 
 const router = Router();
 
@@ -9,8 +10,17 @@ router.get("/", (req, res) => {
   const slot = String(req.query.slot || "").trim();
   if (!slot) return res.status(400).json({ error: "slot обязателен" });
   const city = String(req.query.city || "").trim();
+  const key = `placement:${slot}:${city}`;
+  const hit = getCached<{ placement: unknown }>(key, 60_000);
+  if (hit) {
+    publicCacheHeaders(res, 60);
+    return res.json(hit);
+  }
   const placement = pickPlacement(slot, city || undefined);
-  res.json({ placement });
+  const payload = { placement };
+  setCached(key, payload);
+  publicCacheHeaders(res, 60);
+  res.json(payload);
 });
 
 router.post(

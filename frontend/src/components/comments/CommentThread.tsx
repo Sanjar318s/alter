@@ -13,7 +13,12 @@ import {
   type CommentItem,
 } from "@/lib/comments";
 import { cn } from "@/lib/cn";
-import { EmojiStickerPicker } from "@/components/messages/EmojiStickerPicker";
+import dynamic from "next/dynamic";
+
+const EmojiStickerPicker = dynamic(
+  () => import("@/components/messages/EmojiStickerPicker").then((m) => m.EmojiStickerPicker),
+  { ssr: false }
+);
 
 export function CommentThread({
   targetType,
@@ -215,7 +220,7 @@ function CommentRow({
       <div className="flex gap-2.5">
         <Link href={`/profile/${comment.username}`} className="shrink-0">
           <span className="block w-8 h-8 border border-line overflow-hidden">
-            <SmartImage src={comment.avatarUrl} alt={comment.username} fallback={comment.username} />
+            <SmartImage src={comment.avatarUrl} alt={comment.username} fallback={comment.username} size="thumb" />
           </span>
         </Link>
         <div className="flex-1 min-w-0">
