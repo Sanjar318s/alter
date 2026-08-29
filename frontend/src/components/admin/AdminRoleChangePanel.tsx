@@ -14,8 +14,9 @@ const ROLE_LABEL: Record<string, string> = {
 
 export function AdminRoleChangePanel() {
   const toast = useToast();
+  const [open, setOpen] = useState(true);
   const [requests, setRequests] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -30,8 +31,9 @@ export function AdminRoleChangePanel() {
   }, [toast]);
 
   useEffect(() => {
+    if (!open) return;
     load();
-  }, [load]);
+  }, [open, load]);
 
   async function decide(id: string, action: "approve" | "reject") {
     try {
@@ -48,11 +50,18 @@ export function AdminRoleChangePanel() {
     <section className="border border-line bg-stage p-4 mt-6">
       <div className="flex items-center justify-between gap-3 mb-3">
         <h2 className="font-display font-bold text-[16px]">Заявки на смену роли</h2>
-        <Button size="sm" variant="outline" onClick={load} disabled={loading}>
-          Обновить
-        </Button>
+        <div className="flex gap-2">
+          {open && (
+            <Button size="sm" variant="outline" onClick={load} disabled={loading}>
+              Обновить
+            </Button>
+          )}
+          <Button size="sm" variant="outline" onClick={() => setOpen((v) => !v)}>
+            {open ? "Свернуть" : "Развернуть"}
+          </Button>
+        </div>
       </div>
-      {loading && (
+      {!open ? null : loading ? (
         <div className="flex flex-col gap-3" role="status" aria-label="Загрузка">
           {Array.from({ length: 3 }).map((_, i) => (
             <div key={i} className="border border-line/80 p-3 flex flex-col gap-2">
@@ -62,10 +71,10 @@ export function AdminRoleChangePanel() {
             </div>
           ))}
         </div>
-      )}
-      {!loading && requests.length === 0 && (
+      ) : requests.length === 0 ? (
         <p className="text-[13px] text-ink-45">Нет заявок в статусе pending</p>
-      )}
+      ) : null}
+      {open && (
       <ul className="flex flex-col gap-3">
         {!loading && requests.map((r) => (
           <li key={r.id} className="border border-line/80 p-3">
@@ -90,6 +99,7 @@ export function AdminRoleChangePanel() {
           </li>
         ))}
       </ul>
+      )}
     </section>
   );
 }

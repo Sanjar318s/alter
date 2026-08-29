@@ -171,7 +171,9 @@ export default function AdminPage() {
   const [usersList, setUsersList] = useState<any[]>([]);
   const [staff, setStaff] = useState<any[]>([]);
   const [ownerUsername, setOwnerUsername] = useState("owner");
+  const [dataLoading, setDataLoading] = useState(true);
   const [query, setQuery] = useState("");
+  const [queryDebounced, setQueryDebounced] = useState("");
   const [selected, setSelected] = useState<any>(null);
   const [summary, setSummary] = useState<any>(null);
   const [userSectionsOpen, setUserSectionsOpen] = useState<Record<UserSectionKey, boolean>>({
@@ -221,9 +223,19 @@ export default function AdminPage() {
     setStaffPermissionDraft(next);
   }
 
-  function load() {
-    Promise.allSettled([admin.me(), admin.reports(), admin.withdrawals(), admin.users(query), admin.staff()])
-      .then(([m, r, w, u, s]) => {
+  function load(search = queryDebounced) {
+    setDataLoading(true);
+    Promise.allSettled([
+      admin.me(),
+      admin.reports(),
+      admin.withdrawals(),
+      admin.users(search),
+      admin.staff(),
+      admin.moderationSettings().catch(() => null),
+      admin.auditEvents({ type: auditType, severity: auditSeverity, actor: auditActor, q: auditQuery, limit: 120 }).catch(() => null),
+      health.get().catch(() => null),
+    ])
+      .then(([m, r, w, u, s, mod, audit, h]) => {
         if (m.status === "fulfilled") setPerms(m.value);
         if (r.status === "fulfilled") {
           setReports(r.value.reports || []);
@@ -238,23 +250,20 @@ export default function AdminPage() {
           setOwnerUsername(s.value.ownerUsername || admins.find((x: any) => x.role === "owner")?.username || "owner");
           ensureStaffDraft(admins);
         }
-        admin
-          .moderationSettings()
-          .then((x) => setModerationSettings(x.settings))
-          .catch(() => {});
-        admin
-          .auditEvents({ type: auditType, severity: auditSeverity, actor: auditActor, q: auditQuery, limit: 120 })
-          .then((x) => setAuditEvents(x.events || []))
-          .catch(() => {});
-        health
-          .get()
-          .then((h) => setWorkerHealth(h))
-          .catch(() => {});
+        if (mod.status === "fulfilled" && mod.value?.settings) setModerationSettings(mod.value.settings);
+        if (audit.status === "fulfilled" && audit.value?.events) setAuditEvents(audit.value.events || []);
+        if (h.status === "fulfilled" && h.value) setWorkerHealth(h.value);
         setLastUpdated(new Date());
         setError("");
       })
-      .catch((e) => setError(e instanceof Error ? e.message : "Ошибка загрузки"));
+      .catch((e) => setError(e instanceof Error ? e.message : "Ошибка загрузки"))
+      .finally(() => setDataLoading(false));
   }
+
+  useEffect(() => {
+    const t = setTimeout(() => setQueryDebounced(query.trim()), 350);
+    return () => clearTimeout(t);
+  }, [query]);
 
   async function downloadAuditCsv() {
     try {
@@ -337,10 +346,11 @@ export default function AdminPage() {
       return;
     }
     if (!isAdmin) return;
-    load();
-  }, [user, loading, isAdmin, router, query]);
+    load(queryDebounced);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, loading, isAdmin, router, queryDebounced]);
 
-  if (loading) {
+  if (loading || (isAdmin && dataLoading && !perms)) {
     return (
       <StudioShell>
         <SkeletonPage className="pt-6" />
@@ -698,7 +708,7 @@ export default function AdminPage() {
             </div>
           )}
           {Boolean(perms?.isOwner) && (
-            <Suspense fallback={null}>
+            <Suspense fallback={<SkeletonPage className="pt-4" />}>
               <AdminSocialPanel />
             </Suspense>
           )}

@@ -83,9 +83,11 @@ export default function MarketPage() {
                 {t("marketLead")}
               </p>
               <div className="flex flex-wrap gap-3 mt-8">
-                <Button href="/explore">{t("watchHow")}</Button>
-                <Button href={orderHref} variant="outline">
+                <Button href={orderHref} className="min-h-11 px-6">
                   {t("marketOrderCta")}
+                </Button>
+                <Button href="/explore" variant="outline" className="min-h-11 px-6">
+                  {t("watchHow")}
                 </Button>
               </div>
             </div>

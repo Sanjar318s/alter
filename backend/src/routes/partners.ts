@@ -5,6 +5,8 @@ import { db, schema } from "../db";
 import { loadEventBySlug, loadPartnerBundle, partnerIsLive, serializePartner } from "../lib/partnerHub";
 import { getCached, publicCacheHeaders, setCached } from "../lib/shortCache";
 
+import { rateLimit } from "../middleware/rateLimit";
+
 const router = Router();
 
 router.get("/", (req, res) => {
@@ -80,7 +82,7 @@ router.get("/:slug", (req, res) => {
   res.json({ partner: bundle });
 });
 
-router.post("/applications", (req, res) => {
+router.post("/applications", rateLimit(8, 60_000), (req, res) => {
   const { type, city, contactName, contactEmail, message } = req.body as {
     type?: string;
     city?: string;

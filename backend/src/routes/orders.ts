@@ -237,6 +237,26 @@ function updateOrder(req: AuthRequest, res: import("express").Response) {
 
   const body = req.body || {};
   const nextStatus = body.status;
+  let nextConversationId: string | undefined;
+  if (body.conversationId !== undefined) {
+    const cid = String(body.conversationId || "");
+    if (cid) {
+      const member = db
+        .select()
+        .from(schema.conversationMembers)
+        .where(
+          and(
+            eq(schema.conversationMembers.conversationId, cid),
+            eq(schema.conversationMembers.userId, req.userId!)
+          )
+        )
+        .get();
+      if (!member && !moderator) {
+        return res.status(400).json({ error: "Invalid conversation" });
+      }
+      nextConversationId = cid;
+    }
+  }
   db.update(schema.orders)
     .set({
       ...(nextStatus !== undefined && { status: nextStatus }),
@@ -249,7 +269,7 @@ function updateOrder(req: AuthRequest, res: import("express").Response) {
       ...(body.filesJson !== undefined && { filesJson: body.filesJson }),
       ...(body.deadline !== undefined && { deadline: new Date(body.deadline) }),
       ...(body.title !== undefined && { title: body.title }),
-      ...(body.conversationId !== undefined && { conversationId: body.conversationId }),
+      ...(nextConversationId !== undefined && { conversationId: nextConversationId }),
     })
     .where(eq(schema.orders.id, order.id))
     .run();

@@ -1,6 +1,7 @@
 import "./lib/env";
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import path from "path";
 import { migrate } from "./db/migrate";
 import { dbDriver } from "./db";
@@ -41,17 +42,51 @@ import { purgeInactivePlatformAccounts } from "./lib/inactivityPurge";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
+const isProd = process.env.NODE_ENV === "production";
+
+app.set("trust proxy", 1);
+
+function corsAllowlist(): Set<string> {
+  const set = new Set<string>();
+  const site = (process.env.PUBLIC_SITE_URL || "https://altercosplay.vercel.app").replace(/\/$/, "");
+  set.add(site);
+  const extra = String(process.env.FRONTEND_ORIGINS || "")
+    .split(",")
+    .map((s) => s.trim().replace(/\/$/, ""))
+    .filter(Boolean);
+  for (const o of extra) set.add(o);
+  if (!isProd) {
+    set.add("http://localhost:3000");
+    set.add("http://127.0.0.1:3000");
+    set.add("http://localhost:3001");
+  }
+  return set;
+}
+
+const ALLOWED_ORIGINS = corsAllowlist();
+
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginEmbedderPolicy: false,
+  })
+);
 
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
+      const clean = origin.replace(/\/$/, "");
+      if (ALLOWED_ORIGINS.has(clean)) return cb(null, true);
+      // Preview deploys of our Vercel project only (not arbitrary *.vercel.app)
       if (
-        /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
-        /^https?:\/\/(192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/.test(origin) ||
-        /^https:\/\/([a-z0-9-]+\.)*vercel\.app$/i.test(origin) ||
-        /^https:\/\/([a-z0-9-]+\.)*pages\.dev$/i.test(origin)
+        isProd &&
+        /^https:\/\/alter-[a-z0-9-]+-sanjar7\.vercel\.app$/i.test(clean)
       ) {
+        return cb(null, true);
+      }
+      if (!isProd && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(clean)) {
         return cb(null, true);
       }
       cb(null, false);
@@ -59,9 +94,17 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: "10mb" }));
+app.use(express.json({ limit: "512kb" }));
 
 app.get("/api/health", (_req, res) => {
+  if (isProd) {
+    return res.json({
+      status: "ok",
+      db: dbDriver,
+      storage: storageDriver(),
+      timestamp: new Date().toISOString(),
+    });
+  }
   const telegramSession = Boolean(process.env.TELEGRAM_SESSION || process.env.TELEGRAM_SESSION_STRING);
   const socialOAuthHints = {
     youtube: Boolean(process.env.GOOGLE_OAUTH_CLIENT_ID),
@@ -99,9 +142,9 @@ app.use("/uploads", uploadsRouter, (_req, res) => {
 });
 
 app.use("/api/auth", rateLimit(20, 60_000), authRoutes);
-app.use("/api/explore", exploreRoutes);
-app.use("/api/upload", uploadRoutes);
-app.use("/api/account", accountRoutes);
+app.use("/api/explore", rateLimit(120, 60_000), exploreRoutes);
+app.use("/api/upload", rateLimit(15, 60_000), uploadRoutes);
+app.use("/api/account", rateLimit(60, 60_000), accountRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/builds", buildRoutes);
 app.use("/api/commissions/orders", orderRoutes);
@@ -114,14 +157,13 @@ app.use("/api/publications", publicationRoutes);
 app.use("/api/comments", commentRoutes);
 app.use("/api/credits", creditRoutes);
 app.use("/api/finance", financeRoutes);
-app.use("/api/fx", fxRoutes);
+app.use("/api/fx", rateLimit(60, 60_000), fxRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/calendar", calendarRoutes);
-// Mount social before /api/admin so public OAuth callbacks are not blocked by admin JWT.
 app.use("/api/admin/social", adminSocialRoutes);
 app.use("/api/admin/partners", adminPartnersRoutes);
 app.use("/api/admin", adminRoutes);
-app.use("/api/partners", partnersRoutes);
+app.use("/api/partners", rateLimit(40, 60_000), partnersRoutes);
 app.use("/api/placements", placementsRoutes);
 app.use("/api/partner-portal", partnerPortalRoutes);
 app.use("/api/gifs", rateLimit(90, 60_000), gifsRoutes);
@@ -184,7 +226,6 @@ setInterval(() => {
   }
 }, 60_000);
 
-/** Daily inactivity purge for blogger/seller (single checker, no duplicate schedules). */
 const inactivityEnabled = process.env.INACTIVITY_PURGE !== "0";
 const inactivityIntervalMs = Math.max(
   60 * 60 * 1000,
@@ -209,7 +250,6 @@ setInterval(() => {
   }
 }, 60 * 60 * 1000);
 
-// Run once shortly after boot (after migrate), then on interval above.
 setTimeout(() => {
   if (!inactivityEnabled) return;
   try {

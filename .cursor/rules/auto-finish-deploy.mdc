@@ -1,0 +1,16 @@
+---
+description: Auto commit, push main, and deploy Fly+Vercel when finishing work
+alwaysApply: true
+---
+
+# Finish / deploy without asking
+
+When the user asks to finish a task, deploy, or says «делай» (or confirms an implementation plan that includes deploy):
+
+1. Make the code changes without asking for confirmation on ordinary edits.
+2. After checks pass: `git add` (no secrets / `.env` / `.next`), `git commit`, `git push` to `main`.
+3. Deploy **Fly** (backend) and **Vercel** (frontend; CLI or verify GitHub auto-deploy).
+4. Do **not** separately ask “commit?”, “push?”, or “deploy?”.
+5. Never force-push to main. On diverge: merge/rebase as needed, then push.
+
+Cursor UI Approve/Always cards may still appear for product safety; do not re-ask the same question in chat after the user already directed finish/deploy/делай.

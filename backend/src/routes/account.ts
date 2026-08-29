@@ -4,12 +4,13 @@ import { v4 as uuid } from "uuid";
 import { eq, ne, and } from "drizzle-orm";
 import { db, schema } from "../db";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
+import { rateLimit } from "../middleware/rateLimit";
 import { flagsForUsername } from "../lib/owner";
 import { evaluateBloggerV1, getBloggerPremiumProgress } from "../lib/premium/evaluateBloggerV1";
 
 const router = Router();
 
-router.get("/username-available", (req, res) => {
+router.get("/username-available", rateLimit(30, 60_000), (req, res) => {
   const username = String(req.query.username || "").trim();
   if (!username) return res.status(400).json({ error: "username required" });
   const existing = db.select().from(schema.users).where(eq(schema.users.username, username)).get();

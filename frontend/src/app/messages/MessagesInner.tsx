@@ -50,6 +50,7 @@ import {
 import { ChatMessageRow, type ChatMsg } from "@/components/messages/ChatMessageRow";
 import dynamic from "next/dynamic";
 import { ForwardMessageModal } from "@/components/messages/ForwardMessageModal";
+import { SkeletonMessageList } from "@/components/ui/Skeleton";
 
 const GifPicker = dynamic(
   () => import("@/components/messages/GifPicker").then((m) => m.GifPicker),
@@ -143,6 +144,7 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
   const [query, setQuery] = useState("");
   const [text, setText] = useState("");
   const [msgs, setMsgs] = useState<Msg[]>([]);
+  const [threadLoading, setThreadLoading] = useState(false);
   const [drop, setDrop] = useState(false);
   const [recording, setRecording] = useState<"audio" | "video" | null>(null);
   const [recTime, setRecTime] = useState(0);
@@ -244,6 +246,8 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
     const channelId = catalog?.id || ch?.id;
     const convId = ch?.conversationId || (catalog ? `conv-${catalog.id}` : active);
     let cancelled = false;
+    setThreadLoading(true);
+    setMsgs([]);
     (async () => {
       if (channelId) {
         await messagesApi.joinChannel(channelId).catch(() => {});
@@ -251,77 +255,77 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
         if (!cancelled && listed) setApiChannels(listed.channels || []);
       }
       if (cancelled) return;
-      messagesApi
-        .thread(convId, undefined, isGhostView)
-        .then((r) => {
-          if (cancelled) return;
-          const raw = (r.messages || []) as any[];
-          const base = raw.map((m) => ({
-            id: m.id,
-            own: m.senderId === user?.id,
-            sender: m.sender?.username || (m.senderId === user?.id ? user?.username || "" : ""),
-            senderId: m.senderId,
-            senderAvatar: m.sender?.avatarUrl || (m.senderId === user?.id ? user?.avatarUrl : undefined),
-            senderRole: m.sender?.staffRole || "none",
-            senderBadgeHidden: Boolean(m.sender?.staffBadgeHidden),
-            text: m.deleted ? "Сообщение удалено" : m.text,
-            type: m.type || "text",
-            time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" }) : "",
-            mediaUrl: m.mediaUrl,
-            duration: m.duration,
-            createdAt: m.createdAt,
-            reactions: m.reactions || {},
-            replyToId: m.replyTo as string | undefined,
-          }));
-          const replyCounts = base.reduce<Record<string, number>>((acc, m) => {
-            if (m.replyToId) acc[m.replyToId] = (acc[m.replyToId] || 0) + 1;
-            return acc;
-          }, {});
-          setMsgs(
-            base.map(({ replyToId, ...m }) => {
-              const parent = replyToId ? raw.find((x) => x.id === replyToId) : null;
-              return {
-                ...m,
-                replyCount: replyCounts[m.id] || 0,
-                replyTo: parent
-                  ? {
-                      id: parent.id,
-                      sender: parent.sender?.username || "",
-                      preview: parent.deleted ? "Сообщение удалено" : parent.text || parent.type || "",
-                    }
-                  : undefined,
-              };
-            })
-          );
-        })
-        .catch(() => {
-          if (!cancelled) setMsgs([]);
-        });
-      messagesApi.attachments(convId, undefined, isGhostView).then((r) => {
+      try {
+        const [threadRes, attachRes] = await Promise.all([
+          messagesApi.thread(convId, undefined, isGhostView),
+          messagesApi.attachments(convId, undefined, isGhostView).catch(() => ({ items: [] })),
+        ]);
         if (cancelled) return;
-        const items = r.items || [];
+        const raw = (threadRes.messages || []) as any[];
+        const base = raw.map((m) => ({
+          id: m.id,
+          own: m.senderId === user?.id,
+          sender: m.sender?.username || (m.senderId === user?.id ? user?.username || "" : ""),
+          senderId: m.senderId,
+          senderAvatar: m.sender?.avatarUrl || (m.senderId === user?.id ? user?.avatarUrl : undefined),
+          senderRole: m.sender?.staffRole || "none",
+          senderBadgeHidden: Boolean(m.sender?.staffBadgeHidden),
+          text: m.deleted ? "Сообщение удалено" : m.text,
+          type: m.type || "text",
+          time: m.createdAt ? new Date(m.createdAt).toLocaleTimeString("ru", { hour: "2-digit", minute: "2-digit" }) : "",
+          mediaUrl: m.mediaUrl,
+          duration: m.duration,
+          createdAt: m.createdAt,
+          reactions: m.reactions || {},
+          replyToId: m.replyTo as string | undefined,
+        }));
+        const replyCounts = base.reduce<Record<string, number>>((acc, m) => {
+          if (m.replyToId) acc[m.replyToId] = (acc[m.replyToId] || 0) + 1;
+          return acc;
+        }, {});
+        setMsgs(
+          base.map(({ replyToId, ...m }) => {
+            const parent = replyToId ? raw.find((x) => x.id === replyToId) : null;
+            return {
+              ...m,
+              replyCount: replyCounts[m.id] || 0,
+              replyTo: parent
+                ? {
+                    id: parent.id,
+                    sender: parent.sender?.username || "",
+                    preview: parent.deleted ? "Сообщение удалено" : parent.text || parent.type || "",
+                  }
+                : undefined,
+            };
+          })
+        );
+        const items = attachRes.items || [];
         setSharedFiles(
           items
             .filter((i: any) => i.type === "file" || i.fileName)
             .map((i: any) => ({ id: i.id, name: i.fileName || "файл", size: "", date: "", url: i.mediaUrl }))
         );
         setSharedMedia(items.map((i: any) => i.mediaUrl).filter(Boolean));
-      }).catch(() => {});
+      } catch {
+        if (!cancelled) setMsgs([]);
+      } finally {
+        if (!cancelled) setThreadLoading(false);
+      }
+      const dm = dms.find((d) => d.id === active);
+      if (dm?.peerUsername) {
+        users.get(dm.peerUsername).then(setPeer).catch(() => setPeer(null));
+      } else if (channelId) {
+        setPeer(null);
+      }
+      setMuted(Boolean(dm?.muted));
+      setPinned(Boolean(dm?.pinned));
+      if (channelId || catalog) {
+        messagesApi.getSettings(convId).then((s) => {
+          setMuted(Boolean(s.muted));
+          setPinned(Boolean(s.pinned));
+        }).catch(() => {});
+      }
     })();
-    const dm = dms.find((d) => d.id === active);
-    if (dm?.peerUsername) {
-      users.get(dm.peerUsername).then(setPeer).catch(() => setPeer(null));
-    } else if (channelId) {
-      setPeer(null);
-    }
-    setMuted(Boolean(dm?.muted));
-    setPinned(Boolean(dm?.pinned));
-    if (channelId || isChannel) {
-      messagesApi.getSettings(convId).then((s) => {
-        setMuted(Boolean(s.muted));
-        setPinned(Boolean(s.pinned));
-      }).catch(() => {});
-    }
     return () => {
       cancelled = true;
     };
@@ -1317,47 +1321,53 @@ export default function MessagesInner({ conversationId }: { conversationId?: str
           </div>
         )}
         <div ref={threadRef} className="pane-scroll chat-thread px-3 sm:px-5 py-4 flex flex-col gap-4">
-          {visibleMsgs.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center py-16 text-center text-[13px] text-ink-45">
-              {hiddenSenders.length > 0 && msgs.length > 0
-                ? "Сообщения скрыты. Откройте меню пользователя, чтобы вернуть."
-                : isChannel
-                ? "Пока нет сообщений. Напишите первым."
-                : "Нет сообщений"}
-            </div>
+          {threadLoading ? (
+            <SkeletonMessageList className="py-2" />
           ) : (
-            <div className="flex items-center gap-3 py-1">
-              <div className="flex-1 h-px bg-line/70" />
-              <span className="font-mono text-[11px] text-ink-45 uppercase tracking-wide">Сегодня</span>
-              <div className="flex-1 h-px bg-line/70" />
-            </div>
+            <>
+              {visibleMsgs.length === 0 ? (
+                <div className="flex-1 flex items-center justify-center py-16 text-center text-[13px] text-ink-45">
+                  {hiddenSenders.length > 0 && msgs.length > 0
+                    ? "Сообщения скрыты. Откройте меню пользователя, чтобы вернуть."
+                    : isChannel
+                    ? "Пока нет сообщений. Напишите первым."
+                    : "Нет сообщений"}
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 py-1">
+                  <div className="flex-1 h-px bg-line/70" />
+                  <span className="font-mono text-[11px] text-ink-45 uppercase tracking-wide">Сегодня</span>
+                  <div className="flex-1 h-px bg-line/70" />
+                </div>
+              )}
+              {visibleMsgs.map((m) => {
+                const hit = Boolean(threadQ && matchIds.includes(m.id));
+                const activeHit = hit && matchIds[Math.min(matchIdx, matchIds.length - 1)] === m.id;
+                void prefsTick;
+                const decorated: Msg = {
+                  ...m,
+                  favorited: isMessageFavorite(m.id),
+                  pinned: isMessagePinned(threadConvId, m.id),
+                };
+                return (
+                  <ChatMessageRow
+                    key={m.id}
+                    message={decorated}
+                    hit={hit}
+                    threadQ={threadQ}
+                    highlight={highlight}
+                    activeHit={activeHit}
+                    onMenuOpen={(msg, anchor) => openMessageMenu(msg, anchor)}
+                    onReply={startReply}
+                    onReact={reactToMessage}
+                    onForward={setForwardMsg}
+                    onOpenMedia={(items, index) => setMediaView({ items, index })}
+                    onScrollToReply={(id) => document.getElementById(`msg-${id}`)?.scrollIntoView({ block: "center" })}
+                  />
+                );
+              })}
+            </>
           )}
-          {visibleMsgs.map((m) => {
-            const hit = Boolean(threadQ && matchIds.includes(m.id));
-            const activeHit = hit && matchIds[Math.min(matchIdx, matchIds.length - 1)] === m.id;
-            void prefsTick;
-            const decorated: Msg = {
-              ...m,
-              favorited: isMessageFavorite(m.id),
-              pinned: isMessagePinned(threadConvId, m.id),
-            };
-            return (
-              <ChatMessageRow
-                key={m.id}
-                message={decorated}
-                hit={hit}
-                threadQ={threadQ}
-                highlight={highlight}
-                activeHit={activeHit}
-                onMenuOpen={(msg, anchor) => openMessageMenu(msg, anchor)}
-                onReply={startReply}
-                onReact={reactToMessage}
-                onForward={setForwardMsg}
-                onOpenMedia={(items, index) => setMediaView({ items, index })}
-                onScrollToReply={(id) => document.getElementById(`msg-${id}`)?.scrollIntoView({ block: "center" })}
-              />
-            );
-          })}
         </div>
         {blocked ? (
           <div className="px-4 py-4 text-[13px] text-ink-45">Пользователь заблокирован. Сообщения не отправляются.</div>

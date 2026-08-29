@@ -24,7 +24,7 @@ router.post("/telegram/publish", (req, res) => {
     const message = publishEventsChannelMessage({ text, mediaUrl, type, fileName, fileSize });
     res.status(201).json({ ok: true, message });
   } catch (err: unknown) {
-    res.status(500).json({ error: err instanceof Error ? err.message : "Publish failed" });
+    console.error("[integrations]", err); res.status(500).json({ error: "Publish failed" });
   }
 });
 

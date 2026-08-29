@@ -15,9 +15,20 @@ export interface AuthRequest extends Request {
   tokenJti?: string;
 }
 
+function allowQueryToken(req: Request) {
+  const url = String(req.originalUrl || req.url || "");
+  const accept = String(req.headers.accept || "");
+  if (accept.includes("text/event-stream")) return true;
+  if (/\/stream(\?|$)/.test(url)) return true;
+  // OAuth start redirects cannot set Authorization header in navigation
+  if (/\/api\/admin\/social\/[^/]+\/start(\?|$)/.test(url)) return true;
+  return false;
+}
+
 function readToken(req: Request) {
   const header = req.headers.authorization;
   if (header && header.startsWith("Bearer ")) return header.slice(7);
+  if (!allowQueryToken(req)) return null;
   const q = (req.query as { access_token?: string; token?: string } | undefined) || {};
   if (typeof q.access_token === "string" && q.access_token) return q.access_token;
   if (typeof q.token === "string" && q.token) return q.token;

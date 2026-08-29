@@ -316,8 +316,9 @@ export function AdminChannelManagement({
   }, []);
 
   useEffect(() => {
+    if (!open) return;
     reload();
-  }, [reload]);
+  }, [open, reload]);
 
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();

@@ -1,11 +1,10 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { UserMinus, UserPlus, UserX, UserCheck, KeyRound, Hash } from "lucide-react";
 import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/Button";
 import { AuditEventCard } from "@/lib/auditFormat";
-import { AdminChannelManagement } from "@/components/admin/AdminChannelManagement";
-import { AdminPartnersPanel } from "@/components/admin/AdminPartnersPanel";
 import {
   AdminBadge,
   AdminFilterChip,
@@ -35,6 +34,15 @@ export type HelpTopic =
   | "channels";
 
 export type UserSectionKey = "clean" | "suspicious" | "violator" | "blocked";
+
+const AdminChannelManagement = dynamic(
+  () => import("@/components/admin/AdminChannelManagement").then((m) => m.AdminChannelManagement),
+  { ssr: false }
+);
+const AdminPartnersPanel = dynamic(
+  () => import("@/components/admin/AdminPartnersPanel").then((m) => m.AdminPartnersPanel),
+  { ssr: false }
+);
 
 const PERMISSION_KEYS = [
   "canViewUsers",
@@ -548,7 +556,7 @@ export function AdminDashboard({
         </AdminPanel>
       </div>
 
-      {Boolean(perms?.isOwner) && (
+      {Boolean(perms?.isOwner) && channelsOpen && (
         <AdminChannelManagement
           staffUsernames={staff.map((s: any) => s.username).filter(Boolean)}
           ownerUsername={ownerUsername}

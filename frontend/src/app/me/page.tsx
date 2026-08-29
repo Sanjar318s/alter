@@ -168,17 +168,20 @@ function MeInner() {
   }, []);
 
   const refreshSidebar = useCallback(async (uname: string, platformRole?: string | null) => {
-    const [completeness, fin] = await Promise.all([
+    const isBlogger = platformRole === "blogger";
+    const [completeness, fin, statsRes, activityRes, pubsRes, premiumRes] = await Promise.all([
       account.completeness().catch(() => ({ percent: 0, checks: {} })),
       finance.transactions().catch(() => ({ available: 0 })),
+      users.stats(uname).catch(() => null),
+      users.activity(uname).catch(() => null),
+      isBlogger ? publications.list(uname).catch(() => null) : Promise.resolve(null),
+      isBlogger ? account.premium().catch(() => null) : Promise.resolve(null),
     ]);
     setComplete(completeness as { percent: number; checks: Record<string, boolean> });
     setBalance(fin.available || 0);
-
-    const [statsRes, activityRes] = await Promise.all([
-      users.stats(uname).catch(() => null),
-      users.activity(uname).catch(() => null),
-    ]);
+    const reelCount = pubsRes
+      ? (pubsRes.publications || []).filter((p: { kind?: string }) => p.kind === "post" || !p.kind).length
+      : 0;
     if (statsRes) {
       setStats({
         builds: statsRes.stats?.builds || 0,
@@ -186,33 +189,18 @@ function MeInner() {
         followers: statsRes.stats?.followers || 0,
         following: statsRes.stats?.following || 0,
         likes: statsRes.stats?.likes || 0,
-        reels: 0,
+        reels: reelCount,
       });
     }
-    if (platformRole === "blogger") {
-      try {
-        const pubs = await publications.list(uname);
-        const reelCount = (pubs.publications || []).filter(
-          (p: { kind?: string }) => p.kind === "post" || !p.kind
-        ).length;
-        setHasReels(reelCount > 0);
-        setStats((prev) => ({ ...prev, reels: reelCount }));
-      } catch {
-        setHasReels(false);
-      }
+    if (isBlogger) {
+      setHasReels(reelCount > 0);
+      setPremiumProgress(premiumRes?.progress ?? null);
     } else {
       setHasReels(false);
+      setPremiumProgress(null);
     }
     if (activityRes) {
       setActivity(activityRes.activity || []);
-    }
-    if (platformRole === "blogger") {
-      try {
-        const pr = await account.premium();
-        setPremiumProgress(pr.progress);
-      } catch {
-        setPremiumProgress(null);
-      }
     }
   }, []);
 
@@ -240,12 +228,10 @@ function MeInner() {
     let alive = true;
     Promise.all([
       auth.me(),
-      account.completeness().catch(() => ({ percent: 0, checks: {} })),
       account.notificationSettings().catch(() => ({ settings: null })),
       account.privacy().catch(() => ({ settings: null })),
-      finance.transactions().catch(() => ({ available: 0 })),
     ])
-      .then(async ([me, _completeness, ns, pr]) => {
+      .then(async ([me, ns, pr]) => {
         if (!alive) return;
         applyProfileFromMe(me);
         if (ns.settings) setNotifs((prev) => ({ ...prev, ...ns.settings }));

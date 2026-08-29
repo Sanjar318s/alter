@@ -138,7 +138,7 @@ router.post("/register", async (req, res) => {
     const row = db.select().from(schema.pendingSignups).where(eq(schema.pendingSignups.id, id)).get()!;
     res.status(201).json(otpPayload(row, code));
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("[auth]", err); res.status(500).json({ error: "Internal error" });
   }
 });
 
@@ -195,7 +195,7 @@ router.post("/verify", async (req, res) => {
     const user = db.select().from(schema.users).where(eq(schema.users.id, userId)).get()!;
     res.json(issueToken(user));
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("[auth]", err); res.status(500).json({ error: "Internal error" });
   }
 });
 
@@ -232,7 +232,7 @@ router.post("/resend", async (req, res) => {
     const updated = db.select().from(schema.pendingSignups).where(eq(schema.pendingSignups.id, pendingId)).get()!;
     res.json(otpPayload(updated, code));
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("[auth]", err); res.status(500).json({ error: "Internal error" });
   }
 });
 
@@ -257,7 +257,7 @@ router.post("/login", async (req, res) => {
 
     res.json(issueToken(user));
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("[auth]", err); res.status(500).json({ error: "Internal error" });
   }
 });
 
@@ -340,7 +340,7 @@ router.post("/reset/request", async (req, res) => {
       ...(echoOtpEnabled() ? { devCode: code } : {}),
     });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("[auth]", err); res.status(500).json({ error: "Internal error" });
   }
 });
 
@@ -368,7 +368,7 @@ router.post("/reset/confirm", async (req, res) => {
     db.delete(schema.passwordResets).where(eq(schema.passwordResets.id, resetId)).run();
     res.json({ ok: true });
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
+    console.error("[auth]", err); res.status(500).json({ error: "Internal error" });
   }
 });
 

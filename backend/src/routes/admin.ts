@@ -262,7 +262,7 @@ router.get("/reports", requireAdminPermission("canViewReports"), (_req, res) => 
   res.json({ reports, queue, queueItems });
 });
 
-router.patch("/reports/:id", (req, res) => {
+router.patch("/reports/:id", requireAdminPermission("canViewReports"), (req, res) => {
   const row = db.select().from(schema.reports).where(eq(schema.reports.id, req.params.id as string)).get();
   if (!row) return res.status(404).json({ error: "Not found" });
   const status = String(req.body.status || row.status);
@@ -331,7 +331,7 @@ router.get("/withdrawals", requireAdminPermission("canViewFinance"), (_req, res)
   res.json({ withdrawals: rows });
 });
 
-router.patch("/withdrawals/:id", (req, res) => {
+router.patch("/withdrawals/:id", requireAdminPermission("canViewFinance"), (req, res) => {
   const row = db.select().from(schema.withdrawals).where(eq(schema.withdrawals.id, req.params.id as string)).get();
   if (!row) return res.status(404).json({ error: "Not found" });
   const status = String(req.body.status || "paid");

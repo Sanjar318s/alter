@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { v4 as uuid } from "uuid";
+import { fromBuffer as fileTypeFromBuffer } from "file-type";
 import { authMiddleware, AuthRequest } from "../middleware/auth";
 import { putUpload } from "../lib/storage";
 import { putImageWithVariants } from "../lib/imageVariants";
@@ -32,6 +33,13 @@ const EXT: Record<string, string> = {
   "application/zip": "zip",
 };
 
+/** Map file-type mime → our allowlist mime when aliases differ */
+const DETECT_ALIAS: Record<string, string> = {
+  "audio/vnd.wave": "audio/wav",
+  "audio/x-wav": "audio/wav",
+  "application/x-zip-compressed": "application/zip",
+};
+
 const IMAGE_FOR_VARIANTS = new Set(["image/jpeg", "image/png", "image/webp"]);
 
 const MAX = 25 * 1024 * 1024;
@@ -55,40 +63,68 @@ router.post("/", authMiddleware, (req: AuthRequest, res) => {
   req.on("end", () => {
     void (async () => {
       try {
-        const mime = String(req.headers["x-file-type"] || req.headers["content-type"] || "");
-        const cleanMime = mime.split(";")[0].trim();
-        if (!ALLOWED.has(cleanMime)) {
+        const claimed = String(req.headers["x-file-type"] || req.headers["content-type"] || "")
+          .split(";")[0]
+          .trim();
+        if (!ALLOWED.has(claimed)) {
           return res.status(400).json({ error: "MIME not allowed" });
         }
-        const name = String(req.headers["x-file-name"] || `file.${EXT[cleanMime]}`);
-        const filename = `${uuid()}.${EXT[cleanMime]}`;
         const body = Buffer.concat(chunks);
+        const detected = await fileTypeFromBuffer(body);
+        let mime = claimed;
 
-        if (IMAGE_FOR_VARIANTS.has(cleanMime)) {
-          const stored = await putImageWithVariants(filename, body, cleanMime);
+        if (detected?.mime) {
+          const normalized = DETECT_ALIAS[detected.mime] || detected.mime;
+          if (!ALLOWED.has(normalized)) {
+            return res.status(400).json({ error: "File type not allowed" });
+          }
+          // Claimed type must match detected (prevents polyglot spoof)
+          if (normalized !== claimed) {
+            // allow jpeg/jpg claim mismatch only if detected is jpeg
+            if (!(claimed === "image/jpeg" && normalized === "image/jpeg")) {
+              return res.status(400).json({ error: "MIME mismatch" });
+            }
+          }
+          mime = normalized;
+        } else if (
+          claimed === "audio/webm" ||
+          claimed === "audio/wav" ||
+          claimed === "audio/mpeg"
+        ) {
+          // some audio containers lack strong signatures; keep claim if size ok
+          mime = claimed;
+        } else {
+          return res.status(400).json({ error: "Could not detect file type" });
+        }
+
+        const name = String(req.headers["x-file-name"] || `file.${EXT[mime]}`);
+        const filename = `${uuid()}.${EXT[mime]}`;
+
+        if (IMAGE_FOR_VARIANTS.has(mime)) {
+          const stored = await putImageWithVariants(filename, body, mime);
           return res.status(201).json({
             url: stored.url,
             cardUrl: stored.cardUrl || null,
             thumbUrl: stored.thumbUrl || null,
             fileName: name,
             fileSize: size,
-            mime: cleanMime,
+            mime,
             storage: stored.driver,
           });
         }
 
-        const stored = await putUpload(filename, body, cleanMime);
+        const stored = await putUpload(filename, body, mime);
         res.status(201).json({
           url: stored.url,
           fileName: name,
           fileSize: size,
-          mime: cleanMime,
+          mime,
           storage: stored.driver,
         });
       } catch (err: unknown) {
         console.error("[upload]", err);
         if (!res.headersSent) {
-          res.status(500).json({ error: err instanceof Error ? err.message : "Upload failed" });
+          res.status(500).json({ error: "Upload failed" });
         }
       }
     })();
