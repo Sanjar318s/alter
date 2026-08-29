@@ -37,6 +37,14 @@ function reportPriorityMeta(report: { targetType: string; reason: string; detail
   return { priority, slaMinutes, ageMinutes, overdue };
 }
 
+// Defer /social and /partners to their dedicated routers (public OAuth callbacks live there).
+router.use((req, _res, next) => {
+  if (req.path.startsWith("/social") || req.path.startsWith("/partners")) {
+    return next("router");
+  }
+  next();
+});
+
 router.use(authMiddleware, adminMiddleware);
 
 router.get("/audit", requireAdminPermission("canViewReports"), (req, res) => {

@@ -117,9 +117,10 @@ app.use("/api/finance", financeRoutes);
 app.use("/api/fx", fxRoutes);
 app.use("/api/analytics", analyticsRoutes);
 app.use("/api/calendar", calendarRoutes);
-app.use("/api/admin", adminRoutes);
-app.use("/api/admin/partners", adminPartnersRoutes);
+// Mount social before /api/admin so public OAuth callbacks are not blocked by admin JWT.
 app.use("/api/admin/social", adminSocialRoutes);
+app.use("/api/admin/partners", adminPartnersRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/partners", partnersRoutes);
 app.use("/api/placements", placementsRoutes);
 app.use("/api/partner-portal", partnerPortalRoutes);
